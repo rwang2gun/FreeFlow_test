@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,129 +9,179 @@
         body {
             margin: 0;
             overflow: hidden;
-            background-color: #f0f0f0; 
+            background-color: #f0f0f0;
             font-family: 'Segoe UI', sans-serif;
         }
+
         #game-canvas {
             width: 100vw;
             height: 100vh;
             display: block;
         }
+
         #ui-layer {
             position: absolute;
             top: 20px;
             left: 20px;
-            color: #333;
-            background: rgba(255, 255, 255, 0.9);
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-            user-select: none;
-            backdrop-filter: blur(8px);
-            border-left: 5px solid #d32f2f;
-            max-width: 280px;
-            transition: border-color 0.3s ease;
-        }
-        .instruction {
-            font-weight: bold;
-            margin-bottom: 12px;
-            font-size: 1.2em;
-            color: #1a1a1a;
-        }
-        .key-group {
-            margin-top: 10px;
-            font-size: 0.95em;
-            line-height: 1.8;
-        }
-        .key {
-            background: #333;
-            color: white;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-family: monospace;
-            font-weight: bold;
-            margin-right: 4px;
-        }
-        #pause-overlay, #start-overlay {
-            position: absolute;
-            top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(0, 0, 0, 0.85);
-            display: none;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            color: white;
             z-index: 100;
-            backdrop-filter: blur(5px);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
         }
-        #start-overlay { display: flex; } /* 초기 실행 시 표시 */
-        .guide-box {
-            background: rgba(255,255,255,0.1);
-            padding: 20px 40px;
-            border-radius: 12px;
-            border: 1px solid rgba(255,255,255,0.2);
-            margin: 20px 0;
-            text-align: left;
-            line-height: 1.8;
-        }
-        .guide-item { margin-bottom: 8px; font-size: 1.1em; }
-        .start-btn {
-            padding: 15px 50px;
-            font-size: 1.5em;
-            font-weight: bold;
-            color: #fff;
-            background: #d32f2f;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s;
-            box-shadow: 0 4px 15px rgba(211, 47, 47, 0.4);
-        }
-        .start-btn:hover { background: #b71c1c; transform: translateY(-2px); }
+        #ui-layer * { pointer-events: auto; }
+
         .status-badge {
             display: inline-block;
-            padding: 5px 12px;
-            border-radius: 4px;
-            background: #333;
+            padding: 8px 16px;
+            border-radius: 10px;
+            background: rgba(40, 40, 40, 0.8);
             color: white;
             font-weight: bold;
-            margin-bottom: 5px;
-            font-size: 0.9em;
+            font-size: 1em;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
-        #countdown-overlay {
-            position: absolute;
-            top: 0; left: 0; width: 100vw; height: 100vh;
-            display: none;
+
+        #stance-badge { background: rgba(76, 175, 80, 0.9); }
+        #hp-badge { background: rgba(233, 30, 99, 0.9); }
+        #score-badge { background: rgba(255, 193, 7, 0.9); color: black; }
+
+        /* 통합 메뉴 오버레이 */
+        #game-menu-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(15px);
+            color: white;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 1000;
+            text-align: center;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .menu-container {
+            max-width: 800px;
+            width: 95%;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 40px;
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            display: flex;
             flex-direction: column;
+            align-items: center;
+        }
+
+        .guide-sections {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin: 25px 0;
+        }
+
+        .guide-section {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            text-align: center;
+        }
+
+        .guide-section h3 {
+            color: #ffeb3b;
+            font-size: 1.4em;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 2px solid rgba(255, 235, 59, 0.3);
+            display: inline-block;
+            padding-bottom: 5px;
+        }
+
+        .guide-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .guide-item {
+            font-size: 1.05em;
+            color: #ddd;
+        }
+
+        .key {
+            background: #eee;
+            color: #222;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 0.85em;
+            box-shadow: 0 3px 0 #999;
+            margin: 0 4px;
+            display: inline-block;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 20px;
+            margin-top: 15px;
+        }
+
+        .menu-btn {
+            padding: 14px 40px;
+            font-size: 1.2em;
+            font-weight: bold;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+        }
+
+        .btn-primary { background: #ffeb3b; color: #111; box-shadow: 0 5px 15px rgba(255, 235, 59, 0.3); }
+        .btn-primary:hover { transform: scale(1.05); background: #fff176; }
+        .btn-secondary { background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.2); }
+        .btn-secondary:hover { background: rgba(255,255,255,0.2); transform: translateY(-2px); }
+
+        #countdown-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            display: none;
             justify-content: center;
             align-items: center;
-            z-index: 150;
+            z-index: 2000;
             pointer-events: none;
+            background: rgba(0,0,0,0.2);
+        }
+
+        #countdown-text {
             color: #ffeb3b;
-            font-size: 150px;
-            font-weight: bold;
-            text-shadow: 0 0 30px rgba(0,0,0,0.5);
+            font-size: min(15vw, 150px);
+            font-weight: 900;
+            text-shadow: 0 0 40px rgba(0,0,0,0.8), 0 0 20px rgba(255,235,59,0.5);
             font-family: 'Arial Black', sans-serif;
+            font-style: italic;
+            text-align: center;
+            line-height: 1;
         }
-        .countdown-number {
-            animation: countPop 1s ease-out infinite;
-        }
+
         @keyframes countPop {
             0% { transform: scale(0.5); opacity: 0; }
             20% { transform: scale(1.2); opacity: 1; }
             80% { transform: scale(1); opacity: 1; }
             100% { transform: scale(1); opacity: 0; }
         }
-        #stance-badge {
-            background: #4CAF50;
-            transition: background-color 0.3s ease;
-        }
-        #hp-badge { background: #e91e63; color: white; }
-        #score-badge { background: #ffc107; color: black; font-weight: bold; }
-        #instruction { background: rgba(0,0,0,0.5); font-size: 13px; }
+        .countdown-number { animation: countPop 1s ease-out infinite; }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
+
 <body>
     <div id="ui-layer">
         <div id="stance-badge" class="status-badge">상태: 평화 (납도)</div>
@@ -140,51 +191,92 @@
             <input type="checkbox" id="ai-toggle" checked style="cursor: pointer; width: 18px; height: 18px;">
             <label for="ai-toggle" style="cursor: pointer; font-size: 14px; user-select: none;">NPC AI 활성화</label>
         </div>
-        <div id="attack-name-badge" class="status-badge" style="background: rgba(156, 39, 176, 0.8); display: none; font-weight: bold; border: 1px solid #ce93d8;">기술명: -</div>
-    </div>
-    
-    <!-- 시작 화면 오버레이 -->
-    <div id="start-overlay">
-        <h1 style="font-size: 3.5em; margin-bottom: 20px; color: #ffeb3b; text-shadow: 0 0 20px rgba(255,235,59,0.3);">Free Flow Prototype</h1>
-        
-        <div class="guide-box">
-            <div class="guide-item"><span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span> 이동</div>
-            <div class="guide-item"><span class="key">L-Click</span> 공격 (거리에 따라 기술 자동 발동)</div>
-            <div class="guide-item"><span class="key">Shift</span> 회피 / 대시</div>
-            <div class="guide-item"><span class="key">R-Click</span> (Hold) 카메라 회전</div>
-            <div class="guide-item"><span class="key">ESC</span> 일시정지 및 가이드</div>
-        </div>
-        
-        <button class="start-btn" id="start-btn">GAME START</button>
-        <p style="margin-top: 20px; font-size: 0.9em; opacity: 0.6;">* 시작 시 적 AI가 자동으로 활성화됩니다.</p>
+        <div id="attack-name-badge" class="status-badge"
+            style="background: rgba(156, 39, 176, 0.8); display: none; font-weight: bold; border: 1px solid #ce93d8;">
+            기술명: -</div>
     </div>
 
-    <div id="pause-overlay">
-        <h1 style="font-size: 3em; color: #ffeb3b; margin-bottom: 30px;">PAUSED</h1>
-        <div class="guide-box" style="margin-bottom: 30px;">
-            <div class="guide-item"><span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span> 이동</div>
-            <div class="guide-item"><span class="key">L-Click</span> 공격</div>
-            <div class="guide-item"><span class="key">Shift</span> 회피</div>
-            <div class="guide-item"><span class="key">ESC</span> 계속하기</div>
+    <!-- 통합 메뉴 오버레이 -->
+    <div id="game-menu-overlay">
+        <div class="menu-container">
+            <h1 id="menu-title" style="font-size: 2.8em; color: #ffeb3b; margin-bottom: 25px; text-shadow: 0 0 20px rgba(255,235,59,0.4);">
+                BATTLE GUIDE & MENU</h1>
+
+            <div class="guide-sections">
+                <!-- 1. 조작 방법 -->
+                <div class="guide-section">
+                    <h3>🕹️ 조작 방법</h3>
+                    <div class="guide-content">
+                        <div class="guide-item">이동 : <span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span></div>
+                        <div class="guide-item">공격 : <span class="key">L-Click</span> (거리별 기술 자동 발동)</div>
+                        <div class="guide-item">회피 / 대시 공격 : <span class="key">Shift</span> / <span class="key">R-Click</span></div>
+                        <div class="guide-item">카메라 조작 : <span class="key">Wheel Hold</span></div>
+                        <div class="guide-item">캐릭터 교체 : <span class="key">1</span><span class="key">2</span> / <span class="key">Tab</span></div>
+                        <div class="guide-item">일시정지 : <span class="key">ESC</span></div>
+                    </div>
+                </div>
+
+                <!-- 2. 점수 규칙 -->
+                <div class="guide-section">
+                    <h3>🏆 점수 획득 규칙</h3>
+                    <div class="guide-content">
+                        <div class="guide-item">기본 타격 : <span style="color:#ffeb3b; font-weight:bold;">+1 ~ +3</span> 점</div>
+                        <div class="guide-item"><b>저스트 회피</b> : <span style="color:#ffeb3b; font-weight:bold;">+10</span> 점 (슬로우 발동)</div>
+                        <div class="guide-item"><b>퍼펙트 스왑</b> : <span style="color:#ffeb3b; font-weight:bold;">+15</span> 점 (교체 시 발동)</div>
+                        <div class="guide-item" style="font-size: 0.9em; opacity: 0.8; margin-top: 10px; color: #ffeb3b;">
+                            ⏱️ 저스트 회피와 퍼펙트 스왑 타이밍은 빨간 느낌표 발생 시점부터 <b>0.25초</b>입니다.
+                        </div>
+                        <div class="guide-item" style="font-size: 0.9em; opacity: 0.8; margin-top: 5px; color: #ffeb3b;">
+                            💡 슬로우 모션 중에는 현재 공격자가 고정됩니다!
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. 게임 종료 규칙 -->
+                <div class="guide-section">
+                    <h3>⚠️ 게임 종료 규칙</h3>
+                    <div class="guide-content">
+                        <div class="guide-item">플레이어의 누적 피격 횟수가 <b>10회</b>에 도달하면 종료</div>
+                        <div class="guide-item" style="font-size: 0.9em; opacity: 0.7;">화면 상단의 HP 배지(피격 횟수)를 확인하세요.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 시작 시 버튼 그룹 -->
+            <div id="start-btn-group" class="btn-group">
+                <button class="menu-btn btn-primary" id="start-btn">GAME START</button>
+            </div>
+
+            <!-- 일시정지 시 버튼 그룹 -->
+            <div id="pause-btn-group" class="btn-group" style="display:none;">
+                <button class="menu-btn btn-primary" id="continue-btn">계속 하기</button>
+                <button class="menu-btn btn-secondary" id="restart-btn-pause">다시 하기</button>
+            </div>
         </div>
-        <p>클릭하거나 ESC를 누르면 재개됩니다.</p>
     </div>
 
     <!-- [추가] 게임 오버 레이어 -->
-    <div id="gameover-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); color:white; flex-direction:column; justify-content:center; align-items:center; z-index:200;">
+    <div id="gameover-overlay"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); color:white; flex-direction:column; justify-content:center; align-items:center; z-index:200;">
         <h1 style="font-size: 80px; color: #ff3d00; margin-bottom: 10px;">GAME OVER</h1>
         <div id="final-score" style="font-size: 40px; color: #ffeb3b; margin-bottom: 30px;">FINAL SCORE: 0</div>
-        <button id="restart-btn" style="padding: 15px 40px; font-size: 24px; cursor: pointer; background: #fff; border: none; border-radius: 5px;">다시 시작</button>
+        <button id="restart-btn"
+            style="padding: 15px 40px; font-size: 24px; cursor: pointer; background: #fff; border: none; border-radius: 5px;">다시
+            시작</button>
     </div>
 
     <!-- [추가] 슬로우 모션 연출용 오버레이 -->
-    <div id="slowmo-overlay" style="position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 150, 255, 0.15); pointer-events: none; opacity: 0; transition: opacity 0.3s ease; z-index: 10; display: block;"></div>
+    <div id="slowmo-overlay"
+        style="position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 150, 255, 0.15); pointer-events: none; opacity: 0; transition: opacity 0.3s ease; z-index: 10; display: block;">
+    </div>
 
     <div id="countdown-overlay">
         <div id="countdown-text" class="countdown-number">3</div>
     </div>
 
-    <div id="distance-label" style="position: absolute; transform: translate(-50%, -100%); font-weight: bold; font-size: 1.25em; color: #ffeb3b; text-shadow: 1px 1px 3px rgba(0,0,0,0.8); pointer-events: none; display: none; z-index: 50;"></div>
+    <div id="distance-label"
+        style="position: absolute; transform: translate(-50%, -100%); font-weight: bold; font-size: 1.25em; color: #ffeb3b; text-shadow: 1px 1px 3px rgba(0,0,0,0.8); pointer-events: none; display: none; z-index: 50;">
+    </div>
 
     <canvas id="game-canvas"></canvas>
 
@@ -197,12 +289,13 @@
         class InputManager {
             constructor() {
                 this.keys = { 'w': false, 'a': false, 's': false, 'd': false, 'shift': false };
-                this.isLeftMouseDown = false; this.isRightMouseDown = false;
+                this.isLeftMouseDown = false; this.isMiddleMouseDown = false; this.isRightMouseDown = false;
                 this.mouseMovement = { x: 0, y: 0 };
-                this.attackTriggered = false; this.shiftTriggered = false;  
+                this.attackTriggered = false; this.shiftTriggered = false;
                 this.isLocked = false; // [추가] 입력 잠금 플래그
 
                 window.addEventListener('keydown', (e) => {
+                    if (e.code === 'Tab') e.preventDefault(); // 브라우저 포커스 이동 방지
                     if (this.isLocked) return;
                     const key = e.key.toLowerCase();
                     if (key === 'shift') this.shiftTriggered = true;
@@ -216,19 +309,20 @@
                 window.addEventListener('mousedown', (e) => {
                     if (this.isLocked) {
                         // 잠금 상태에서도 우클릭 카메라 회전은 허용할지 검토 (현재는 차단)
-                        if (e.button !== 2) return; 
+                        if (e.button !== 2) return;
                     }
                     // [수정] 오버레이 요소 클릭 시 공격 트리거 방지
-                    if (e.target.closest('#ui-layer') || 
-                        e.target.closest('#start-overlay') || 
-                        e.target.closest('#pause-overlay') || 
+                    if (e.target.closest('#ui-layer') ||
+                        e.target.closest('#game-menu-overlay') ||
                         e.target.closest('#gameover-overlay')) return;
-                        
+
                     if (e.button === 0) { this.isLeftMouseDown = true; this.attackTriggered = true; }
-                    if (e.button === 2) this.isRightMouseDown = true;
+                    if (e.button === 1) this.isMiddleMouseDown = true;
+                    if (e.button === 2) { this.isRightMouseDown = true; this.shiftTriggered = true; }
                 });
                 window.addEventListener('mouseup', (e) => {
                     if (e.button === 0) this.isLeftMouseDown = false;
+                    if (e.button === 1) this.isMiddleMouseDown = false;
                     if (e.button === 2) this.isRightMouseDown = false;
                 });
                 window.addEventListener('mousemove', (e) => {
@@ -237,7 +331,7 @@
                 window.addEventListener('contextmenu', e => e.preventDefault());
             }
             resetTriggers() {
-                this.attackTriggered = false; this.shiftTriggered = false;  
+                this.attackTriggered = false; this.shiftTriggered = false;
                 this.mouseMovement.x = 0; this.mouseMovement.y = 0;
             }
         }
@@ -250,9 +344,9 @@
         class CameraRig {
             constructor(camera, target, input) {
                 this.camera = camera; this.target = target; this.input = input;
-                this.distance = 6.5; 
-                this.theta = Math.PI; this.phi = Math.PI / 3.2; 
-                
+                this.distance = 6.5;
+                this.theta = Math.PI; this.phi = Math.PI / 3.2;
+
                 // [추가] 부드러운 카메라 전환을 위한 타겟값
                 this.targetDistance = this.distance;
                 this.targetTheta = this.theta;
@@ -265,33 +359,33 @@
             setThetaPhi(theta, phi) {
                 this.targetTheta = theta;
                 this.targetPhi = phi;
-                this.isManual = true; 
+                this.isManual = true;
                 this.alignTimer = 0;
             }
             setIntroView() {
                 // [수정] 캐릭터가 바라보는 방향의 뒤쪽 대각선으로 카메라 정렬 (글로벌 규칙)
                 const charForward = new THREE.Vector3(0, 0, 1).applyQuaternion(this.target.mesh.quaternion);
                 const charTheta = Math.atan2(charForward.x, charForward.z);
-                this.setThetaPhi(charTheta + Math.PI, Math.PI / 3.0); 
+                this.setThetaPhi(charTheta + Math.PI, Math.PI / 3.0);
                 this.targetDistance = 9.5; // 약간 더 멀리서 조망
             }
             update(dt) {
                 const charBase = this.target.mesh.position.clone();
                 const charPivot = charBase.clone().add(new THREE.Vector3(0, 0.9, 0));
                 const lookAtTarget = charBase.clone().add(new THREE.Vector3(0, 2.2, 0));
-                
+
                 const isForward = this.input.keys['w'];
                 const isSAD = this.input.keys['s'] || this.input.keys['a'] || this.input.keys['d'];
                 const isAnyMovement = isForward || isSAD;
 
-                if (this.input.isRightMouseDown) {
+                if (this.input.isMiddleMouseDown) {
                     this.isManual = true; this.alignTimer = 0;
                     this.targetTheta += this.input.mouseMovement.x * 0.005;
                     this.targetPhi -= this.input.mouseMovement.y * 0.005;
                     this.targetPhi = THREE.MathUtils.clamp(this.targetPhi, 0.2, Math.PI / 2.2);
                 } else {
-                    if (isSAD) { this.isManual = true; this.alignTimer = 0; } 
-                    else if (isForward) { this.alignTimer += dt; if (this.alignTimer > this.alignDelay) this.isManual = false; } 
+                    if (isSAD) { this.isManual = true; this.alignTimer = 0; }
+                    else if (isForward) { this.alignTimer += dt; if (this.alignTimer > this.alignDelay) this.isManual = false; }
                     else if (!isAnyMovement) { this.isManual = false; }
                 }
 
@@ -299,25 +393,25 @@
                     this.isManual = true;
                 }
 
-                if (!this.isManual && !this.input.isRightMouseDown) {
+                if (!this.isManual && !this.input.isMiddleMouseDown) {
                     this.rotationWeight = THREE.MathUtils.lerp(this.rotationWeight, 1.0, 1.8 * dt);
                     const charForward = new THREE.Vector3(0, 0, 1).applyQuaternion(this.target.mesh.quaternion);
                     this.targetTheta = Math.atan2(charForward.x, charForward.z) + Math.PI;
                     this.targetPhi = Math.PI / 3.2; // 기본 높이
                     this.targetDistance = 7.0; // 기본 거리
-                } else { 
-                    this.rotationWeight = 0; 
+                } else {
+                    this.rotationWeight = 0;
                 }
 
                 // [보간 실행] 모든 모드에서 공통으로 적용
-                const lerpSpeed = (this.isManual) ? 5.0 : 2.5; 
+                const lerpSpeed = (this.isManual) ? 5.0 : 2.5;
                 this.distance = THREE.MathUtils.lerp(this.distance, this.targetDistance, lerpSpeed * dt);
-                
+
                 let thetaDiff = this.targetTheta - this.theta;
                 while (thetaDiff < -Math.PI) thetaDiff += Math.PI * 2;
                 while (thetaDiff > Math.PI) thetaDiff -= Math.PI * 2;
                 this.theta += thetaDiff * lerpSpeed * dt;
-                
+
                 this.phi = THREE.MathUtils.lerp(this.phi, this.targetPhi, lerpSpeed * dt);
 
                 const sinPhi = Math.sin(this.phi);
@@ -326,7 +420,7 @@
                     this.distance * Math.cos(this.phi),
                     this.distance * sinPhi * Math.cos(this.theta)
                 );
-                
+
                 this.camera.position.lerp(charPivot.clone().add(offset), this.followSpeed * dt);
                 this.lookAtPos.lerp(lookAtTarget, 10 * dt);
                 this.camera.lookAt(this.lookAtPos);
@@ -348,7 +442,7 @@
         class StateMachine {
             constructor() { this.states = {}; this.currentState = null; }
             addState(name, state) { this.states[name] = state; }
-            changeState(name, params) { 
+            changeState(name, params) {
                 if (this.currentState && this.currentState.exit) this.currentState.exit();
                 this.currentState = this.states[name];
                 if (this.currentState && this.currentState.enter) this.currentState.enter(params);
@@ -356,7 +450,7 @@
             update(dt) { if (this.currentState && this.currentState.update) this.currentState.update(dt); }
         }
 
-        class State { constructor(parent) { this.parent = parent; } enter(params) {} exit() {} update(dt) {} }
+        class State { constructor(parent) { this.parent = parent; } enter(params) { } exit() { } update(dt) { } }
 
         class HurtState extends State {
             constructor(parent) { super(parent); this.name = 'hurt'; }
@@ -379,7 +473,7 @@
                 // 지연 시간 이후에 넉백 트리거
                 if (this.kbDir && !this.knockbackTriggered && this.timer >= this.knockbackDelay) {
                     this.knockbackTriggered = true;
-                    this.parent.knockbackTimer = 0.1; 
+                    this.parent.knockbackTimer = 0.1;
                     this.parent.knockbackVelocity.copy(this.kbDir.clone().multiplyScalar(this.kbSpeed));
                 }
 
@@ -394,9 +488,9 @@
             constructor(parent) { super(parent); this.name = 'idle'; }
             update(dt) {
                 if (this.parent.input.shiftTriggered) { this.parent.stateMachine.changeState('dash'); return; }
-                if (this.parent.input.attackTriggered) { 
-                    this.parent.stateMachine.changeState('attack'); 
-                    return; 
+                if (this.parent.input.attackTriggered && this.parent.comboCooldown <= 0) { // [수정] 쿨다운 체크
+                    this.parent.stateMachine.changeState('attack');
+                    return;
                 }
                 const isMoving = this.parent.input.keys['w'] || this.parent.input.keys['a'] || this.parent.input.keys['s'] || this.parent.input.keys['d'];
                 if (isMoving) { this.parent.stateMachine.changeState('walk'); return; }
@@ -429,9 +523,9 @@
             constructor(parent) { super(parent); this.name = 'walk'; }
             update(dt) {
                 if (this.parent.input.shiftTriggered) { this.parent.stateMachine.changeState('dash'); return; }
-                if (this.parent.input.attackTriggered) { 
-                    this.parent.stateMachine.changeState('attack'); 
-                    return; 
+                if (this.parent.input.attackTriggered) {
+                    this.parent.stateMachine.changeState('attack');
+                    return;
                 }
                 const inputDir = this.parent.calculateMovement(dt);
                 if (inputDir.lengthSq() < 0.01) { this.parent.stateMachine.changeState('idle'); return; }
@@ -446,7 +540,7 @@
                 this.timer = 0; this.duration = 0.25; this.dashDir = new THREE.Vector3();
                 const isMoving = this.parent.input.keys['w'] || this.parent.input.keys['a'] || this.parent.input.keys['s'] || this.parent.input.keys['d'];
                 if (isMoving) {
-                    const inputDir = this.parent.calculateMovement(0.016); 
+                    const inputDir = this.parent.calculateMovement(0.016);
                     if (inputDir.lengthSq() > 0.001) {
                         this.dashDir.copy(inputDir).normalize();
                         this.parent.mesh.quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.atan2(this.dashDir.x, this.dashDir.z));
@@ -454,50 +548,50 @@
                     this.dashSpeed = 8.0; // [수정] 15.0 -> 8.0 (시간 0.25s * 8.0 = 2m)
                     this.isBackDash = false;
                 } else {
-                    this.dashDir.set(0,0,1).applyQuaternion(this.parent.mesh.quaternion).multiplyScalar(-1);
+                    this.dashDir.set(0, 0, 1).applyQuaternion(this.parent.mesh.quaternion).multiplyScalar(-1);
                     this.dashSpeed = 8.0; // [수정] 15.0 -> 8.0 (시간 0.25s * 8.0 = 2m)
-                    this.isBackDash = true;  
+                    this.isBackDash = true;
                 }
             }
             update(dt) {
-                if (this.parent.input.attackTriggered) { 
-                    this.parent.stateMachine.changeState('attack', { forceDash: true }); 
-                    return; 
+                if (this.parent.input.attackTriggered && this.parent.comboCooldown <= 0) {
+                    this.parent.stateMachine.changeState('attack', { forceDash: true });
+                    return;
                 }
 
                 this.timer += dt;
                 if (this.timer < this.duration) {
                     this.parent.velocity.copy(this.dashDir).multiplyScalar(this.dashSpeed);
 
-                    const lerpSpeed = Math.min(1, 25 * dt); 
+                    const lerpSpeed = Math.min(1, 25 * dt);
 
                     if (this.isBackDash) {
-                        this.parent.parts.root.rotation.x = THREE.MathUtils.lerp(this.parent.parts.root.rotation.x, -0.6, lerpSpeed); 
+                        this.parent.parts.root.rotation.x = THREE.MathUtils.lerp(this.parent.parts.root.rotation.x, -0.6, lerpSpeed);
                         this.parent.parts.root.rotation.y = THREE.MathUtils.lerp(this.parent.parts.root.rotation.y, -0.6, lerpSpeed);
                         this.parent.parts.waist.rotation.y = THREE.MathUtils.lerp(this.parent.parts.waist.rotation.y, 0.2, lerpSpeed);
                         this.parent.parts.chest.rotation.y = THREE.MathUtils.lerp(this.parent.parts.chest.rotation.y, 0.2, lerpSpeed);
 
-                        this.parent.parts.root.position.y = THREE.MathUtils.lerp(this.parent.parts.root.position.y, 0.85, lerpSpeed); 
-                        
-                        this.parent.parts.waist.rotation.x = THREE.MathUtils.lerp(this.parent.parts.waist.rotation.x, 0.6, lerpSpeed); 
-                        this.parent.parts.chest.rotation.x = THREE.MathUtils.lerp(this.parent.parts.chest.rotation.x, 0.3, lerpSpeed); 
+                        this.parent.parts.root.position.y = THREE.MathUtils.lerp(this.parent.parts.root.position.y, 0.85, lerpSpeed);
+
+                        this.parent.parts.waist.rotation.x = THREE.MathUtils.lerp(this.parent.parts.waist.rotation.x, 0.6, lerpSpeed);
+                        this.parent.parts.chest.rotation.x = THREE.MathUtils.lerp(this.parent.parts.chest.rotation.x, 0.3, lerpSpeed);
                         this.parent.parts.neck.rotation.x = THREE.MathUtils.lerp(this.parent.parts.neck.rotation.x, 0.1, lerpSpeed);
 
                         this.parent.lerpJoint(this.parent.parts.leftLeg.hip, new THREE.Vector3(-1.0, 0, -0.1), lerpSpeed);
-                        this.parent.parts.leftLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parent.parts.leftLeg.knee.rotation.x, 0.05, lerpSpeed); 
+                        this.parent.parts.leftLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parent.parts.leftLeg.knee.rotation.x, 0.05, lerpSpeed);
 
                         this.parent.lerpJoint(this.parent.parts.rightLeg.hip, new THREE.Vector3(-1.4, 0, 0.2), lerpSpeed);
-                        this.parent.parts.rightLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parent.parts.rightLeg.knee.rotation.x, 1.5, lerpSpeed); 
+                        this.parent.parts.rightLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parent.parts.rightLeg.knee.rotation.x, 1.5, lerpSpeed);
 
                         this.parent.lerpJoint(this.parent.parts.leftArm.shoulder, new THREE.Vector3(-1.2, 0.2, 0.4), lerpSpeed);
-                        this.parent.parts.leftArm.elbow.rotation.x = THREE.MathUtils.lerp(this.parent.parts.leftArm.elbow.rotation.x, -0.1, lerpSpeed); 
+                        this.parent.parts.leftArm.elbow.rotation.x = THREE.MathUtils.lerp(this.parent.parts.leftArm.elbow.rotation.x, -0.1, lerpSpeed);
 
                         this.parent.lerpJoint(this.parent.parts.rightArm.shoulder, new THREE.Vector3(0.5, 0, -0.6), lerpSpeed);
                         this.parent.parts.rightArm.elbow.rotation.x = THREE.MathUtils.lerp(this.parent.parts.rightArm.elbow.rotation.x, -0.2, lerpSpeed);
-                        this.parent.parts.rightArm.wrist.rotation.set(1.4, 0.2, 0); 
-                        
+                        this.parent.parts.rightArm.wrist.rotation.set(1.4, 0.2, 0);
+
                     } else {
-                        this.parent.parts.root.rotation.x = THREE.MathUtils.lerp(this.parent.parts.root.rotation.x, 0.2, lerpSpeed); 
+                        this.parent.parts.root.rotation.x = THREE.MathUtils.lerp(this.parent.parts.root.rotation.x, 0.2, lerpSpeed);
                         this.parent.parts.root.rotation.y = THREE.MathUtils.lerp(this.parent.parts.root.rotation.y, 0, lerpSpeed);
                         this.parent.parts.waist.rotation.y = THREE.MathUtils.lerp(this.parent.parts.waist.rotation.y, 0, lerpSpeed);
                         this.parent.parts.chest.rotation.y = THREE.MathUtils.lerp(this.parent.parts.chest.rotation.y, 0, lerpSpeed);
@@ -505,7 +599,7 @@
                         this.parent.parts.root.position.y = THREE.MathUtils.lerp(this.parent.parts.root.position.y, 0.62, lerpSpeed);
                         this.parent.parts.waist.rotation.x = THREE.MathUtils.lerp(this.parent.parts.waist.rotation.x, 0.9, lerpSpeed);
                         this.parent.parts.chest.rotation.x = THREE.MathUtils.lerp(this.parent.parts.chest.rotation.x, 0.3, lerpSpeed);
-                        this.parent.parts.neck.rotation.x = THREE.MathUtils.lerp(this.parent.parts.neck.rotation.x, -1.0, lerpSpeed); 
+                        this.parent.parts.neck.rotation.x = THREE.MathUtils.lerp(this.parent.parts.neck.rotation.x, -1.0, lerpSpeed);
 
                         this.parent.lerpJoint(this.parent.parts.leftLeg.hip, new THREE.Vector3(-1.3, 0, 0), lerpSpeed);
                         this.parent.parts.leftLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parent.parts.leftLeg.knee.rotation.x, 1.2, lerpSpeed);
@@ -523,13 +617,13 @@
 
                 } else { this.parent.stateMachine.changeState('idle'); }
             }
-            exit() { this.parent.velocity.set(0,0,0); }
+            exit() { this.parent.velocity.set(0, 0, 0); }
         }
 
         class AttackState extends State {
             constructor(parent) { super(parent); this.name = 'attack'; }
             enter(params) {
-                this.comboStep = 1; 
+                this.comboStep = 1;
 
                 if (params && params.nextStep) {
                     this.comboStep = params.nextStep;
@@ -538,12 +632,26 @@
                 } else {
                     const target = this.parent.nearestDummy;
                     const dist = target ? this.parent.mesh.position.distanceTo(target.mesh.position) : Infinity;
-                    
+
                     if (target && dist <= 10.0) {
-                        if (dist < 3.0) this.comboStep = 1; 
-                        else if (dist < 4.5) this.comboStep = 'step_strike'; 
-                        else if (dist < 7.0) this.comboStep = 'dash'; 
-                        else if (dist <= 10.0) this.comboStep = 'leap'; 
+                        if (this.parent.roleName === "FS") {
+                            if (dist < 1.0) this.comboStep = 'shoulder_bash';
+                            else if (dist < 3.0) this.comboStep = 1;
+                            else if (dist < 4.5) this.comboStep = 'step_strike';
+                            else if (dist < 7.0) this.comboStep = 'dash';
+                            else this.comboStep = 'leap';
+                        } else if (this.parent.roleName === "EF") {
+                            if (dist < 0.8) this.comboStep = 'uppercut';
+                            else if (dist < 2.0) this.comboStep = 1;
+                            else if (dist < 4.5) this.comboStep = 'elbow';
+                            else if (dist < 7.0) this.comboStep = 'dash';
+                            else this.comboStep = 'leap';
+                        } else {
+                            if (dist < 3.0) this.comboStep = 1;
+                            else if (dist < 4.5) this.comboStep = 'step_strike';
+                            else if (dist < 7.0) this.comboStep = 'dash';
+                            else if (dist <= 10.0) this.comboStep = 'leap';
+                        }
                     } else {
                         this.comboStep = 1;
                     }
@@ -555,23 +663,28 @@
             update(dt) {
                 if (this.parent.input.shiftTriggered) { this.parent.stateMachine.changeState('dash'); return; }
                 this.timer += dt;
-                
+
                 if (this.parent.input.attackTriggered && this.timer > 0.05) this.inputBuffered = true;
-                
+
                 this.parent.updateCombo(dt, this);
                 if (this.timer >= this.duration) {
-                    const isAdvancedFirstStrike = ['shoulder_bash', 'step_strike', 'dash', 'leap'].includes(this.comboStep);
-                    if (this.inputBuffered && (isAdvancedFirstStrike || this.comboStep < this.parent.maxCombo)) {
-                        let nextStep = 2;
-                        if (this.comboStep === 2) nextStep = 3;
-                        
+                    const isAdvancedFirstStrike = ['shoulder_bash', 'step_strike', 'dash', 'leap', 'uppercut', 'elbow'].includes(this.comboStep);
+                    if (this.inputBuffered && (isAdvancedFirstStrike || (typeof this.comboStep === 'number' && this.comboStep < this.parent.maxCombo))) {
+                        let nextStep = (typeof this.comboStep === 'number') ? this.comboStep + 1 : 2;
+
                         this.timer = 0; this.hasHit = false; this.inputBuffered = false;
                         this.comboStep = nextStep;
                         this.parent.setupCombo(this, this.comboStep);
-                    } else { this.parent.stateMachine.changeState('idle'); }
+                    } else { 
+                        // [추가] 정규 콤보 마지막 단계에서 종료 시 쿨다운 부여
+                        if (typeof this.comboStep === 'number' && this.comboStep === this.parent.maxCombo) {
+                            this.parent.comboCooldown = 0.3;
+                        }
+                        this.parent.stateMachine.changeState('idle'); 
+                    }
                 }
             }
-            exit() { this.parent.velocity.set(0,0,0); }
+            exit() { this.parent.velocity.set(0, 0, 0); }
         }
 
         /**
@@ -582,16 +695,18 @@
         class CharacterFS {
             constructor(game, scene, camera, input) {
                 this.game = game; this.scene = scene; this.camera = camera; this.input = input;
+                this.roleName = "FS";
                 this.maxSpeed = 6.0; this.acceleration = 14.0; this.damping = 18.0; this.turnSpeed = 15.0;
                 this.attackRange = 2.0; this.radius = 0.45; this.attackAngle = Math.PI / 3; this.maxCombo = 3;
-                
-                this.velocity = new THREE.Vector3(); 
-                this.mesh = new THREE.Group(); 
+
+                this.velocity = new THREE.Vector3();
+                this.mesh = new THREE.Group();
                 this.parts = {};
                 this.animTimer = 0; this.knockbackTimer = 0; this.knockbackVelocity = new THREE.Vector3();
+                this.comboCooldown = 0; // [추가] 콤보 종료 후 입력 지연 시간
 
                 this.isCombatMode = false;
-                this.combatTimer = 0;      
+                this.combatTimer = 0;
                 this.aggroRadius = 10.5; // 8.0 -> 10.5로 확대 (도약 사거리 10m 대응)
 
                 // [추가] 피격 횟수 관리
@@ -604,7 +719,7 @@
                 this.stateMachine.addState('attack', new AttackState(this));
                 this.stateMachine.addState('dash', new DashState(this));
                 this.stateMachine.addState('hurt', new HurtState(this));
-                
+
                 this.buildGeometry();
                 this.scene.add(this.mesh);
 
@@ -612,27 +727,27 @@
             }
 
             buildGeometry() {
-                const headH = 0.23, chestH = 0.25, waistH = 0.14, pelvisH = 0.19; 
-                const thighL = 0.3, calfL = 0.5, legH = thighL + calfL; 
+                const headH = 0.23, chestH = 0.25, waistH = 0.14, pelvisH = 0.19;
+                const thighL = 0.3, calfL = 0.5, legH = thighL + calfL;
 
                 const matChest = new THREE.MeshLambertMaterial({ color: 0x4a4a4a });
                 const matWaist = new THREE.MeshLambertMaterial({ color: 0x333333 });
                 const matPelvis = new THREE.MeshLambertMaterial({ color: 0x4a4a4a });
-                const matBody = new THREE.MeshLambertMaterial({ color: 0x444444 }); 
+                const matBody = new THREE.MeshLambertMaterial({ color: 0x444444 });
                 const matSkin = new THREE.MeshLambertMaterial({ color: 0xffdbac });
-                const matR = new THREE.MeshLambertMaterial({ color: 0xe91e63 }); 
-                const matL = new THREE.MeshLambertMaterial({ color: 0x2196f3 }); 
+                const matR = new THREE.MeshLambertMaterial({ color: 0xe91e63 });
+                const matL = new THREE.MeshLambertMaterial({ color: 0x2196f3 });
 
-                const root = new THREE.Group(); 
-                root.position.y = legH; 
-                this.mesh.add(root); this.parts.root = root; 
+                const root = new THREE.Group();
+                root.position.y = legH;
+                this.mesh.add(root); this.parts.root = root;
 
                 const pelvisMesh = new THREE.Mesh(new THREE.BoxGeometry(0.3, pelvisH, 0.22), matPelvis);
                 pelvisMesh.position.y = pelvisH / 2; root.add(pelvisMesh); this.parts.pelvisMesh = pelvisMesh;
 
                 const waistJoint = new THREE.Group(); waistJoint.position.y = pelvisH; root.add(waistJoint); this.parts.waist = waistJoint;
                 const waistMesh = new THREE.Mesh(new THREE.BoxGeometry(0.22, waistH, 0.16), matWaist);
-                waistMesh.position.y = waistH / 2; waistJoint.add(waistMesh); this.parts.waistMesh = waistMesh; 
+                waistMesh.position.y = waistH / 2; waistJoint.add(waistMesh); this.parts.waistMesh = waistMesh;
 
                 const chestJoint = new THREE.Group(); chestJoint.position.y = waistH; waistJoint.add(chestJoint); this.parts.chest = chestJoint;
                 const chestMesh = new THREE.Mesh(new THREE.BoxGeometry(0.33, chestH, 0.2), matChest);
@@ -640,40 +755,40 @@
                 this.baseChestColor = matChest.color.getHex();
 
                 const neckJoint = new THREE.Group(); neckJoint.position.y = chestH; chestJoint.add(neckJoint); this.parts.neck = neckJoint;
-                
+
                 const headW = 0.19, headD = 0.21;
                 const headMesh = new THREE.Mesh(new THREE.BoxGeometry(headW, headH, headD), matSkin);
                 headMesh.position.y = headH / 2 + 0.03; neckJoint.add(headMesh); this.parts.head = headMesh;
 
                 const nose = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.04, 0.04), new THREE.MeshBasicMaterial({ color: 0x00ff00 }));
                 nose.position.set(0, -0.02, headD / 2 + 0.02); headMesh.add(nose); this.parts.nose = nose;
-                nose.visible = false; 
+                nose.visible = false;
 
-                const matHair = new THREE.MeshLambertMaterial({ color: 0x2c3e50 }); 
+                const matHair = new THREE.MeshLambertMaterial({ color: 0x2c3e50 });
                 const hairTop = new THREE.Mesh(new THREE.BoxGeometry(headW + 0.04, 0.06, headD + 0.04), matHair);
                 hairTop.position.y = headH / 2 + 0.01; headMesh.add(hairTop);
-                
+
                 const hairFront = new THREE.Mesh(new THREE.BoxGeometry(headW + 0.04, 0.1, 0.05), matHair);
                 hairFront.position.set(0, headH / 2 - 0.03, headD / 2 + 0.02); headMesh.add(hairFront);
-                
+
                 const hairBack = new THREE.Mesh(new THREE.BoxGeometry(headW + 0.03, 0.38, 0.08), matHair);
                 hairBack.position.set(0, -0.05, -headD / 2 - 0.02); headMesh.add(hairBack);
-                
+
                 const hairSideW = 0.03;
                 const hairSideR = new THREE.Mesh(new THREE.BoxGeometry(hairSideW, 0.2, 0.1), matHair);
                 hairSideR.position.set(headW / 2 + 0.02, 0.03, -0.04); headMesh.add(hairSideR);
-                
+
                 const hairSideL = new THREE.Mesh(new THREE.BoxGeometry(hairSideW, 0.2, 0.1), matHair);
                 hairSideL.position.set(-headW / 2 - 0.02, 0.03, -0.04); headMesh.add(hairSideL);
 
                 this.baseMats = { body: matBody, skin: matSkin }; this.debugMats = { R: matR, L: matL };
 
-                const armW = 0.08, upperArmL = 0.32, forearmL = 0.35, handS = 0.07; 
+                const armW = 0.08, upperArmL = 0.32, forearmL = 0.35, handS = 0.07;
                 const createArm = (isRight) => {
                     const side = isRight ? -1 : 1; const mat = isRight ? matR : matL;
-                    const shoulder = new THREE.Group(); shoulder.position.set(0.23 * side, chestH * 0.8, 0); chestJoint.add(shoulder); 
+                    const shoulder = new THREE.Group(); shoulder.position.set(0.23 * side, chestH * 0.8, 0); chestJoint.add(shoulder);
                     const upperArmMesh = new THREE.Mesh(new THREE.BoxGeometry(armW, upperArmL, armW), mat); upperArmMesh.position.y = -upperArmL / 2; shoulder.add(upperArmMesh);
-                    const elbowJoint = new THREE.Group(); elbowJoint.position.y = -upperArmL; shoulder.add(elbowJoint); 
+                    const elbowJoint = new THREE.Group(); elbowJoint.position.y = -upperArmL; shoulder.add(elbowJoint);
                     const forearmMesh = new THREE.Mesh(new THREE.BoxGeometry(armW * 0.9, forearmL, armW * 0.9), mat); forearmMesh.position.y = -forearmL / 2; elbowJoint.add(forearmMesh);
                     const wristJoint = new THREE.Group(); wristJoint.position.y = -forearmL; elbowJoint.add(wristJoint);
                     const handMesh = new THREE.Mesh(new THREE.BoxGeometry(handS, handS, handS), matSkin); handMesh.position.y = -handS / 2; wristJoint.add(handMesh);
@@ -681,19 +796,19 @@
                 };
                 this.parts.rightArm = createArm(true); this.parts.leftArm = createArm(false);
 
-                const sword = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.04, 1.2), new THREE.MeshLambertMaterial({color: 0x00e5ff, emissive: 0x005577}));
-                sword.position.set(0, -handS / 2, 0.6); 
-                sword.scale.set(0.001, 0.001, 0.001); 
+                const sword = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.04, 1.2), new THREE.MeshLambertMaterial({ color: 0x00e5ff, emissive: 0x005577 }));
+                sword.position.set(0, -handS / 2, 0.6);
+                sword.scale.set(0.001, 0.001, 0.001);
                 sword.visible = false;
                 this.parts.rightArm.wrist.add(sword);
                 this.parts.sword = sword;
 
-                const thighW = 0.16, calfW = 0.11;   
+                const thighW = 0.16, calfW = 0.11;
                 const createLeg = (isRight) => {
                     const side = isRight ? -1 : 1; const mat = isRight ? matR : matL;
-                    const hipJoint = new THREE.Group(); hipJoint.position.set(0.11 * side, 0, 0); root.add(hipJoint); 
+                    const hipJoint = new THREE.Group(); hipJoint.position.set(0.11 * side, 0, 0); root.add(hipJoint);
                     const thighMesh = new THREE.Mesh(new THREE.BoxGeometry(thighW, thighL, thighW), mat); thighMesh.position.y = -thighL / 2; hipJoint.add(thighMesh);
-                    const kneeJoint = new THREE.Group(); kneeJoint.position.y = -thighL; hipJoint.add(kneeJoint); 
+                    const kneeJoint = new THREE.Group(); kneeJoint.position.y = -thighL; hipJoint.add(kneeJoint);
                     const calfMesh = new THREE.Mesh(new THREE.BoxGeometry(calfW, calfL, calfW), mat); calfMesh.position.y = -calfL / 2; kneeJoint.add(calfMesh);
                     return { hip: hipJoint, knee: kneeJoint, thighMesh, calfMesh };
                 };
@@ -716,16 +831,16 @@
                 // [추가] 입력 잠금 상태일 때는 이동 및 회전 처리를 완전히 무시
                 if (this.input.isLocked) return new THREE.Vector3();
 
-                const camDir = new THREE.Vector3(); this.camera.getWorldDirection(camDir); camDir.y = 0; 
+                const camDir = new THREE.Vector3(); this.camera.getWorldDirection(camDir); camDir.y = 0;
                 if (camDir.lengthSq() > 0.001) camDir.normalize();
-                
+
                 const camLeft = new THREE.Vector3(0, 1, 0).cross(camDir);
                 if (camLeft.lengthSq() > 0.001) camLeft.normalize();
 
                 const inputDir = new THREE.Vector3();
                 if (this.input.keys['w']) inputDir.add(camDir); if (this.input.keys['s']) inputDir.sub(camDir);
                 if (this.input.keys['a']) inputDir.add(camLeft); if (this.input.keys['d']) inputDir.sub(camLeft);
-                
+
                 if (inputDir.lengthSq() > 0.0001) {
                     inputDir.normalize();
                     const targetAngle = Math.atan2(inputDir.x, inputDir.z);
@@ -750,10 +865,10 @@
                     safeKbDir = safeKbDir.clone().normalize();
                 }
 
-                // [추가] 피격 횟수 증가 및 게임 오버 체크
-                if (this.game.isGameOver) return; 
-                this.currentHits++;
-                if (this.currentHits >= this.maxHits) {
+                // [추가] 통합 피격 횟수 증가 및 게임 오버 체크
+                if (this.game.isGameOver) return;
+                this.game.totalPlayerHits++;
+                if (this.game.totalPlayerHits >= this.game.maxPlayerHits) {
                     this.game.showGameOver();
                 }
 
@@ -770,7 +885,7 @@
 
                 this.lerpJoint(this.parts.leftArm.shoulder, new THREE.Vector3(-0.5, 0, 1.2), lerpSpeed);
                 this.parts.leftArm.elbow.rotation.x = THREE.MathUtils.lerp(this.parts.leftArm.elbow.rotation.x, -0.5, lerpSpeed);
-                this.lerpJoint(this.parts.rightArm.shoulder, new THREE.Vector3(0.5, 0, 1.2), lerpSpeed);
+                this.lerpJoint(this.parts.rightArm.shoulder, new THREE.Vector3(0.5, 0, -1.2), lerpSpeed);
                 this.parts.rightArm.elbow.rotation.x = THREE.MathUtils.lerp(this.parts.rightArm.elbow.rotation.x, -0.5, lerpSpeed);
 
                 this.lerpJoint(this.parts.leftLeg.hip, new THREE.Vector3(-0.4, 0, 0.1), lerpSpeed);
@@ -778,6 +893,7 @@
             }
 
             update(dt) {
+                if (this.comboCooldown > 0) this.comboCooldown -= dt; // [추가] 쿨다운 차감
                 let minEnemyDist = Infinity;
                 let minAttackerDist = Infinity;
                 this.nearestDummy = null;
@@ -785,7 +901,7 @@
 
                 for (let d of this.game.dummies) {
                     let dist = this.mesh.position.distanceTo(d.mesh.position);
-                    
+
                     // [수정] 단순히 isAttacking 뿐만 아니라 role이 'attacker'인 모든 적을 추적 (호들갑 상태 포함)
                     if (d.role === 'attacker' || d.isAttacking) {
                         if (dist < minAttackerDist) {
@@ -824,45 +940,41 @@
                     if (this.stateMachine.currentState === this.stateMachine.states['attack'] && this.stateMachine.currentState.comboStep === 'shoulder_bash') {
                         this.parts.sword.scale.lerp(new THREE.Vector3(0.001, 0.001, 0.001), 20 * dt);
                     } else {
-                        this.parts.sword.scale.lerp(new THREE.Vector3(1, 1, 1), 20 * dt); 
+                        this.parts.sword.scale.lerp(new THREE.Vector3(1, 1, 1), 20 * dt);
                     }
                 } else if (this.parts.sword) {
-                    this.parts.sword.scale.lerp(new THREE.Vector3(0.001, 0.001, 0.001), 10 * dt); 
+                    this.parts.sword.scale.lerp(new THREE.Vector3(0.001, 0.001, 0.001), 10 * dt);
                     if (this.parts.sword.scale.x < 0.05) this.parts.sword.visible = false;
                 }
 
                 if (this.knockbackTimer > 0) {
-                    this.knockbackTimer -= dt; 
+                    this.knockbackTimer -= dt;
                     this.mesh.position.add(this.knockbackVelocity.clone().multiplyScalar(dt));
                     // 넉백 속도 점진적 감쇄 추가
-                    this.knockbackVelocity.lerp(new THREE.Vector3(0,0,0), 10 * dt);
+                    this.knockbackVelocity.lerp(new THREE.Vector3(0, 0, 0), 10 * dt);
                     this.parts.chestMesh.material.color.setHex(0xff0000);
                     if (this.knockbackTimer <= 0) {
                         this.parts.chestMesh.material.color.setHex(this.baseChestColor || 0x4a4a4a);
-                        this.knockbackVelocity.set(0,0,0);
+                        this.knockbackVelocity.set(0, 0, 0);
                     }
                 }
-                
+
                 this.stateMachine.update(dt);
                 if (this.knockbackTimer <= 0) {
                     this.mesh.position.add(this.velocity.clone().multiplyScalar(dt));
                 }
-                
+
                 for (let d of this.game.dummies) {
                     let dist = this.mesh.position.distanceTo(d.mesh.position);
-                    if (dist < this.radius + d.bodyRadius && dist > 0.001) {
-                        let pushDir = new THREE.Vector3().subVectors(this.mesh.position, d.mesh.position).setY(0);
-                        let pushDistSq = pushDir.lengthSq();
-                        if (pushDistSq > 0.0001) {
-                            pushDir.divideScalar(Math.sqrt(pushDistSq));
-                            // 충돌 보정 계수 완화 (0.2 -> 0.1) 및 보정값 제한
-                            const pushAmt = Math.min(0.1, (this.radius + d.bodyRadius - dist) * 0.1);
-                            this.mesh.position.add(pushDir.multiplyScalar(pushAmt));
-                        } else {
-                            // 완전히 겹쳤을 경우 랜덤한 방향으로 아주 살짝 밀어냄
-                            const randomDir = new THREE.Vector3(Math.random()-0.5, 0, Math.random()-0.5).normalize();
-                            this.mesh.position.add(randomDir.multiplyScalar(0.01));
-                        }
+                    let combinedRadius = this.radius + d.bodyRadius;
+                    if (dist < combinedRadius && dist > 0.001) {
+                        let pushDir = new THREE.Vector3().subVectors(this.mesh.position, d.mesh.position).setY(0).normalize();
+                        let overlap = combinedRadius - dist;
+                        // [하드 블로킹] 즉시 위치 보정하여 겹침 방지 (의도치 않은 밀려남 억제)
+                        this.mesh.position.add(pushDir.multiplyScalar(overlap));
+                    } else if (dist < 0.001) {
+                        const randomDir = new THREE.Vector3(Math.random() - 0.5, 0, Math.random() - 0.5).normalize();
+                        this.mesh.position.add(randomDir.multiplyScalar(0.01));
                     }
                 }
             }
@@ -870,7 +982,7 @@
             animateIdle(dt) {
                 this.animTimer += dt * 1.5;
                 const breath = Math.sin(this.animTimer) * 0.04;
-                
+
                 let targetLookAngle = 0;
 
                 if (this.isCombatMode && this.nearestDummy) {
@@ -889,19 +1001,19 @@
                     const dot = forward.dot(moveDir);
                     targetLookAngle = THREE.MathUtils.clamp(Math.atan2(cross.y, dot), -Math.PI / 2.2, Math.PI / 2.2);
                 }
-                
-                let targetRootYRot = 0; 
-                let targetRootY = 0.8; 
-                
+
+                let targetRootYRot = 0;
+                let targetRootY = 0.8;
+
                 let targetWaistX = 0;
-                let targetWaistY = 0; 
-                let targetChestX = 0; 
+                let targetWaistY = 0;
+                let targetChestX = 0;
                 let targetChestY = 0;
 
                 let targetRKnee = 0.05;
                 let targetLKnee = 0.05;
                 let targetRHipX = 0;
-                let targetRHipY = 0; 
+                let targetRHipY = 0;
                 let targetRHipZ = 0;
                 let targetLHipX = 0;
                 let targetLHipY = 0;
@@ -914,30 +1026,30 @@
                 const lElbowTarget = new THREE.Vector3(-0.15, 0, 0);
 
                 if (this.isCombatMode) {
-                    targetRootYRot = -0.8; 
+                    targetRootYRot = -0.8;
                     targetRootY = 0.72;
 
-                    targetLHipX = -0.4;  
-                    targetLHipY = 0;     
-                    targetLHipZ = 0.45;  
-                    
-                    targetRHipX = 0.1;   
-                    targetRHipY = 0;     
-                    targetRHipZ = -0.45; 
-                    
-                    targetRKnee = 0.1;   
-                    targetLKnee = 0.4;   
+                    targetLHipX = -0.4;
+                    targetLHipY = 0;
+                    targetLHipZ = 0.45;
 
-                    targetWaistX = 0.1; 
-                    targetWaistY = 0.4; 
+                    targetRHipX = 0.1;
+                    targetRHipY = 0;
+                    targetRHipZ = -0.45;
+
+                    targetRKnee = 0.1;
+                    targetLKnee = 0.4;
+
+                    targetWaistX = 0.1;
+                    targetWaistY = 0.4;
                     targetChestX = 0.1 + breath * 0.5;
                     targetChestY = 0.4;
 
-                    rShoulderTarget.set(0.2, 0.5, -0.6); 
-                    rElbowTarget.set(-0.1, 0, 0); 
-                    rWristTarget.set(1.4, -1.0, 0.2); 
-                    
-                    lShoulderTarget.set(0.2, 0.2, 0.3); 
+                    rShoulderTarget.set(0.2, 0.5, -0.6);
+                    rElbowTarget.set(-0.1, 0, 0);
+                    rWristTarget.set(1.4, -1.0, 0.2);
+
+                    lShoulderTarget.set(0.2, 0.2, 0.3);
                     lElbowTarget.set(-1.2, 0, 0);
                 }
 
@@ -945,15 +1057,15 @@
                 this.parts.root.rotation.x = THREE.MathUtils.lerp(this.parts.root.rotation.x, 0, alpha8);
                 this.parts.root.rotation.y = THREE.MathUtils.lerp(this.parts.root.rotation.y, targetRootYRot, alpha8);
                 this.parts.root.position.y = THREE.MathUtils.lerp(this.parts.root.position.y, targetRootY, alpha8);
-                
+
                 this.parts.waist.rotation.x = THREE.MathUtils.lerp(this.parts.waist.rotation.x, targetWaistX, alpha8);
-                this.parts.waist.rotation.y = THREE.MathUtils.lerp(this.parts.waist.rotation.y, targetWaistY, alpha8); 
-                
+                this.parts.waist.rotation.y = THREE.MathUtils.lerp(this.parts.waist.rotation.y, targetWaistY, alpha8);
+
                 this.parts.chest.rotation.set(targetChestX, targetChestY, 0);
-                
+
                 let currentBodyTwist = this.parts.root.rotation.y + this.parts.waist.rotation.y + this.parts.chest.rotation.y;
                 let targetNeckX = this.isCombatMode ? (-0.1 - breath * 1.5) : (-targetWaistX - breath * 1.5);
-                
+
                 const neckAlpha = Math.min(1, 15 * dt);
                 this.parts.neck.rotation.x = THREE.MathUtils.lerp(this.parts.neck.rotation.x, targetNeckX, neckAlpha);
                 this.parts.neck.rotation.y = THREE.MathUtils.lerp(this.parts.neck.rotation.y, targetLookAngle - currentBodyTwist, neckAlpha);
@@ -962,11 +1074,11 @@
                 const alpha10 = Math.min(1, 10 * dt);
                 this.parts.rightLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parts.rightLeg.knee.rotation.x, targetRKnee, alpha10);
                 this.parts.leftLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parts.leftLeg.knee.rotation.x, targetLKnee, alpha10);
-                
+
                 this.parts.rightLeg.hip.rotation.x = THREE.MathUtils.lerp(this.parts.rightLeg.hip.rotation.x, targetRHipX, alpha10);
                 this.parts.rightLeg.hip.rotation.y = THREE.MathUtils.lerp(this.parts.rightLeg.hip.rotation.y, targetRHipY, alpha10);
                 this.parts.rightLeg.hip.rotation.z = THREE.MathUtils.lerp(this.parts.rightLeg.hip.rotation.z, targetRHipZ, alpha10);
-                
+
                 this.parts.leftLeg.hip.rotation.x = THREE.MathUtils.lerp(this.parts.leftLeg.hip.rotation.x, targetLHipX, alpha10);
                 this.parts.leftLeg.hip.rotation.y = THREE.MathUtils.lerp(this.parts.leftLeg.hip.rotation.y, targetLHipY, alpha10);
                 this.parts.leftLeg.hip.rotation.z = THREE.MathUtils.lerp(this.parts.leftLeg.hip.rotation.z, targetLHipZ, alpha10);
@@ -1007,9 +1119,9 @@
                 let baseRootY = 0.8;
                 let targetWaistX = 0;
                 let targetWaistY = Math.sin(this.animTimer) * 0.12;
-                let kneeBendBase = 0.05; 
+                let kneeBendBase = 0.05;
                 let kneeBendMult = 1.0;
-                let hipSwingMult = 0.75; 
+                let hipSwingMult = 0.75;
                 let targetHipZ = 0;
                 let hipBaseX = 0;
 
@@ -1020,21 +1132,21 @@
                 const lElbowTarget = new THREE.Vector3((swing < 0) ? swing * 0.6 : -0.15, 0, 0);
 
                 if (this.isCombatMode) {
-                    targetRootYRot = -0.5; 
-                    baseRootY = 0.74;  
-                    targetWaistX = 0.2; 
-                    targetWaistY = 0.2 + Math.sin(this.animTimer) * 0.05; 
-                    
-                    kneeBendBase = 0.3; 
-                    kneeBendMult = 0.7; 
-                    hipSwingMult = 0.65; 
-                    targetHipZ = -0.35; 
+                    targetRootYRot = -0.5;
+                    baseRootY = 0.74;
+                    targetWaistX = 0.2;
+                    targetWaistY = 0.2 + Math.sin(this.animTimer) * 0.05;
+
+                    kneeBendBase = 0.3;
+                    kneeBendMult = 0.7;
+                    hipSwingMult = 0.65;
+                    targetHipZ = -0.35;
                     hipBaseX = -0.2;
 
                     rShoulderTarget.set(0.2 - swing * 0.1, 0.5, -0.6);
                     rElbowTarget.set(-0.1, 0, 0);
                     rWristTarget.set(1.4, -1.0, 0.2);
-                    
+
                     lShoulderTarget.set(0.1 + swing * 0.1, 0.1, 0.2);
                     lElbowTarget.set(-1.0, 0, 0);
                 }
@@ -1043,14 +1155,14 @@
                 this.parts.root.rotation.x = THREE.MathUtils.lerp(this.parts.root.rotation.x, 0, alpha12);
                 this.parts.root.rotation.y = THREE.MathUtils.lerp(this.parts.root.rotation.y, targetRootYRot, alpha12);
                 this.parts.root.position.y = THREE.MathUtils.lerp(this.parts.root.position.y, baseRootY + walkBob, alpha12);
-                
+
                 const alpha10 = Math.min(1, 10 * dt);
                 this.parts.waist.rotation.x = THREE.MathUtils.lerp(this.parts.waist.rotation.x, targetWaistX, alpha10);
                 this.parts.waist.rotation.y = THREE.MathUtils.lerp(this.parts.waist.rotation.y, targetWaistY, alpha10);
                 this.parts.chest.rotation.y = THREE.MathUtils.lerp(this.parts.chest.rotation.y, Math.sin(this.animTimer) * 0.08, alpha10);
 
                 let currentBodyTwist = this.parts.root.rotation.y + this.parts.waist.rotation.y + this.parts.chest.rotation.y;
-                
+
                 const neckAlpha = Math.min(1, 15 * dt);
                 this.parts.neck.rotation.x = THREE.MathUtils.lerp(this.parts.neck.rotation.x, -targetWaistX, neckAlpha);
                 this.parts.neck.rotation.y = THREE.MathUtils.lerp(this.parts.neck.rotation.y, targetLookAngle - currentBodyTwist, neckAlpha);
@@ -1061,16 +1173,16 @@
                 const alpha15 = Math.min(1, 15 * dt);
                 this.parts.rightLeg.hip.rotation.x = THREE.MathUtils.lerp(this.parts.rightLeg.hip.rotation.x, hipBaseX + swing * hipSwingMult, alpha15);
                 this.parts.leftLeg.hip.rotation.x = THREE.MathUtils.lerp(this.parts.leftLeg.hip.rotation.x, hipBaseX - swing * hipSwingMult, alpha15);
-                
+
                 this.parts.rightLeg.hip.rotation.y = THREE.MathUtils.lerp(this.parts.rightLeg.hip.rotation.y, 0, alpha15);
                 this.parts.leftLeg.hip.rotation.y = THREE.MathUtils.lerp(this.parts.leftLeg.hip.rotation.y, 0, alpha15);
-                
+
                 this.parts.rightLeg.hip.rotation.z = THREE.MathUtils.lerp(this.parts.rightLeg.hip.rotation.z, targetHipZ, alpha15);
                 this.parts.leftLeg.hip.rotation.z = THREE.MathUtils.lerp(this.parts.leftLeg.hip.rotation.z, -targetHipZ, alpha15);
-                
+
                 let targetRKnee = Math.max(0, -cosSwing) * kneeBendMult + kneeBendBase;
                 let targetLKnee = Math.max(0, cosSwing) * kneeBendMult + kneeBendBase;
-                
+
                 this.parts.rightLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parts.rightLeg.knee.rotation.x, targetRKnee, alpha15);
                 this.parts.leftLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parts.leftLeg.knee.rotation.x, targetLKnee, alpha15);
 
@@ -1083,26 +1195,26 @@
 
             setupCombo(state, step) {
                 if (step === 'dash') {
-                    state.duration = 0.45;  state.activeEnd = 0.30; 
+                    state.duration = 0.45; state.activeEnd = 0.30;
                 } else if (step === 'shoulder_bash') {
                     // 타격 시점을 0.15초로 당기고 전체 시간을 늘려 (0.6초) 오랫동안 자세를 고정하여 밀치는 여운을 남김
-                    state.duration = 0.60;  state.activeEnd = 0.15;
+                    state.duration = 0.60; state.activeEnd = 0.15;
                 } else if (step === 'step_strike') {
-                    state.duration = 0.40;  state.activeEnd = 0.25;
+                    state.duration = 0.40; state.activeEnd = 0.25;
                 } else if (step === 'leap') {
-                    state.duration = 0.65;  state.activeEnd = 0.50;
+                    state.duration = 0.65; state.activeEnd = 0.50;
                 } else {
-                    state.duration = step === 3 ? 0.65 : (step === 1 ? 0.50 : 0.40);  
-                    state.activeEnd = step === 3 ? 0.45 : 0.25; 
+                    state.duration = step === 3 ? 0.65 : (step === 1 ? 0.50 : 0.40);
+                    state.activeEnd = step === 3 ? 0.45 : 0.25;
                 }
-                
+
                 // [수정] 별도로 가까운 적을 찾지 않고, 이미 CharacterFS.update에서 결정된 (공격자 우선) nearestDummy 사용
                 let nearest = this.nearestDummy;
                 let minDist = nearest ? this.mesh.position.distanceTo(nearest.mesh.position) : Infinity;
-                
-                if(nearest && minDist <= 10.0) { // 타겟 인식 거리를 10m로 넉넉하게 확장
+
+                if (nearest && minDist <= 10.0) { // 타겟 인식 거리를 10m로 넉넉하게 확장
                     const dir = new THREE.Vector3().subVectors(nearest.mesh.position, this.mesh.position);
-                    
+
                     // [수정] 대시, 스텝 스트라이크, 도약 공격 모두 타겟과의 거리에 맞춰 이동 거리 계산
                     if (['dash', 'step_strike', 'leap'].includes(step)) {
                         const distToTarget = dir.length();
@@ -1116,11 +1228,11 @@
                 }
             }
             updateCombo(dt, state) {
-                const forward = new THREE.Vector3(0,0,1).applyQuaternion(this.mesh.quaternion);
-                
+                const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(this.mesh.quaternion);
+
                 if (state.timer < state.activeEnd) {
                     let dashSpeed = 3.2; // 기본 1타/2타: 0.8m / 0.25s = 3.2
-                    
+
                     // [수정] 사거리별 공격들은 미리 계산된 targetDist를 기반으로 타겟에 도달하도록 속도 조절
                     if (['dash', 'step_strike', 'leap'].includes(state.comboStep)) {
                         const dist = state.attackDashDist || 2.0;
@@ -1129,30 +1241,30 @@
                     else if (state.comboStep === 'shoulder_bash') dashSpeed = 4.0;
                     else if (state.comboStep === 3) dashSpeed = 3.33;
 
-                    this.velocity.copy(forward).multiplyScalar(dashSpeed); 
-                
+                    this.velocity.copy(forward).multiplyScalar(dashSpeed);
+
                     const rotAlpha = Math.min(1, 18 * dt);
                     this.parts.root.rotation.x = THREE.MathUtils.lerp(this.parts.root.rotation.x, 0, rotAlpha);
                     this.parts.root.rotation.y = THREE.MathUtils.lerp(this.parts.root.rotation.y, 0, rotAlpha);
                     this.parts.waist.rotation.y = THREE.MathUtils.lerp(this.parts.waist.rotation.y, 0, rotAlpha);
                     this.parts.rightLeg.hip.rotation.y = THREE.MathUtils.lerp(this.parts.rightLeg.hip.rotation.y, 0, rotAlpha);
                     this.parts.leftLeg.hip.rotation.y = THREE.MathUtils.lerp(this.parts.leftLeg.hip.rotation.y, 0, rotAlpha);
-                    
-                    let targetRootY = 0.72; 
+
+                    let targetRootY = 0.72;
 
                     if (state.comboStep === 'dash' || state.comboStep === 'step_strike') {
-                        targetRootY = 0.65; 
+                        targetRootY = 0.65;
                     } else if (state.comboStep === 'leap') {
                         let jumpArc = Math.sin((state.timer / state.activeEnd) * Math.PI);
                         targetRootY = 0.72 + jumpArc * 2.0;
                     } else if (state.comboStep === 'shoulder_bash') {
-                        targetRootY = 0.65; 
+                        targetRootY = 0.65;
                     } else if (state.comboStep === 3) {
-                        targetRootY = 0.75; 
+                        targetRootY = 0.75;
                     }
 
                     this.parts.root.position.y = THREE.MathUtils.lerp(this.parts.root.position.y, targetRootY, rotAlpha);
-                    
+
                     // [수정] 무기 스윙 동안 머리 회전 로직 (어깨치기만 회전, 다른 공격은 상체 독립적 시선 유지)
                     if (state.comboStep === 'shoulder_bash') {
                         // 어깨치기: 상체가 왼쪽(+Y)으로 크게 돌아가므로, 고개는 오른쪽(-Y)으로 돌려 어깨에 파묻음
@@ -1180,10 +1292,10 @@
                             const dot = forward.dot(moveDir);
                             targetLookAngle = THREE.MathUtils.clamp(Math.atan2(cross.y, dot), -Math.PI / 2.2, Math.PI / 2.2);
                         }
-                        
+
                         let currentBodyTwist = this.parts.root.rotation.y + this.parts.waist.rotation.y + this.parts.chest.rotation.y;
                         let targetNeckY = targetLookAngle - currentBodyTwist;
-                        
+
                         // 물리적 한계 (고개가 등 뒤로 넘어가는 것 방지)
                         targetNeckY = THREE.MathUtils.clamp(targetNeckY, -Math.PI / 2, Math.PI / 2);
 
@@ -1195,29 +1307,29 @@
 
                     if (state.comboStep === 'shoulder_bash') {
                         // 기존 (0.6, 0.8) -> (0.65, 0.95) 로 10~20% 상향하여 오른쪽 등/어깨가 극단적으로 앞으로 밀고 나가게 함
-                        this.lerpJoint(this.parts.waist, new THREE.Vector3(0.65, 0.95, 0), 20 * dt); 
+                        this.lerpJoint(this.parts.waist, new THREE.Vector3(0.65, 0.95, 0), 20 * dt);
                         this.lerpJoint(this.parts.chest, new THREE.Vector3(0.45, 0.65, 0), 20 * dt);
-                        
-                        this.lerpJoint(this.parts.rightArm.shoulder, new THREE.Vector3(-0.2, 0, -0.2), 20 * dt); 
+
+                        this.lerpJoint(this.parts.rightArm.shoulder, new THREE.Vector3(-0.2, 0, -0.2), 20 * dt);
                         this.parts.rightArm.elbow.rotation.x = -1.5;
-                        this.lerpJoint(this.parts.rightArm.wrist, new THREE.Vector3(1.5, 0, 0), 20 * dt); 
-                        
-                        this.lerpJoint(this.parts.leftArm.shoulder, new THREE.Vector3(0.5, 0, 0.5), 20 * dt); 
-                        
+                        this.lerpJoint(this.parts.rightArm.wrist, new THREE.Vector3(1.5, 0, 0), 20 * dt);
+
+                        this.lerpJoint(this.parts.leftArm.shoulder, new THREE.Vector3(0.5, 0, 0.5), 20 * dt);
+
                         this.lerpJoint(this.parts.rightLeg.hip, new THREE.Vector3(-0.8, 0, 0), 15 * dt);
                         this.parts.rightLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parts.rightLeg.knee.rotation.x, 1.2, 15 * dt);
                         this.lerpJoint(this.parts.leftLeg.hip, new THREE.Vector3(0.5, 0, 0), 15 * dt);
                         this.parts.leftLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parts.leftLeg.knee.rotation.x, 0.1, 15 * dt);
                     }
                     else if (state.comboStep === 'leap') {
-                        this.lerpJoint(this.parts.waist, new THREE.Vector3(0.8, 0, 0), 10 * dt); 
+                        this.lerpJoint(this.parts.waist, new THREE.Vector3(0.8, 0, 0), 10 * dt);
                         this.lerpJoint(this.parts.chest, new THREE.Vector3(0.2, 0, 0), 10 * dt);
-                        
-                        this.lerpJoint(this.parts.rightArm.shoulder, new THREE.Vector3(-2.8, 0, 0.5), 15 * dt); 
+
+                        this.lerpJoint(this.parts.rightArm.shoulder, new THREE.Vector3(-2.8, 0, 0.5), 15 * dt);
                         this.parts.rightArm.elbow.rotation.x = -0.2;
-                        this.lerpJoint(this.parts.rightArm.wrist, new THREE.Vector3(1.5, 1.0, 0), 15 * dt); 
-                        
-                        this.lerpJoint(this.parts.leftArm.shoulder, new THREE.Vector3(-2.5, 0, -0.5), 15 * dt); 
+                        this.lerpJoint(this.parts.rightArm.wrist, new THREE.Vector3(1.5, 1.0, 0), 15 * dt);
+
+                        this.lerpJoint(this.parts.leftArm.shoulder, new THREE.Vector3(-2.5, 0, -0.5), 15 * dt);
                         this.parts.leftArm.elbow.rotation.x = -0.5;
 
                         this.lerpJoint(this.parts.rightLeg.hip, new THREE.Vector3(-0.4, 0, 0), 15 * dt);
@@ -1226,15 +1338,15 @@
                         this.parts.leftLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parts.leftLeg.knee.rotation.x, 0.5, 15 * dt);
                     }
                     else if (state.comboStep === 'step_strike') {
-                        this.lerpJoint(this.parts.waist, new THREE.Vector3(0.3, 0.8, 0), 15 * dt); 
+                        this.lerpJoint(this.parts.waist, new THREE.Vector3(0.3, 0.8, 0), 15 * dt);
                         this.lerpJoint(this.parts.chest, new THREE.Vector3(0.1, 0.6, 0), 15 * dt);
-                        
-                        this.lerpJoint(this.parts.rightArm.shoulder, new THREE.Vector3(-1.2, 0, 1.0), 18 * dt); 
+
+                        this.lerpJoint(this.parts.rightArm.shoulder, new THREE.Vector3(-1.2, 0, 1.0), 18 * dt);
                         this.parts.rightArm.elbow.rotation.x = -0.1;
-                        this.lerpJoint(this.parts.rightArm.wrist, new THREE.Vector3(1.5, 0.5, 0), 18 * dt); 
-                        
-                        this.lerpJoint(this.parts.leftArm.shoulder, new THREE.Vector3(0.8, 0, 0.5), 18 * dt); 
-                        
+                        this.lerpJoint(this.parts.rightArm.wrist, new THREE.Vector3(1.5, 0.5, 0), 18 * dt);
+
+                        this.lerpJoint(this.parts.leftArm.shoulder, new THREE.Vector3(0.8, 0, 0.5), 18 * dt);
+
                         this.lerpJoint(this.parts.rightLeg.hip, new THREE.Vector3(-0.6, 0, 0), 15 * dt);
                         this.parts.rightLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parts.rightLeg.knee.rotation.x, 1.0, 15 * dt);
                         this.lerpJoint(this.parts.leftLeg.hip, new THREE.Vector3(0.2, 0, 0), 15 * dt);
@@ -1242,19 +1354,19 @@
                     }
                     else if (state.comboStep === 'dash') {
                         // 대시 공격: 전진하며 검을 강하게 찌르는 동작
-                        this.lerpJoint(this.parts.waist, new THREE.Vector3(0.6, 0.4, 0), 15 * dt); 
+                        this.lerpJoint(this.parts.waist, new THREE.Vector3(0.6, 0.4, 0), 15 * dt);
                         this.lerpJoint(this.parts.chest, new THREE.Vector3(0.5, 0.2, 0), 15 * dt);
-                        
+
                         // 오른팔은 균형을 잡기 위해 뒤로 살짝 뻗음 (검이 뒤를 향함)
-                        this.lerpJoint(this.parts.rightArm.shoulder, new THREE.Vector3(-0.5, 0, 0.8), 18 * dt); 
+                        this.lerpJoint(this.parts.rightArm.shoulder, new THREE.Vector3(-0.5, 0, 0.8), 18 * dt);
                         this.parts.rightArm.elbow.rotation.x = -0.1;
-                        this.lerpJoint(this.parts.rightArm.wrist, new THREE.Vector3(1.0, 0.5, 0), 18 * dt); 
-                        
+                        this.lerpJoint(this.parts.rightArm.wrist, new THREE.Vector3(1.0, 0.5, 0), 18 * dt);
+
                         // 왼팔을 앞으로 뻗어 앞을 강하게 찌르거나 견제하는 모양
-                        this.lerpJoint(this.parts.leftArm.shoulder, new THREE.Vector3(1.2, 0, 0.4), 22 * dt); 
+                        this.lerpJoint(this.parts.leftArm.shoulder, new THREE.Vector3(1.2, 0, 0.4), 22 * dt);
                         this.parts.leftArm.elbow.rotation.x = -0.1;
-                        this.lerpJoint(this.parts.leftArm.wrist, new THREE.Vector3(1.5, 0.8, -1.2), 22 * dt); 
-                        
+                        this.lerpJoint(this.parts.leftArm.wrist, new THREE.Vector3(1.5, 0.8, -1.2), 22 * dt);
+
                         // 하체는 대시하는 듯이 깊게 런지(Lunge) 자세
                         this.lerpJoint(this.parts.rightLeg.hip, new THREE.Vector3(-1.0, 0, 0), 15 * dt);
                         this.parts.rightLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parts.rightLeg.knee.rotation.x, 1.2, 15 * dt);
@@ -1262,30 +1374,30 @@
                         this.parts.leftLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parts.leftLeg.knee.rotation.x, 0.1, 15 * dt);
                     }
                     else if (state.comboStep === 1) {
-                        this.lerpJoint(this.parts.waist, new THREE.Vector3(0.2, 1.0, 0), 15 * dt); 
+                        this.lerpJoint(this.parts.waist, new THREE.Vector3(0.2, 1.0, 0), 15 * dt);
                         this.lerpJoint(this.parts.chest, new THREE.Vector3(0.1, 0.8, 0), 15 * dt);
-                        
-                        this.lerpJoint(this.parts.rightArm.shoulder, new THREE.Vector3(-1.0, 0, 1.0), 18 * dt); 
+
+                        this.lerpJoint(this.parts.rightArm.shoulder, new THREE.Vector3(-1.0, 0, 1.0), 18 * dt);
                         this.parts.rightArm.elbow.rotation.x = -0.1;
-                        this.lerpJoint(this.parts.rightArm.wrist, new THREE.Vector3(1.5, 0.5, 0), 18 * dt); 
-                        
-                        this.lerpJoint(this.parts.leftArm.shoulder, new THREE.Vector3(0.8, 0, 0.5), 18 * dt); 
+                        this.lerpJoint(this.parts.rightArm.wrist, new THREE.Vector3(1.5, 0.5, 0), 18 * dt);
+
+                        this.lerpJoint(this.parts.leftArm.shoulder, new THREE.Vector3(0.8, 0, 0.5), 18 * dt);
                         this.parts.leftArm.elbow.rotation.x = -0.2;
 
                         this.lerpJoint(this.parts.rightLeg.hip, new THREE.Vector3(-0.6, 0, 0), 15 * dt);
                         this.parts.rightLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parts.rightLeg.knee.rotation.x, 0.8, 15 * dt);
                         this.lerpJoint(this.parts.leftLeg.hip, new THREE.Vector3(0.2, 0, 0), 15 * dt);
                         this.parts.leftLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parts.leftLeg.knee.rotation.x, 0.1, 15 * dt);
-                    } 
+                    }
                     else if (state.comboStep === 2) {
-                        this.lerpJoint(this.parts.waist, new THREE.Vector3(0.2, -1.2, 0), 15 * dt); 
+                        this.lerpJoint(this.parts.waist, new THREE.Vector3(0.2, -1.2, 0), 15 * dt);
                         this.lerpJoint(this.parts.chest, new THREE.Vector3(0.1, -0.8, 0), 15 * dt);
-                        
-                        this.lerpJoint(this.parts.rightArm.shoulder, new THREE.Vector3(-1.0, 0, -1.2), 18 * dt); 
+
+                        this.lerpJoint(this.parts.rightArm.shoulder, new THREE.Vector3(-1.0, 0, -1.2), 18 * dt);
                         this.parts.rightArm.elbow.rotation.x = -0.2;
-                        this.lerpJoint(this.parts.rightArm.wrist, new THREE.Vector3(1.5, -0.5, 0), 18 * dt); 
-                        
-                        this.lerpJoint(this.parts.leftArm.shoulder, new THREE.Vector3(-0.8, 0, -0.5), 18 * dt); 
+                        this.lerpJoint(this.parts.rightArm.wrist, new THREE.Vector3(1.5, -0.5, 0), 18 * dt);
+
+                        this.lerpJoint(this.parts.leftArm.shoulder, new THREE.Vector3(-0.8, 0, -0.5), 18 * dt);
                         this.parts.leftArm.elbow.rotation.x = -1.2;
 
                         this.lerpJoint(this.parts.rightLeg.hip, new THREE.Vector3(-0.3, 0, 0), 15 * dt);
@@ -1293,7 +1405,7 @@
 
                         this.parts.rightLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parts.rightLeg.knee.rotation.x, 0.2, 15 * dt);
                         this.parts.leftLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parts.leftLeg.knee.rotation.x, 0.2, 15 * dt);
-                    } 
+                    }
                     else if (state.comboStep === 3) {
                         // 3타는 시간(state.timer)에 따라 두 번 베는 모션으로 분리
                         const halfTime = state.activeEnd / 2; // 발동 시간의 절반(0.225초)
@@ -1301,26 +1413,26 @@
                         if (state.timer < halfTime) {
                             // 첫 번째 베기 (우에서 좌로)
                             // 몸통은 우측(+Y)으로 회전, 오른팔은 원래대로 복구
-                            this.lerpJoint(this.parts.waist, new THREE.Vector3(0.3, 0.4, 0), 15 * dt); 
+                            this.lerpJoint(this.parts.waist, new THREE.Vector3(0.3, 0.4, 0), 15 * dt);
                             this.lerpJoint(this.parts.chest, new THREE.Vector3(0.1, 0.4, 0), 15 * dt);
-                            
-                            this.lerpJoint(this.parts.rightArm.shoulder, new THREE.Vector3(-0.8, 0, 1.2), 20 * dt); 
+
+                            this.lerpJoint(this.parts.rightArm.shoulder, new THREE.Vector3(-0.8, 0, 1.2), 20 * dt);
                             this.parts.rightArm.elbow.rotation.x = -0.2;
-                            this.lerpJoint(this.parts.rightArm.wrist, new THREE.Vector3(1.0, 0.5, 0), 20 * dt); 
-                            
+                            this.lerpJoint(this.parts.rightArm.wrist, new THREE.Vector3(1.0, 0.5, 0), 20 * dt);
+
                             // 왼팔은 등 뒤/밖으로 뻗어 반동 균형을 맞춤
-                            this.lerpJoint(this.parts.leftArm.shoulder, new THREE.Vector3(-0.2, 0, -0.8), 20 * dt); 
+                            this.lerpJoint(this.parts.leftArm.shoulder, new THREE.Vector3(-0.2, 0, -0.8), 20 * dt);
                             this.parts.leftArm.elbow.rotation.x = -0.2;
                         } else {
                             // 두 번째 베기 (기본 2타 모션과 동일하게)
-                            this.lerpJoint(this.parts.waist, new THREE.Vector3(0.2, -1.2, 0), 25 * dt); 
+                            this.lerpJoint(this.parts.waist, new THREE.Vector3(0.2, -1.2, 0), 25 * dt);
                             this.lerpJoint(this.parts.chest, new THREE.Vector3(0.1, -0.8, 0), 25 * dt);
-                            
-                            this.lerpJoint(this.parts.rightArm.shoulder, new THREE.Vector3(-1.0, 0, -1.2), 30 * dt); 
+
+                            this.lerpJoint(this.parts.rightArm.shoulder, new THREE.Vector3(-1.0, 0, -1.2), 30 * dt);
                             this.parts.rightArm.elbow.rotation.x = -0.2;
-                            this.lerpJoint(this.parts.rightArm.wrist, new THREE.Vector3(1.5, -0.5, 0), 30 * dt); 
-                            
-                            this.lerpJoint(this.parts.leftArm.shoulder, new THREE.Vector3(-0.8, 0, -0.5), 30 * dt); 
+                            this.lerpJoint(this.parts.rightArm.wrist, new THREE.Vector3(1.5, -0.5, 0), 30 * dt);
+
+                            this.lerpJoint(this.parts.leftArm.shoulder, new THREE.Vector3(-0.8, 0, -0.5), 30 * dt);
                             this.parts.leftArm.elbow.rotation.x = -1.2;
                         }
 
@@ -1333,7 +1445,7 @@
                     // 3타 연속 타격 로직 (hasHit을 타이머에 따라 초기화)
                     if (state.comboStep === 3 && state.timer > state.activeEnd / 2 && !state.hasSecondHit) {
                         state.hasHit = false; // 두 번째 타격을 위해 초기화
-                        state.hasSecondHit = true; 
+                        state.hasSecondHit = true;
                     }
 
                     if (!state.hasHit) {
@@ -1341,24 +1453,24 @@
                             const toD = new THREE.Vector3().subVectors(d.mesh.position, this.mesh.position).setY(0);
                             let currentRange = this.attackRange;
                             if (state.comboStep === 'leap') currentRange = 2.5; // 거리를 좁힌 대신 범위를 약간 줄임
-                            else if (state.comboStep === 'shoulder_bash') currentRange = 1.2;
-                            
+                            else if (state.comboStep === 'shoulder_bash') currentRange = 0.9;
+
                             if (toD.length() < currentRange + d.radius && toD.lengthSq() > 0.001) {
                                 if (Math.acos(forward.dot(toD.normalize())) < this.attackAngle + 0.2) {
                                     // 특정 공격(어깨치기, 도약공격)만 적의 행동을 중단(Flinch)시킴
                                     const shouldFlinch = (state.comboStep === 'shoulder_bash' || state.comboStep === 'leap');
                                     const forceKnockdown = (state.comboStep === 'shoulder_bash'); // 어깨치기일 경우 넉다운 트리거
-                                    d.takeDamage(shouldFlinch, forceKnockdown); 
+                                    d.takeDamage(shouldFlinch, forceKnockdown);
                                     this.game.addScore(5, "HIT", d.mesh.position); // [추가] 공격 성공 점수
                                     state.hasHit = true;
-                                    
+
                                     if (state.comboStep === 'shoulder_bash') {
                                         d.logicalPos.add(forward.clone().multiplyScalar(2.0)); // 어깨치기는 2m 밀어냄
                                     } else if (state.comboStep === 'leap') {
                                         d.logicalPos.add(forward.clone().multiplyScalar(1.0)); // 도약 공격은 1m 밀어냄
                                     }
                                     // 기본 공격(1,2,3), 대시 공격은 밀어내지 않음 (사거리 유지)
-                                    
+
                                     const hitlagTime = (state.comboStep === 3 || state.comboStep === 'leap') ? 0.08 : (state.comboStep === 'dash' ? 0.06 : 0.04);
                                     const shakeIntens = (state.comboStep === 3 || state.comboStep === 'leap') ? 0.3 : (state.comboStep === 'dash' ? 0.15 : 0.1);
                                     this.game.triggerImpact(hitlagTime, shakeIntens);
@@ -1369,19 +1481,19 @@
                 } else {
                     // 회복 페이즈: 벨로시티를 0으로 서서히 감쇄 (sliding 방지)
                     this.velocity.lerp(new THREE.Vector3(0, 0, 0), this.damping * dt);
-                    if (this.velocity.lengthSq() < 0.01) this.velocity.set(0,0,0);
+                    if (this.velocity.lengthSq() < 0.01) this.velocity.set(0, 0, 0);
                     const recoverAlpha = Math.min(1, 10 * dt);
 
                     // 회복 페이즈: 컴뱃 아이들 포즈에 가깝게 돌아가도록 목표점 수정
                     this.lerpJoint(this.parts.waist, new THREE.Vector3(0.1, 0.4, 0), recoverAlpha);
                     this.lerpJoint(this.parts.chest, new THREE.Vector3(0.1, 0.4, 0), recoverAlpha);
-                    
+
                     this.lerpJoint(this.parts.rightLeg.hip, new THREE.Vector3(-0.1, 0, -0.2), recoverAlpha);
                     this.lerpJoint(this.parts.leftLeg.hip, new THREE.Vector3(-0.4, 0, 0.2), recoverAlpha);
 
                     this.parts.root.position.y = THREE.MathUtils.lerp(this.parts.root.position.y, 0.72, recoverAlpha);
                     this.parts.root.rotation.y = THREE.MathUtils.lerp(this.parts.root.rotation.y, -0.8, recoverAlpha);
-                    
+
                     this.parts.rightLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parts.rightLeg.knee.rotation.x, 0.1, recoverAlpha);
                     this.parts.leftLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parts.leftLeg.knee.rotation.x, 0.4, recoverAlpha);
 
@@ -1403,7 +1515,7 @@
                         const dot = forward.dot(moveDir);
                         targetLookAngle = THREE.MathUtils.clamp(Math.atan2(cross.y, dot), -Math.PI / 2.2, Math.PI / 2.2);
                     }
-                    
+
                     let currentBodyTwist = this.parts.root.rotation.y + this.parts.waist.rotation.y + this.parts.chest.rotation.y;
                     let targetNeckY = targetLookAngle - currentBodyTwist;
                     targetNeckY = THREE.MathUtils.clamp(targetNeckY, -Math.PI / 2, Math.PI / 2);
@@ -1422,9 +1534,9 @@
          */
         class CharacterEF extends CharacterFS {
             constructor(game, scene, camera, input) {
-                super(game, scene, camera, input); 
+                super(game, scene, camera, input);
                 this.roleName = "EF";
-                
+
                 // [수정] 무기를 실제로 제거하지 않고, 극소 스케일로 숨겨서 부모 클래스의 update 로직 충돌 방지
                 // 전투 모드에서도 보이지 않도록 sets로 관리하거나 update에서 강제로 숨김 처리
                 if (this.parts.sword) {
@@ -1438,6 +1550,7 @@
 
                 // 몸체류는 노란색 의상
                 this.parts.chestMesh.material = yellowMat;
+                this.maxCombo = 4; // 3타 -> 4타로 확장
                 this.parts.waistMesh.material = yellowMat;
                 this.parts.pelvisMesh.material = yellowMat;
 
@@ -1459,28 +1572,34 @@
 
             // [수정] 격투가 전용 대기 애니메이션 (낮고 넓은 전투 스탠스)
             animateIdle(dt) {
-                this.animTimer += dt * 2.0; 
+                this.animTimer += dt * 2.0;
                 const bounce = Math.abs(Math.sin(this.animTimer * 1.5)) * 0.04;
                 const lerpAlpha = Math.min(1, 15 * dt);
 
-                // 무게 중심을 낮게 (0.72 -> 0.6)
+                // 무게 중심 및 회전 초기화
                 this.parts.root.position.y = 0.6 + bounce;
-                
+                this.parts.root.rotation.x = THREE.MathUtils.lerp(this.parts.root.rotation.x, 0, lerpAlpha);
+                this.parts.root.rotation.y = THREE.MathUtils.lerp(this.parts.root.rotation.y, 0, lerpAlpha);
+
                 // 상체를 약간 앞쪽으로 (웨이스트 회전)
                 this.lerpJoint(this.parts.waist, new THREE.Vector3(0.3, 0.4, 0), lerpAlpha);
                 this.lerpJoint(this.parts.chest, new THREE.Vector3(0.1, 0.2, 0), lerpAlpha);
-                
+
                 // 가드 포즈 (양손 얼굴 높이로)
                 this.lerpJoint(this.parts.rightArm.shoulder, new THREE.Vector3(0.8, -0.4, -0.6), lerpAlpha);
                 this.parts.rightArm.elbow.rotation.x = THREE.MathUtils.lerp(this.parts.rightArm.elbow.rotation.x, -2.0, lerpAlpha);
-                
+
                 this.lerpJoint(this.parts.leftArm.shoulder, new THREE.Vector3(0.8, 0.4, 0.6), lerpAlpha);
                 this.parts.leftArm.elbow.rotation.x = THREE.MathUtils.lerp(this.parts.leftArm.elbow.rotation.x, -2.0, lerpAlpha);
+
+                // [추가] 손목 꺾임 제거 (주먹 자세)
+                this.lerpJoint(this.parts.rightArm.wrist, new THREE.Vector3(0, 0, 0), lerpAlpha);
+                this.lerpJoint(this.parts.leftArm.wrist, new THREE.Vector3(0, 0, 0), lerpAlpha);
 
                 // 다리를 넓게 벌리고 무릎을 굽힘 (이미지 참고)
                 this.lerpJoint(this.parts.rightLeg.hip, new THREE.Vector3(-0.6, 0, -0.5), lerpAlpha);
                 this.parts.rightLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parts.rightLeg.knee.rotation.x, 1.2, lerpAlpha);
-                
+
                 this.lerpJoint(this.parts.leftLeg.hip, new THREE.Vector3(-0.6, 0, 0.5), lerpAlpha);
                 this.parts.leftLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parts.leftLeg.knee.rotation.x, 1.2, lerpAlpha);
 
@@ -1495,12 +1614,17 @@
 
                 this.parts.root.position.y = 0.72 + Math.abs(swing) * 0.08;
                 this.parts.root.rotation.x = THREE.MathUtils.lerp(this.parts.root.rotation.x, 0.15, lerpAlpha);
+                this.parts.root.rotation.y = THREE.MathUtils.lerp(this.parts.root.rotation.y, 0, lerpAlpha);
 
                 // 팔 흔들기 (주먹 쥐고)
                 this.lerpJoint(this.parts.rightArm.shoulder, new THREE.Vector3(swing * 0.8, 0, -0.2), lerpAlpha);
                 this.parts.rightArm.elbow.rotation.x = -1.2;
                 this.lerpJoint(this.parts.leftArm.shoulder, new THREE.Vector3(-swing * 0.8, 0, 0.2), lerpAlpha);
                 this.parts.leftArm.elbow.rotation.x = -1.2;
+
+                // [추가] 손목 꺾임 제거 (주먹 자세)
+                this.lerpJoint(this.parts.rightArm.wrist, new THREE.Vector3(0, 0, 0), lerpAlpha);
+                this.lerpJoint(this.parts.leftArm.wrist, new THREE.Vector3(0, 0, 0), lerpAlpha);
 
                 // 다리 움직임
                 this.lerpJoint(this.parts.rightLeg.hip, new THREE.Vector3(swing * 0.8, 0, 0), lerpAlpha);
@@ -1530,7 +1654,7 @@
                     const dot = forward.dot(moveDir);
                     targetLookAngle = THREE.MathUtils.clamp(Math.atan2(cross.y, dot), -Math.PI / 2.2, Math.PI / 2.2);
                 }
-                
+
                 const curTwist = this.parts.root.rotation.y + this.parts.waist.rotation.y + this.parts.chest.rotation.y;
                 let targetNeckY = targetLookAngle - curTwist;
                 targetNeckY = THREE.MathUtils.clamp(targetNeckY, -Math.PI / 2, Math.PI / 2);
@@ -1563,12 +1687,12 @@
 
                 // 1. 머리 윗부분 베이스 (이전 스케일로 복구)
                 const hairTop = new THREE.Mesh(new THREE.BoxGeometry(0.23, 0.06, 0.25), hairMat);
-                hairTop.position.y = 0.125; 
+                hairTop.position.y = 0.125;
                 headMesh.add(hairTop);
 
                 // 2. 요청하신 뒷머리 블록 (높이를 키워 윗머리와 닿게 조절)
                 const hairBack = new THREE.Mesh(new THREE.BoxGeometry(0.19, 0.18, 0.04), hairMat);
-                hairBack.position.set(0, 0.05, -0.11); 
+                hairBack.position.set(0, 0.05, -0.11);
                 headMesh.add(hairBack);
 
                 // 3. 구레나룻 및 옆머리 (이전 스케일로 복구)
@@ -1587,34 +1711,38 @@
                 // super.setupCombo(state, step); // Call super to handle common logic like target acquisition and rotation
 
                 if (step === 'dash') {
-                    state.duration = 0.45;  state.activeEnd = 0.30; 
-                } else if (step === 'shoulder_bash') { 
+                    state.duration = 0.45; state.activeEnd = 0.30;
+                } else if (step === 'shoulder_bash') {
                     state.comboStep = 'uppercut';
-                    state.duration = 0.5;
-                    state.activeEnd = 0.22;
-                    state.attackDashDist = 1.5; 
+                    state.duration = 0.70;
+                    state.activeEnd = 0.40;
+                    state.attackDashDist = 1.6;
                 } else if (step === 'step_strike') {
                     state.comboStep = 'elbow'; // [추가] 엘보우 스트라이크
-                    state.duration = 0.45;  state.activeEnd = 0.25;
+                    state.duration = 0.45; state.activeEnd = 0.25;
                     state.attackDashDist = 3.5;
                 } else if (step === 'leap') {
                     state.comboStep = 'leap'; // 니킥
-                    state.duration = 0.65;  state.activeEnd = 0.50;
+                    state.duration = 0.75; state.activeEnd = 0.60;
                     state.attackDashDist = 6.0;
                 } else {
-                    state.duration = step === 3 ? 0.70 : (step === 1 ? 0.60 : 0.55);  
-                    state.activeEnd = step === 3 ? 0.45 : 0.25; 
+                    // [보정] 1, 2타 입력 시간 확장 반영 / 3, 4타 발차기 타이밍 추가
+                    if (step === 1) { state.duration = 0.60; state.activeEnd = 0.25; }
+                    else if (step === 2) { state.duration = 0.55; state.activeEnd = 0.25; }
+                    else if (step === 3) { state.duration = 0.75; state.activeEnd = 0.40; state.attackDashDist = 2.5; }
+                    else if (step === 4) { state.duration = 0.85; state.activeEnd = 0.45; state.attackDashDist = 3.0; }
+                    else { state.duration = 0.40; state.activeEnd = 0.25; }
                 }
-                
+
                 let nearest = this.nearestDummy;
                 let minDist = nearest ? this.mesh.position.distanceTo(nearest.mesh.position) : Infinity;
-                
-                if(nearest && minDist <= 10.0) {
+
+                if (nearest && minDist <= 10.0) {
                     const dir = new THREE.Vector3().subVectors(nearest.mesh.position, this.mesh.position);
-                    
+
                     if (['dash', 'step_strike', 'leap', 'uppercut'].includes(state.comboStep)) { // Add uppercut
                         const distToTarget = dir.length();
-                        const targetDist = Math.max(0.2, distToTarget - 1.2);
+                        const targetDist = Math.max(0.2, distToTarget - 0.6); // 1.2 -> 0.6으로 단축하여 더 밀착
                         state.attackDashDist = targetDist;
                     }
 
@@ -1625,8 +1753,8 @@
             }
 
             updateCombo(dt, state) {
-                const forward = new THREE.Vector3(0,0,1).applyQuaternion(this.mesh.quaternion);
-                
+                const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(this.mesh.quaternion);
+
                 if (state.timer < state.activeEnd) {
                     let dashSpeed = 3.2;
                     if (['dash', 'step_strike', 'leap'].includes(state.comboStep)) {
@@ -1661,7 +1789,7 @@
                         const dot = forward.dot(moveDir);
                         targetLookAngle = THREE.MathUtils.clamp(Math.atan2(cross.y, dot), -Math.PI / 2.2, Math.PI / 2.2);
                     }
-                    
+
                     let currentBodyTwist = this.parts.root.rotation.y + this.parts.waist.rotation.y + this.parts.chest.rotation.y;
                     let targetNeckY = targetLookAngle - currentBodyTwist;
                     targetNeckY = THREE.MathUtils.clamp(targetNeckY, -Math.PI / 2, Math.PI / 2);
@@ -1672,15 +1800,42 @@
 
 
                     if (state.comboStep === 'uppercut') {
-                        // 어퍼컷: 몸을 낮췄다가 강력하게 솟구침
-                        this.parts.root.position.y = THREE.MathUtils.lerp(this.parts.root.position.y, 0.6, rotAlpha);
-                        this.lerpJoint(this.parts.waist, new THREE.Vector3(0.4, 0.8, 0), rotAlpha);
-                        this.lerpJoint(this.parts.chest, new THREE.Vector3(0.2, 0.6, 0), rotAlpha); // 가슴도 같이 움직임
-                        
-                        this.lerpJoint(this.parts.rightArm.shoulder, new THREE.Vector3(0.8, 0, 0.5), rotAlpha);
-                        this.parts.rightArm.elbow.rotation.x = THREE.MathUtils.lerp(this.parts.rightArm.elbow.rotation.x, -0.2, rotAlpha);
+                        // [개편] 스크류 어퍼: 회전하며 솟구치는 강력한 상단 가격
+                        const progress = Math.min(1.0, state.timer / state.activeEnd);
+                        const soarArc = Math.sin(progress * Math.PI * 0.5); // 초반에 빠르게 솟구침
+
+                        // 몸체 회전 및 상승
+                        this.parts.root.position.y = 0.72 + soarArc * 2.2;
+
+                        // [수정] 상승 구간(70%까지)에서만 360도 회전하고 하강 시에는 정면 유지
+                        let rotY = 0;
+                        if (progress < 0.7) {
+                            rotY = (progress / 0.7) * Math.PI * 2;
+                        } else {
+                            rotY = Math.PI * 2;
+                        }
+                        this.parts.root.rotation.y = rotY;
+
+                        // 상체: 솟구치는 방향으로 비틀기
+                        this.lerpJoint(this.parts.waist, new THREE.Vector3(0.5, 0.4, 0), rotAlpha);
+                        this.lerpJoint(this.parts.chest, new THREE.Vector3(0.3, 0.2, 0), rotAlpha);
+
+                        // 오른팔: 하늘을 향해 곧게 뻗음 (타격 팔)
+                        this.lerpJoint(this.parts.rightArm.shoulder, new THREE.Vector3(-2.8, 0, 0), rotAlpha * 2);
+                        this.parts.rightArm.elbow.rotation.x = THREE.MathUtils.lerp(this.parts.rightArm.elbow.rotation.x, -0.1, rotAlpha * 2);
+                        this.lerpJoint(this.parts.rightArm.wrist, new THREE.Vector3(0, 0, 0), rotAlpha * 2);
+
+                        // 왼팔: 균형을 위해 몸쪽으로 당김
+                        this.lerpJoint(this.parts.leftArm.shoulder, new THREE.Vector3(0.8, 0, 0.5), rotAlpha);
+                        this.parts.leftArm.elbow.rotation.x = -2.0;
+
+                        // 다리: 도약하는 역동적인 포즈 (오른다리는 쭉 펴고 왼다리는 굽힘)
+                        this.lerpJoint(this.parts.rightLeg.hip, new THREE.Vector3(-0.5, 0, -0.2), rotAlpha);
+                        this.parts.rightLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parts.rightLeg.knee.rotation.x, 0.2, rotAlpha);
+                        this.lerpJoint(this.parts.leftLeg.hip, new THREE.Vector3(1.2, 0, 0.3), rotAlpha);
+                        this.parts.leftLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parts.leftLeg.knee.rotation.x, 1.8, rotAlpha);
                         this.lerpJoint(this.parts.rightArm.wrist, new THREE.Vector3(2.5, 0, 0), rotAlpha); // 주먹을 위로!
-                        
+
                         this.lerpJoint(this.parts.leftArm.shoulder, new THREE.Vector3(-0.5, 0, -0.5), rotAlpha); // 왼팔은 균형
                         this.parts.leftArm.elbow.rotation.x = THREE.MathUtils.lerp(this.parts.leftArm.elbow.rotation.x, -0.5, rotAlpha);
 
@@ -1692,19 +1847,19 @@
                     } else if (state.comboStep === 1) {
                         // 1타: 버스트 펀치 (왼팔 정면 타격, 타격 각도 상향 보정)
                         const rotAlpha = Math.min(1, 25 * dt);
-                        
+
                         // [보정] 골반을 확실히 뒤로 빼고(root.z) 무게 중심을 낮춤
                         this.parts.root.position.y = THREE.MathUtils.lerp(this.parts.root.position.y, 0.48, rotAlpha);
-                        this.parts.root.position.z = THREE.MathUtils.lerp(this.parts.root.position.z, -0.4, rotAlpha); 
+                        this.parts.root.position.z = THREE.MathUtils.lerp(this.parts.root.position.z, -0.4, rotAlpha);
 
                         // [허리/골반] 상체가 앞으로 쏟아지지 않게 골반 회전을 뒤로 (waist.x)
-                        this.lerpJoint(this.parts.waist, new THREE.Vector3(0.8, -0.3, 0), rotAlpha); 
-                        this.lerpJoint(this.parts.chest, new THREE.Vector3(0.2, -0.2, 0), rotAlpha); 
-                        
+                        this.lerpJoint(this.parts.waist, new THREE.Vector3(0.8, -0.3, 0), rotAlpha);
+                        this.lerpJoint(this.parts.chest, new THREE.Vector3(0.2, -0.2, 0), rotAlpha);
+
                         // 왼팔 (정면 타격 - 각도 보정: -1.05 -> -1.75 상향)
-                        this.lerpJoint(this.parts.leftArm.shoulder, new THREE.Vector3(-1.75, 0.1, 0), rotAlpha); 
+                        this.lerpJoint(this.parts.leftArm.shoulder, new THREE.Vector3(-1.75, 0.1, 0), rotAlpha);
                         this.parts.leftArm.elbow.rotation.x = THREE.MathUtils.lerp(this.parts.leftArm.elbow.rotation.x, -0.1, rotAlpha);
-                        
+
                         // 오른팔 (가드 & 균형 보조)
                         this.lerpJoint(this.parts.rightArm.shoulder, new THREE.Vector3(-0.4, -0.3, -0.6), rotAlpha);
                         this.parts.rightArm.elbow.rotation.x = THREE.MathUtils.lerp(this.parts.rightArm.elbow.rotation.x, -2.2, rotAlpha);
@@ -1718,7 +1873,7 @@
                     } else if (state.comboStep === 2) {
                         // 2타: 연계 펀치 (오른팔 정면 타격, 왼팔 가드 고정, 오른다리 전방 런지)
                         const rotAlpha = Math.min(1, 25 * dt);
-                        
+
                         // [보정] 골반 안착 및 무게 중심 유지
                         this.parts.root.position.y = THREE.MathUtils.lerp(this.parts.root.position.y, 0.40, rotAlpha);
                         this.parts.root.position.z = THREE.MathUtils.lerp(this.parts.root.position.z, -0.4, rotAlpha);
@@ -1726,11 +1881,11 @@
                         // 회전력을 위한 상체 트위스트 (오른손 타격을 위해 왼쪽으로 회전)
                         this.lerpJoint(this.parts.waist, new THREE.Vector3(0.7, 0.5, 0), rotAlpha);
                         this.lerpJoint(this.parts.chest, new THREE.Vector3(0.2, 0.3, 0), rotAlpha);
-                        
+
                         // 왼팔 (가드 고정 - 회전하지 않도록 보정)
                         this.lerpJoint(this.parts.leftArm.shoulder, new THREE.Vector3(-0.4, 0.3, 0.6), rotAlpha);
                         this.parts.leftArm.elbow.rotation.x = THREE.MathUtils.lerp(this.parts.leftArm.elbow.rotation.x, -2.0, rotAlpha);
-                        
+
                         // 오른팔 (정면 타격 - 1타 왼손 각도 참조하여 -1.75 상향 타격)
                         this.lerpJoint(this.parts.rightArm.shoulder, new THREE.Vector3(-1.75, -0.1, 0), rotAlpha);
                         this.parts.rightArm.elbow.rotation.x = THREE.MathUtils.lerp(this.parts.rightArm.elbow.rotation.x, -0.1, rotAlpha);
@@ -1741,50 +1896,126 @@
                         this.lerpJoint(this.parts.leftLeg.hip, new THREE.Vector3(0.8, 0, 0.3), rotAlpha);
                         this.parts.leftLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parts.leftLeg.knee.rotation.x, 0.4, rotAlpha);
 
+                    } else if (state.comboStep === 3) {
+                        // 3타: 왼발 하이킥 (상체 뒤로 젖히며 왼발을 높게 지름)
+                        const rotAlpha = Math.min(1, 25 * dt);
+
+                        // [보정] 몸을 뒤로 젖히고 디딤발이 지면에 닿도록 높이 조정
+                        this.parts.root.position.y = THREE.MathUtils.lerp(this.parts.root.position.y, 0.75, rotAlpha);
+                        this.parts.root.position.z = THREE.MathUtils.lerp(this.parts.root.position.z, -0.6, rotAlpha);
+                        this.parts.root.rotation.x = THREE.MathUtils.lerp(this.parts.root.rotation.x, -0.4, rotAlpha);
+
+                        // 상체 뒤틀기 (오른쪽으로 비틀어 발차기 공간 확보)
+                        this.lerpJoint(this.parts.waist, new THREE.Vector3(0.3, -0.8, 0), rotAlpha);
+                        this.lerpJoint(this.parts.chest, new THREE.Vector3(0.2, -0.6, 0.2), rotAlpha);
+
+                        // 팔 가드/균형
+                        this.lerpJoint(this.parts.leftArm.shoulder, new THREE.Vector3(0.5, 0.4, 0.8), rotAlpha);
+                        this.lerpJoint(this.parts.rightArm.shoulder, new THREE.Vector3(1.2, -0.4, -0.5), rotAlpha);
+
+                        // 다리: 왼다리 하이킥, 오른다리(디딤발) 지탱 보정
+                        this.lerpJoint(this.parts.leftLeg.hip, new THREE.Vector3(-1.8, 0, 0.1), rotAlpha);
+                        this.parts.leftLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parts.leftLeg.knee.rotation.x, 0.1, rotAlpha);
+
+                        // [디딤발] 무릎을 펴고(0.1) 각도를 세워(0.4) 지면에 안착
+                        this.lerpJoint(this.parts.rightLeg.hip, new THREE.Vector3(0.4, 0, -0.3), rotAlpha);
+                        this.parts.rightLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parts.rightLeg.knee.rotation.x, 0.1, rotAlpha);
+
+                    } else if (state.comboStep === 4) {
+                        // 4타: 오른발 하이킥 (강력한 마무리, 반대쪽 발차기)
+                        const rotAlpha = Math.min(1, 25 * dt);
+
+                        // [보정] 골반 높이 상향하여 디딤발 안착
+                        this.parts.root.position.y = THREE.MathUtils.lerp(this.parts.root.position.y, 0.75, rotAlpha);
+                        this.parts.root.position.z = THREE.MathUtils.lerp(this.parts.root.position.z, -0.6, rotAlpha);
+                        this.parts.root.rotation.x = THREE.MathUtils.lerp(this.parts.root.rotation.x, -0.4, rotAlpha);
+
+                        // 상체 뒤틀기 (왼쪽으로 비틀기)
+                        this.lerpJoint(this.parts.waist, new THREE.Vector3(0.3, 0.8, 0), rotAlpha);
+                        this.lerpJoint(this.parts.chest, new THREE.Vector3(0.2, 0.6, -0.2), rotAlpha);
+
+                        // 팔 가드/균형
+                        this.lerpJoint(this.parts.rightArm.shoulder, new THREE.Vector3(0.5, -0.4, -0.8), rotAlpha);
+                        this.lerpJoint(this.parts.leftArm.shoulder, new THREE.Vector3(1.2, 0.4, 0.5), rotAlpha);
+
+                        // 다리: 오른다리 하이킥, 왼다리(디딤발) 지탱 보정
+                        this.lerpJoint(this.parts.rightLeg.hip, new THREE.Vector3(-1.8, 0, -0.1), rotAlpha);
+                        this.parts.rightLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parts.rightLeg.knee.rotation.x, 0.1, rotAlpha);
+
+                        // [디딤발] 무릎을 펴고(0.1) 각도를 세워(0.4) 지면에 안착
+                        this.lerpJoint(this.parts.leftLeg.hip, new THREE.Vector3(0.4, 0, 0.3), rotAlpha);
+                        this.parts.leftLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parts.leftLeg.knee.rotation.x, 0.1, rotAlpha);
+
                     } else if (state.comboStep === 'leap') {
-                        // 도약 공격: 플라잉 니킥
-                        let jumpArc = Math.sin((state.timer / state.activeEnd) * Math.PI);
-                        this.parts.root.position.y = 0.72 + jumpArc * 2.5;
-                        this.lerpJoint(this.parts.waist, new THREE.Vector3(0.8, 0, 0), rotAlpha);
-                        this.lerpJoint(this.parts.chest, new THREE.Vector3(0.2, 0, 0), rotAlpha);
+                        // [개편] 도약 공격: 공중 회전 뒤꿈치 내려차기
+                        const progress = Math.min(1.2, state.timer / state.activeEnd); // 진행도 (0~1.0+)
+                        const jumpArc = Math.sin(Math.min(1, progress) * Math.PI);
 
-                        this.lerpJoint(this.parts.rightLeg.hip, new THREE.Vector3(1.2, 0, 0), rotAlpha); // 무릎 차기
-                        this.parts.rightLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parts.rightLeg.knee.rotation.x, 1.5, rotAlpha);
-                        this.lerpJoint(this.parts.leftLeg.hip, new THREE.Vector3(-0.2, 0, 0), rotAlpha);
-                        this.parts.leftLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parts.leftLeg.knee.rotation.x, 0.5, rotAlpha);
+                        // 공중 높이 및 회전 (360도 전방 회전)
+                        this.parts.root.position.y = 0.72 + jumpArc * 3.5;
+                        this.parts.root.rotation.x = THREE.MathUtils.lerp(this.parts.root.rotation.x, -progress * Math.PI * 2, 10 * dt);
 
-                        this.lerpJoint(this.parts.rightArm.shoulder, new THREE.Vector3(-0.5, 0, 0.5), rotAlpha);
-                        this.lerpJoint(this.parts.leftArm.shoulder, new THREE.Vector3(0.5, 0, -0.5), rotAlpha);
+                        if (progress < 0.6) {
+                            // 1단계: 몸 말기 (상승 및 회전 시작)
+                            this.lerpJoint(this.parts.waist, new THREE.Vector3(1.2, 0, 0), rotAlpha);
+                            this.lerpJoint(this.parts.rightLeg.hip, new THREE.Vector3(1.5, 0, 0), rotAlpha);
+                            this.parts.rightLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parts.rightLeg.knee.rotation.x, 2.0, rotAlpha);
+                            this.lerpJoint(this.parts.leftLeg.hip, new THREE.Vector3(1.5, 0, 0), rotAlpha);
+                            this.parts.leftLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parts.leftLeg.knee.rotation.x, 2.0, rotAlpha);
+                        } else {
+                            // 2단계: 다리 뻗어 내려찍기 (하강 및 타격)
+                            this.lerpJoint(this.parts.waist, new THREE.Vector3(-0.5, 0, 0), rotAlpha);
+                            // 오른발을 쭉 뻗어 내려침
+                            this.lerpJoint(this.parts.rightLeg.hip, new THREE.Vector3(-1.2, 0, 0), rotAlpha * 1.5);
+                            this.parts.rightLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parts.rightLeg.knee.rotation.x, 0, rotAlpha * 1.5);
 
-                    } else if (state.comboStep === 'elbow') {
-                        // 돌진 팔꿈치 치기
-                        this.parts.root.rotation.y = THREE.MathUtils.lerp(this.parts.root.rotation.y, 0.8, rotAlpha);
-                        this.lerpJoint(this.parts.waist, new THREE.Vector3(0.2, 0.5, 0), rotAlpha);
-                        
-                        this.lerpJoint(this.parts.rightArm.shoulder, new THREE.Vector3(1.2, 0, 1.4), rotAlpha);
-                        this.parts.rightArm.elbow.rotation.x = THREE.MathUtils.lerp(this.parts.rightArm.elbow.rotation.x, -2.5, rotAlpha);
-                        
-                        this.lerpJoint(this.parts.leftArm.shoulder, new THREE.Vector3(-0.8, 0, -0.2), rotAlpha);
+                            // 왼발은 균형을 위해 살짝 접음
+                            this.lerpJoint(this.parts.leftLeg.hip, new THREE.Vector3(0.5, 0.2, 0), rotAlpha);
+                            this.parts.leftLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parts.leftLeg.knee.rotation.x, 0.8, rotAlpha);
+                        }
+
+                        // 팔은 균형을 위해 넓게 벌림
+                        this.lerpJoint(this.parts.rightArm.shoulder, new THREE.Vector3(-0.8, 0, 1.2), rotAlpha);
+                        this.lerpJoint(this.parts.leftArm.shoulder, new THREE.Vector3(-0.8, 0, -1.2), rotAlpha);
+
+                    } else if (state.comboStep === 'elbow' || state.comboStep === 'dash') {
+                        // [개편] 정면 돌진 니킥 (Knee Strike)
+                        const dashProgress = Math.min(1.2, state.timer / state.activeEnd);
+
+                        // 상체: 전방으로 깊게 숙임 (돌진 에너지 표현)
+                        this.lerpJoint(this.parts.waist, new THREE.Vector3(0.9, 0, 0), rotAlpha);
+                        this.lerpJoint(this.parts.chest, new THREE.Vector3(0.3, 0, 0), rotAlpha);
+
+                        // 공격 발: 니킥 (오른다리 고관절을 전방으로 높게, 무릎을 완전히 굽힘)
+                        // [수정] 부호 반전: 양수(1.3)가 후방이므로, 전방을 위해 음수(-1.3) 사용
+                        this.lerpJoint(this.parts.rightLeg.hip, new THREE.Vector3(-1.3, 0, 0), rotAlpha * 1.5);
+                        this.parts.rightLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parts.rightLeg.knee.rotation.x, 2.5, rotAlpha * 1.5);
+
+                        // 디딤 발: 전방 추진력을 위해 뒤로 쭉 뻗음 (왼다리)
+                        // [수정] 부호 반전: 양수(0.8) 사용하여 뒤로 쭉 뻗게 함
+                        this.lerpJoint(this.parts.leftLeg.hip, new THREE.Vector3(0.8, 0, 0), rotAlpha);
+                        this.parts.leftLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parts.leftLeg.knee.rotation.x, 0.2, rotAlpha);
+
+                        // 양팔: 가로도를 위해 뒤로 젖히거나 균형을 잡음 (이미지 참고 - 오른쪽 니킥 대응 스왑)
+                        this.lerpJoint(this.parts.rightArm.shoulder, new THREE.Vector3(1.2, 0, 0.4), rotAlpha);
+                        this.lerpJoint(this.parts.leftArm.shoulder, new THREE.Vector3(1.0, 0, -0.6), rotAlpha);
+
+                        // 정면 돌진을 위해 낮은 Y축 유지
+                        this.parts.root.position.y = THREE.MathUtils.lerp(this.parts.root.position.y, 0.6, rotAlpha);
 
                     } else if (state.comboStep === 3) {
                         // 3타: 라운드하우스 킥 (360도 전신 회전)
                         const pivotAlpha = Math.min(1, state.timer / state.activeEnd);
                         this.parts.root.rotation.y = THREE.MathUtils.lerp(0, Math.PI * 2, pivotAlpha); // 360도 회전
-                        
+
                         this.lerpJoint(this.parts.rightLeg.hip, new THREE.Vector3(1.5, 0, 0.8), rotAlpha);
                         this.parts.rightLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parts.rightLeg.knee.rotation.x, 0.4, rotAlpha);
-                        
+
                         this.parts.root.position.y = 1.02; // 높이 상향
-                        
+
                         this.lerpJoint(this.parts.leftArm.shoulder, new THREE.Vector3(-0.5, 0, 0.5), rotAlpha);
                         this.lerpJoint(this.parts.rightArm.shoulder, new THREE.Vector3(0.5, 0, -0.5), rotAlpha);
 
-                    } else if (state.comboStep === 'dash') {
-                        // 격투가 전용 대쉬 포즈
-                        this.parts.root.position.y = 0.5;
-                        this.lerpJoint(this.parts.waist, new THREE.Vector3(0.8, 0, 0), rotAlpha);
-                        this.lerpJoint(this.parts.rightArm.shoulder, new THREE.Vector3(-0.8, 0, 0.5), rotAlpha);
-                        this.lerpJoint(this.parts.leftArm.shoulder, new THREE.Vector3(-0.8, 0, -0.5), rotAlpha);
                     } else {
                         // 잽(1), 훅(2) 등 이미 처리된 경우는 여기 오지 않음
                         super.updateCombo(dt, state);
@@ -1796,25 +2027,22 @@
                         for (let d of this.game.dummies) {
                             const toD = new THREE.Vector3().subVectors(d.mesh.position, this.mesh.position).setY(0);
                             let range = 1.5;
-                            let angle = Math.PI / 2;
+                            let angle = 1.143; // 약 131도 (총 아크)
 
-                            if (state.comboStep === 'uppercut') range = 1.8; 
-                            else if (state.comboStep === 'leap') { range = 2.2; angle = Math.PI / 1.5; } 
-                            else if (state.comboStep === 'elbow') range = 2.0;
-                            else if (state.comboStep === 3) { range = 2.5; angle = Math.PI; } // 라운드하우스는 넓은 전방위 판정
+                            if (state.comboStep === 'uppercut') range = 1.8;
+                            else if (state.comboStep === 'leap') { range = 2.2; angle = Math.PI / 1.5; }
+                            else if (state.comboStep === 'elbow' || state.comboStep === 'dash') range = 2.0;
+                            else if (state.comboStep === 3 || state.comboStep === 4) { range = 2.0; angle = 1.143; }
 
                             if (toD.length() < range + d.radius && Math.acos(forward.dot(toD.normalize())) < angle) {
-                                // 넉백/에어본 로직
-                                const launchForce = (state.comboStep === 'uppercut') ? 15.0 : (state.comboStep === 3 ? 5.0 : 0);
-                                
-                                // [수정] 어퍼컷 시 뒤로 2m 가량 날아가는 물리 효과 추가 (속도 기반)
                                 if (state.comboStep === 'uppercut') {
-                                    const kbDir = forward.clone().multiplyScalar(5.0); // 뒤로 밀어내는 속도 벡터
-                                    d.takeDamage(true, true, launchForce, kbDir); // 에어본 + 수평 넉백
+                                    const kbDir = forward.clone().multiplyScalar(5.0); // 2m 이동을 위해 5.0으로 하향
+                                    d.takeDamage(true, true, 22.0, kbDir);
                                 } else {
-                                    d.takeDamage(true, state.comboStep === 'uppercut', launchForce); 
+                                    const launchForce = (state.comboStep === 3 ? 5.0 : 0);
+                                    d.takeDamage(true, false, launchForce);
                                 }
-                                
+
                                 this.game.addScore(state.comboStep === 'uppercut' ? 15 : 5, "HIT", d.mesh.position);
                                 state.hasHit = true;
                                 this.game.triggerImpact(0.06, 0.2);
@@ -1824,12 +2052,22 @@
                 } else {
                     // 회복 페이즈: 벨로시티 감쇄 및 가드 포즈로 복원
                     this.velocity.lerp(new THREE.Vector3(0, 0, 0), this.damping * dt);
-                    if (this.velocity.lengthSq() < 0.01) this.velocity.set(0,0,0);
-                    const recoverAlpha = Math.min(1, 12 * dt);
+                    if (this.velocity.lengthSq() < 0.01) this.velocity.set(0, 0, 0);
+
+                    // [수정] 어퍼컷인 경우 낙하 및 복귀 속도를 2배 이상 상향하여 기민함 강조
+                    let recoverAlpha = Math.min(1, (state.comboStep === 'uppercut' ? 30 : 12) * dt);
 
                     this.parts.root.position.y = THREE.MathUtils.lerp(this.parts.root.position.y, 0.72, recoverAlpha);
-                    this.parts.root.rotation.y = THREE.MathUtils.lerp(this.parts.root.rotation.y, 0, recoverAlpha);
-                    
+                    this.parts.root.position.z = THREE.MathUtils.lerp(this.parts.root.position.z, 0, recoverAlpha);
+                    this.parts.root.rotation.x = THREE.MathUtils.lerp(this.parts.root.rotation.x, 0, recoverAlpha);
+
+                    // [수정] 어퍼컷의 나선 회전(Math.PI * 2) 이후 반대로 돌며 복구되지 않도록 즉시 0(또는 2PI)으로 고정
+                    if (state.comboStep === 'uppercut' && this.parts.root.rotation.y > Math.PI) {
+                        this.parts.root.rotation.y = 0;
+                    } else {
+                        this.parts.root.rotation.y = THREE.MathUtils.lerp(this.parts.root.rotation.y, 0, recoverAlpha);
+                    }
+
                     // 가드 포즈 복원
                     this.lerpJoint(this.parts.waist, new THREE.Vector3(0.05, 0.4, 0), recoverAlpha);
                     this.lerpJoint(this.parts.chest, new THREE.Vector3(0.1, 0.2, 0), recoverAlpha);
@@ -1837,6 +2075,10 @@
                     this.parts.rightArm.elbow.rotation.x = THREE.MathUtils.lerp(this.parts.rightArm.elbow.rotation.x, -1.8, recoverAlpha);
                     this.lerpJoint(this.parts.leftArm.shoulder, new THREE.Vector3(0.8, 0.2, 0.6), recoverAlpha);
                     this.parts.leftArm.elbow.rotation.x = THREE.MathUtils.lerp(this.parts.leftArm.elbow.rotation.x, -1.8, recoverAlpha);
+
+                    // [추가] 손목 꺾임 제거 (주먹 자세)
+                    this.lerpJoint(this.parts.rightArm.wrist, new THREE.Vector3(0, 0, 0), recoverAlpha);
+                    this.lerpJoint(this.parts.leftArm.wrist, new THREE.Vector3(0, 0, 0), recoverAlpha);
 
                     this.updateNeckRotation(dt, true);
                 }
@@ -1846,13 +2088,13 @@
             animateHurt(dt) {
                 const lerpAlpha = Math.min(1, 15 * dt);
                 this.parts.root.position.y = 0.72;
-                
+
                 this.lerpJoint(this.parts.waist, new THREE.Vector3(-0.4, 0.2, 0.1), lerpAlpha);
                 this.parts.neck.rotation.x = THREE.MathUtils.lerp(this.parts.neck.rotation.x, -0.6, lerpAlpha);
-                
+
                 // 타격에 의해 팔이 뒤로 밀려남
-                this.lerpJoint(this.parts.rightArm.shoulder, new THREE.Vector3(-1.0, -0.5, 0.2), lerpAlpha);
-                this.lerpJoint(this.parts.leftArm.shoulder, new THREE.Vector3(-1.2, 0.5, -0.2), lerpAlpha);
+                this.lerpJoint(this.parts.rightArm.shoulder, new THREE.Vector3(1.0, -0.5, -0.2), lerpAlpha);
+                this.lerpJoint(this.parts.leftArm.shoulder, new THREE.Vector3(1.2, 0.5, 0.2), lerpAlpha);
             }
         }
 
@@ -1863,26 +2105,26 @@
          */
         class Goblin {
             constructor(scene, position) {
-                this.mesh = new THREE.Group(); 
+                this.mesh = new THREE.Group();
                 this.mesh.rotation.order = 'YXZ'; // Y(응시) -> X(앞뒤) -> Z(기울기)
-                this.mesh.position.copy(position); 
+                this.mesh.position.copy(position);
                 this.originalPos = position.clone();
                 this.logicalPos = position.clone();
-                
+
                 // 고블린 스케일 조정 (바닥에서 1.2m 높이, 뭉툭하고 작은 체형)
                 const totalHeight = 1.2;
-                this.radius = 0.4; 
-                this.bodyRadius = 0.3; 
+                this.radius = 0.4;
+                this.bodyRadius = 0.3;
                 this.armRadius = 0.7;
-                
+
                 this.colorBase = 0x4CAF50; // 기본 녹색 피부
                 this.colorMoving = 0x388E3C; // 이동 시 진한 녹색
-                
+
                 // 고블린 몸체 (통통한 배럴 형태)
                 const bodyGeom = new THREE.CylinderGeometry(0.2, 0.28, totalHeight * 0.6, 12);
                 this.matBody = new THREE.MeshLambertMaterial({ color: this.colorBase });
                 const body = new THREE.Mesh(bodyGeom, this.matBody);
-                body.position.y = totalHeight * 0.4; 
+                body.position.y = totalHeight * 0.4;
                 this.mesh.add(body);
 
                 // 고블린 머리 (몸에 비해 큼)
@@ -1894,7 +2136,7 @@
 
                 // 고블린 뾰족귀
                 const earGeom = new THREE.ConeGeometry(0.08, 0.25, 4);
-                
+
                 const rightEar = new THREE.Mesh(earGeom, this.matHead);
                 rightEar.position.set(-0.25, totalHeight * 0.9, 0);
                 rightEar.rotation.z = Math.PI / 3;
@@ -1909,13 +2151,13 @@
 
                 // 고블린 안광 (Glowing Eyes)
                 const eyeGeom = new THREE.BoxGeometry(0.06, 0.06, 0.06);
-                const eyeMat = new THREE.MeshLambertMaterial({ 
-                    color: 0x000000, 
-                    emissive: 0xff0000, 
-                    emissiveIntensity: 0.0 
+                const eyeMat = new THREE.MeshLambertMaterial({
+                    color: 0x000000,
+                    emissive: 0xff0000,
+                    emissiveIntensity: 0.0
                 });
                 this.eyeMat = eyeMat; // Store for dynamic updates
-                
+
                 this.rightEye = new THREE.Mesh(eyeGeom, eyeMat);
                 this.rightEye.position.set(-0.1, totalHeight * 0.88, 0.18);
                 this.rightEye.visible = true; // Always visible as requested
@@ -1933,7 +2175,7 @@
                 // 오른팔 그룹 (관절 중심점 역할)
                 this.rightArm = new THREE.Group();
                 this.rightArm.position.set(-0.35, totalHeight * 0.65, 0); // 어깨 위치
-                
+
                 const rightArmMesh = new THREE.Mesh(armGeom, armMat);
                 rightArmMesh.position.y = -0.25; // 어깨 힌지 아래로 팔이 내려오도록 오프셋
                 this.rightArm.add(rightArmMesh);
@@ -1944,8 +2186,8 @@
                 const clubMat = new THREE.MeshLambertMaterial({ color: 0x5D4037 }); // 짙은 나무색
                 const club = new THREE.Mesh(clubGeom, clubMat);
                 // 길이가 늘어나서 위로 더 빠지지 않게 위치 조정
-                club.position.set(0, -0.6, 0.2); 
-                club.rotation.x = Math.PI / 4;   
+                club.position.set(0, -0.6, 0.2);
+                club.rotation.x = Math.PI / 4;
                 this.rightArm.add(club);
 
                 this.mesh.add(this.rightArm);
@@ -1953,38 +2195,38 @@
                 // 왼팔 그룹
                 this.leftArm = new THREE.Group();
                 this.leftArm.position.set(0.35, totalHeight * 0.65, 0); // 어깨 위치
-                
+
                 const leftArmMesh = new THREE.Mesh(armGeom, armMat);
                 leftArmMesh.position.y = -0.25; // 어깨 힌지 아래로 팔이 내려오도록 오프셋
                 this.leftArm.add(leftArmMesh);
 
                 this.mesh.add(this.leftArm);
-                
+
                 // 기본 팔 자세 세팅
-                this.rightArm.rotation.x = -Math.PI / 6; 
+                this.rightArm.rotation.x = -Math.PI / 6;
                 this.leftArm.rotation.x = 0;
-                
+
                 // 고블린 짧은 다리 (양발)
                 const legGeom = new THREE.BoxGeometry(0.12, 0.25, 0.15);
                 const legMat = new THREE.MeshLambertMaterial({ color: 0x2E7D32 });
-                
+
                 this.rightLeg = new THREE.Mesh(legGeom, legMat);
-                this.rightLeg.position.set(-0.15, 0.125, 0); 
+                this.rightLeg.position.set(-0.15, 0.125, 0);
                 this.mesh.add(this.rightLeg);
-                
+
                 this.leftLeg = new THREE.Mesh(legGeom, legMat);
                 this.leftLeg.position.set(0.15, 0.125, 0);
                 this.mesh.add(this.leftLeg);
 
                 scene.add(this.mesh);
 
-                this.hitTimer = 0; 
+                this.hitTimer = 0;
                 this.isAttacking = false;
                 this.attackTimer = 0;
                 this.attackCooldown = 0;
-                this.isDodged = false;      
-                this.warningShowed = false; 
-                
+                this.isDodged = false;
+                this.warningShowed = false;
+
                 this.role = 'watcher'; // 'attacker' or 'watcher'
                 this.walkTimer = 0;
                 this.orbitOffset = Math.random() * Math.PI * 2; // 각자 다른 위치로 분산하기 위한 오프셋
@@ -1993,7 +2235,7 @@
                 // [추가] 넉다운 상태 관리 배수
                 this.isKnockdown = false;
                 this.knockdownTimer = 0;
-                this.attackInterrupted = false; 
+                this.attackInterrupted = false;
 
                 // [추가] 공중 물리 상태
                 this.isAirborne = false;
@@ -2002,13 +2244,13 @@
                 this.gravity = -20; // 중력 세기
             }
 
-            takeDamage(shouldFlinch = true, forceKnockdown = false, launchForce = 0, kbDir = null) { 
+            takeDamage(shouldFlinch = true, forceKnockdown = false, launchForce = 0, kbDir = null) {
                 if (launchForce > 0) {
                     this.isAirborne = true;
                     this.verticalVelocity = launchForce;
                     this.isKnockdown = false; // 공중 상태 우선
                     this.attackInterrupted = true;
-                    
+
                     // [추가] 수평 넉백 속도 설정
                     if (kbDir) {
                         this.knockbackVelocity.copy(kbDir).multiplyScalar(1.0); // 방향과 힘 설정
@@ -2017,13 +2259,13 @@
                     }
                 } else if (forceKnockdown) {
                     this.isKnockdown = true;
-                    this.knockdownTimer = 1.5; 
+                    this.knockdownTimer = 1.5;
                 }
 
                 if (shouldFlinch) {
-                    this.hitTimer = 0.15; 
+                    this.hitTimer = 0.15;
                     this.attackInterrupted = true; // [수정] 피격(Flinch) 발생 시 무조건 인터럽트 플래그 설정
-                    
+
                     // 공격 중 피격 시 공격 중단
                     if (this.isAttacking) {
                         this.isAttacking = false;
@@ -2033,32 +2275,34 @@
                         this.mesh.position.y = 0; // 공격 중 피격 시 Y 위치 초기화
                     }
                 }
-                
+
                 // 공통: 피격 시 색상 변경
-                this.matBody.color.setHex(0xff0000); 
+                this.matBody.color.setHex(0xff0000);
                 this.matHead.color.setHex(0xff0000);
             }
 
             update(dt, game) {
                 const charPos = game.character.mesh.position;
                 const dist = this.logicalPos.distanceTo(charPos);
-                
+
                 if (this.attackCooldown > 0) this.attackCooldown -= dt;
 
-                // 위치 보정: 모든 프레임에서 Y를 0으로 유지 (땅속 파묻힘 방지)
-                this.logicalPos.y = 0;
-                this.mesh.position.y = THREE.MathUtils.lerp(this.mesh.position.y, 0, 10 * dt);
+                // [수정] 공중 상태가 아닐 때만 지면 보정 적용 (공중 체공 보장)
+                if (!this.isAirborne) {
+                    this.logicalPos.y = 0;
+                    this.mesh.position.y = THREE.MathUtils.lerp(this.mesh.position.y, 0, 10 * dt);
+                }
 
                 // 상황별 눈 색상 관리
                 if (dist <= 6.0 || game.isAIStarting) {
-                    this.eyeMat.color.setHex((dist <= 6.0) ? 0xff0000 : 0x000000); 
+                    this.eyeMat.color.setHex((dist <= 6.0) ? 0xff0000 : 0x000000);
                     this.eyeMat.emissiveIntensity = (dist <= 6.0) ? 1.0 : 0.0;
 
                     const toChar = new THREE.Vector3().subVectors(charPos, this.logicalPos).setY(0);
                     if (toChar.lengthSq() > 0.001) {
                         const targetAngle = Math.atan2(toChar.x, toChar.z);
                         const targetQuat = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), targetAngle);
-                        this.mesh.quaternion.slerp(targetQuat, 8 * dt); 
+                        this.mesh.quaternion.slerp(targetQuat, 8 * dt);
                     }
                 } else {
                     this.eyeMat.color.setHex(0x000000); // 평소 검은 눈
@@ -2069,22 +2313,33 @@
                     this.hitTimer -= dt;
                     this.mesh.position.x = this.logicalPos.x + (Math.random() - 0.5) * 0.3;
                     this.mesh.position.z = this.logicalPos.z + (Math.random() - 0.5) * 0.3;
-                    if (this.hitTimer <= 0) { 
-                        this.matBody.color.setHex(this.colorBase); 
-                        this.matHead.color.setHex(this.colorBase); 
+                    if (this.hitTimer <= 0) {
+                        this.matBody.color.setHex(this.colorBase);
+                        this.matHead.color.setHex(this.colorBase);
                     }
                     // 피격 중에도 공중 물리 연산은 계속되어야 함
+                }
+
+                // [추가] 캐릭터와의 하드 블로킹 (겹침 방지)
+                const charRadius = game.character.radius;
+                const combinedRadius = this.bodyRadius + charRadius;
+                if (dist < combinedRadius && dist > 0.001) {
+                    const pushDir = new THREE.Vector3().subVectors(this.logicalPos, charPos).setY(0).normalize();
+                    const overlap = combinedRadius - dist;
+                    // 몬스터가 캐릭터에 의해 밀려나지 않도록, 몬스터의 위치를 즉시 보정하여 겹침만 해소
+                    this.logicalPos.add(pushDir.multiplyScalar(overlap));
                 }
 
                 // [추가] 공중 물리 연산
                 if (this.isAirborne) {
                     this.verticalVelocity += this.gravity * dt;
                     this.mesh.position.y += this.verticalVelocity * dt;
-                    
+
                     // [추가] 수평 넉백 적용
                     this.logicalPos.add(this.knockbackVelocity.clone().multiplyScalar(dt));
-                    this.knockbackVelocity.lerp(new THREE.Vector3(0,0,0), 2 * dt); // 서서히 감속
-                    
+                    // [수정] 수평 감쇄 강화: 1.2 * dt -> 4.0 * dt 로 변경하여 이동 거리 2m 내외로 제한
+                    this.knockbackVelocity.lerp(new THREE.Vector3(0, 0, 0), 4.0 * dt);
+
                     // 회전 연출 (붕 뜸)
                     this.mesh.rotation.x += dt * 5;
                     this.mesh.rotation.z += dt * 3;
@@ -2093,7 +2348,7 @@
                         this.mesh.position.y = 0;
                         this.isAirborne = false;
                         this.verticalVelocity = 0;
-                        this.knockbackVelocity.set(0,0,0);
+                        this.knockbackVelocity.set(0, 0, 0);
                         this.isKnockdown = true; // 착지 시 넉다운
                         this.knockdownTimer = 1.0;
                         this.mesh.rotation.x = -Math.PI / 2; // 바닥에 누운 자세
@@ -2107,9 +2362,9 @@
                 // 넘어지는 도중에도 밀려나는 연출(logicalPos 반영)이 가능하도록 return 위치 조정
                 if (this.isKnockdown) {
                     this.knockdownTimer -= dt;
-                    const fallAngle = -Math.PI / 2.2; 
+                    const fallAngle = -Math.PI / 2.2;
                     this.mesh.rotation.x = THREE.MathUtils.lerp(this.mesh.rotation.x, fallAngle, 10 * dt);
-                    this.mesh.position.y = THREE.MathUtils.lerp(this.mesh.position.y, 0.25, 10 * dt); 
+                    this.mesh.position.y = THREE.MathUtils.lerp(this.mesh.position.y, 0.25, 10 * dt);
 
                     if (this.knockdownTimer <= 0) {
                         this.isKnockdown = false;
@@ -2124,14 +2379,14 @@
 
                 // 역할에 따른 색상 및 무기 관리
                 if (this.role === 'attacker') {
-                    this.clubMat.color.setHex(0xff0000); 
+                    this.clubMat.color.setHex(0xff0000);
                     this.clubMat.emissive.setHex(0x550000);
                 } else {
                     this.clubMat.color.setHex(0x5D4037);
                     this.clubMat.emissive.setHex(0x000000);
                 }
 
-                this.matBody.color.setHex(this.colorBase); 
+                this.matBody.color.setHex(this.colorBase);
                 this.matHead.color.setHex(this.colorBase);
                 this.mesh.position.copy(this.logicalPos);
 
@@ -2204,14 +2459,14 @@
                     this.walkTimer += dt * animationSpeed;
                     const waddle = Math.sin(this.walkTimer);
                     const legSwing = Math.cos(this.walkTimer) * 0.4;
-                    
+
                     // 몸체 좌우 기울기
                     this.mesh.rotation.z = waddle * 0.15;
-                    
+
                     // 다리 교차
                     this.rightLeg.position.z = legSwing;
                     this.leftLeg.position.z = -legSwing;
-                    
+
                     // 팔 교차
                     this.rightArm.rotation.x = -Math.PI / 6 + legSwing;
                     this.leftArm.rotation.x = -legSwing;
@@ -2226,7 +2481,7 @@
 
                 if (this.isAttacking) {
                     this.attackTimer += dt;
-                    
+
                     // [추가] 공격 중 전방으로 약 2.0m 전진 (대시)
                     // 공격 준비/발동 기간(0.15s ~ 0.8s) 동안 전진
                     if (this.attackTimer > 0.15 && this.attackTimer < 0.8) {
@@ -2235,7 +2490,7 @@
                         this.logicalPos.add(forward.multiplyScalar(enemyDashSpeed * dt));
                     }
                     const duration = 1.0;
-                    
+
                     // 공격 중 뒤뚱거림 초기화
                     this.mesh.rotation.z = THREE.MathUtils.lerp(this.mesh.rotation.z, 0, 15 * dt);
 
@@ -2299,10 +2554,10 @@
                         this.isAttacking = false;
                         this.attackTimer = 0;
                         this.hasHitThisCycle = false;
-                        this.isDodged = false;      
-                        this.warningShowed = false; 
+                        this.isDodged = false;
+                        this.warningShowed = false;
                         this.mesh.position.y = 0;
-                        this.attackCooldown = 0.5; 
+                        this.attackCooldown = 0.5;
                     }
                 }
             }
@@ -2318,7 +2573,7 @@
                 this.scene = scene;
                 this.timer = 0;
                 this.duration = 1.0;
-                
+
                 const isWarning = text === "!";
                 const fontSize = isWarning ? 80 : 40;
                 const scale = isWarning ? { x: 1.5, y: 0.75 } : { x: 0.8, y: 0.4 };
@@ -2326,10 +2581,10 @@
                 const canvas = document.createElement('canvas');
                 canvas.width = 256; canvas.height = 128;
                 const ctx = canvas.getContext('2d');
-                ctx.font = `Bold ${fontSize}px Arial`; 
+                ctx.font = `Bold ${fontSize}px Arial`;
                 ctx.fillStyle = '#' + new THREE.Color(color).getHexString();
                 ctx.textAlign = 'center';
-                
+
                 // 가독성을 위해 흰색 외곽선 추가
                 ctx.strokeStyle = 'white';
                 ctx.lineWidth = isWarning ? 8 : 4;
@@ -2340,7 +2595,7 @@
                 const spriteMat = new THREE.SpriteMaterial({ map: texture, transparent: true });
                 this.sprite = new THREE.Sprite(spriteMat);
                 this.sprite.position.copy(position);
-                this.sprite.scale.set(scale.x, scale.y, 1); 
+                this.sprite.scale.set(scale.x, scale.y, 1);
                 this.scene.add(this.sprite);
             }
             update(dt) {
@@ -2378,11 +2633,11 @@
 
                 this.mesh = group;
                 this.mesh.position.copy(startPos);
-                
+
                 // 타겟 방향으로 회전 (+Z 정면 기준)
                 this.mesh.lookAt(targetPos);
                 this.direction = new THREE.Vector3().subVectors(targetPos, startPos).normalize();
-                
+
                 this.scene.add(this.mesh);
                 this.lifeTimer = 2.0; // 2초 후 자동 소멸
             }
@@ -2396,7 +2651,7 @@
 
                 // 캐릭터와의 충돌 판정 (+Z 정면 기준)
                 const char = this.game.character;
-                
+
                 // [수정] 3D 거리 대신 평면(2D) 거리와 높이 차이를 함께 체크 (더 정밀한 판정)
                 const diff = new THREE.Vector3().subVectors(this.mesh.position, char.mesh.position);
                 const dist2D = Math.sqrt(diff.x * diff.x + diff.z * diff.z);
@@ -2428,7 +2683,7 @@
                 this.colorBase = 0x2e7d32; // 투창병은 짙은 녹색으로 구분
                 this.matBody.color.setHex(this.colorBase);
                 this.matHead.color.setHex(this.colorBase);
-                
+
                 // [추가] 부모로부터 상속받은 몽둥이 메쉬 제거 및 창으로 교체
                 const club = this.rightArm.children.find(c => c instanceof THREE.Mesh && c.geometry.type === 'CylinderGeometry');
                 if (club) this.rightArm.remove(club);
@@ -2437,7 +2692,7 @@
                 const spearGroup = new THREE.Group();
                 this.spearMatShaft = new THREE.MeshStandardMaterial({ color: 0x8b4513 });
                 this.spearMatTip = new THREE.MeshStandardMaterial({ color: 0xaaaaaa });
-                
+
                 const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.5), this.spearMatShaft);
                 shaft.rotation.x = Math.PI / 2;
                 spearGroup.add(shaft);
@@ -2449,13 +2704,13 @@
                 // 투창병 손에 맞게 위치 및 회전 조정
                 spearGroup.position.set(0, -0.5, 0);
                 // [수정] 창의 머리(Tip)가 앞(로컬 +Z)을 향하게 기본값 설정 (0)
-                spearGroup.rotation.x = 0; 
+                spearGroup.rotation.x = 0;
                 this.spearMesh = spearGroup; // 애니메이션 제어를 위해 참조 저장
                 this.rightArm.add(spearGroup);
 
-                this.attackDuration = 1.2; 
+                this.attackDuration = 1.2;
                 this.isSpearThrown = false;
-                this.isWarningTriggered = false; 
+                this.isWarningTriggered = false;
                 this.isFussing = false; // [추가] 1초간 호들갑 상태
                 this.fussTimer = 0;
                 this.activeSpear = null; // [추가] 자신이 생성한 창 직접 참조
@@ -2465,14 +2720,14 @@
 
             update(dt, game) {
                 if (game.isGameOver) return;
-                
+
                 const char = game.character;
                 const toChar = new THREE.Vector3().subVectors(char.mesh.position, this.logicalPos);
                 const dist = toChar.length();
 
                 // 상황별 눈 색상 관리 (부모 클래스 로직 기반으로 투창병에 적용)
                 if (dist <= 6.0 || game.isAIStarting) {
-                    this.eyeMat.color.setHex(0xff0000); 
+                    this.eyeMat.color.setHex(0xff0000);
                     this.eyeMat.emissiveIntensity = 1.0;
                 } else {
                     this.eyeMat.color.setHex(0x000000);
@@ -2507,7 +2762,7 @@
                         // 호들갑 애니메이션 (통통 튐)
                         this.walkTimer += dt * 30;
                         this.mesh.position.y = Math.abs(Math.sin(this.walkTimer)) * 0.2;
-                        
+
                         if (this.fussTimer <= 0) {
                             this.isFussing = false;
                             this.isAttacking = true;
@@ -2520,11 +2775,11 @@
                     }
 
                     if (this.isAttacking) {
-                    this.attackTimer += dt;
-                    // 공격 중에는 플레이어를 계속 응시
-                    this.mesh.lookAt(char.mesh.position.x, 0, char.mesh.position.z);
-                    
-                    // [수정] 팔 들어올리기 애니메이션 (0.0s ~ 0.7s)
+                        this.attackTimer += dt;
+                        // 공격 중에는 플레이어를 계속 응시
+                        this.mesh.lookAt(char.mesh.position.x, 0, char.mesh.position.z);
+
+                        // [수정] 팔 들어올리기 애니메이션 (0.0s ~ 0.7s)
                         // 투척을 위해 팔을 뒤로 젖히며 창 방향을 서서히 정면으로 돌림
                         const liftAlpha = Math.min(this.attackTimer / 0.7, 1.0);
                         this.rightArm.rotation.x = THREE.MathUtils.lerp(-Math.PI / 6, -Math.PI * 0.8, liftAlpha);
@@ -2561,17 +2816,17 @@
                         if (!this.isDodged && this.attackTimer >= 0.7 && this.attackTimer <= 0.9) {
                             if (char.input.shiftTriggered || (char.stateMachine.currentState && char.stateMachine.currentState.name === 'dash')) {
                                 this.isDodged = true;
-                                
+
                                 // [수정] 직접 참조 중인 창을 회피 처리
                                 if (this.activeSpear) {
                                     this.activeSpear.isDodged = true;
                                 }
-                                
+
                                 // 중복 슬로우 모션 방지
                                 if (game.enemySlowTimer <= 0) {
                                     game.triggerSlowMo(0.2, 2.0);
                                 }
-                                
+
                                 const charHeadPos = char.mesh.position.clone().add(new THREE.Vector3(0, 2.2, 0));
                                 game.indicators.push(new FloatingIndicator(game.scene, "MISS", charHeadPos, 0xffffff));
                                 game.addScore(10, "DODGE", char.mesh.position); // [추가] 회피 성공 점수 (원거리 창)
@@ -2621,7 +2876,7 @@
                                 this.isPositioned = false; // 다음 공격을 위해 초기화 가능성 열어둠
                             }
                         }
-                        
+
                         this.mesh.lookAt(char.mesh.position.x, 0, char.mesh.position.z);
                         this.mesh.position.copy(this.logicalPos);
                     }
@@ -2644,17 +2899,19 @@
             constructor() {
                 this.initThree();
                 this.input = new InputManager();
-                this.enableDummyAttack = false; 
-                this.enableDummyMove = false; 
-                this.isPaused = true; 
+                this.enableDummyAttack = false;
+                this.enableDummyMove = false;
+                this.isPaused = true;
                 this.isCountingDown = false;
                 this.countdownValue = 3;
                 this.countdownTimer = 0;
-                this.isGameOver = false; 
-                this.indicators = []; 
-                this.spears = []; 
+                this.isGameOver = false;
+                this.indicators = [];
+                this.spears = [];
                 this.score = 0;
-                
+                this.totalPlayerHits = 0;
+                this.maxPlayerHits = 10;
+
                 this.hitStopTimer = 0;
                 this.shakeTimer = 0;
                 this.shakeIntensity = 0;
@@ -2667,36 +2924,40 @@
 
                 // [수정] 모든 적을 120cm 소형 고블린(Goblin)으로 교체
                 this.dummies = [
-                    new Goblin(this.scene, new THREE.Vector3(0, 0, 10)), 
+                    new Goblin(this.scene, new THREE.Vector3(0, 0, 10)),
                     new Goblin(this.scene, new THREE.Vector3(12, 0, -5)),
                     new Goblin(this.scene, new THREE.Vector3(-10, 0, 5)),
                     new GoblinSpearman(this.scene, new THREE.Vector3(-8, 0, -10)) // [추가] 고블린 투창병
                 ];
-                
+
                 this.characterFS = new CharacterFS(this, this.scene, this.camera, this.input);
                 this.characterEF = new CharacterEF(this, this.scene, this.camera, this.input);
                 this.character = this.characterFS;
                 this.characterEF.mesh.visible = false;
 
                 this.cameraRig = new CameraRig(this.camera, this.character, this.input);
-                
+
                 this.attackerIdx = -1;
                 this.aiCoordinatorTimer = 0;
                 this.isAIStarting = false;
-                
+
                 this.character.setDebugMode(false);
-                
+
                 this.enableNPC_AI = false;
-                
+
                 // [추가] 시작 버튼 리스너
                 document.getElementById('start-btn').addEventListener('click', () => this.startGame());
-                
+
+                // [추가] 일시정지 메뉴용 리스너
+                document.getElementById('continue-btn').addEventListener('click', () => this.togglePause());
+                document.getElementById('restart-btn-pause').addEventListener('click', () => this.resetGame(true));
+
                 // [추가] ESC 일시정지 리스너
                 window.addEventListener('esc-pressed', () => this.togglePause());
 
-                // [수정] 재시작 버튼 리스너 추가
+                // [수정] 재시작 버튼 리스너 추가 (게임 오버 화면용)
                 document.getElementById('restart-btn').addEventListener('click', () => this.resetGame());
-                
+
                 // [추가] AI 토글 리스너
                 const aiToggle = document.getElementById('ai-toggle');
                 aiToggle.addEventListener('change', (e) => {
@@ -2714,18 +2975,22 @@
                         this.attackerIdx = -1;
                     }
                 });
-                
-                window.addEventListener('blur', () => { this.isPaused = true; document.getElementById('pause-overlay').style.display='flex'; });
-                window.addEventListener('mousedown', () => { 
-                    if(this.isPaused && document.getElementById('pause-overlay').style.display === 'flex') { 
+
+                window.addEventListener('blur', () => { this.isPaused = true; document.getElementById('pause-overlay').style.display = 'flex'; });
+                window.addEventListener('mousedown', () => {
+                    if (this.isPaused && document.getElementById('pause-overlay').style.display === 'flex') {
                         this.togglePause();
-                    } 
+                    }
                 });
 
                 // [추가] 숫자키 1, 2로 캐릭터 교체
                 window.addEventListener('keydown', (e) => {
                     if (e.code === 'Digit1') this.switchCharacter('FS');
                     if (e.code === 'Digit2') this.switchCharacter('EF');
+                    if (e.code === 'Tab') {
+                        const nextType = this.character === this.characterFS ? 'EF' : 'FS';
+                        this.switchCharacter(nextType);
+                    }
                 });
 
                 this.clock = new THREE.Clock(); this.animate();
@@ -2733,9 +2998,14 @@
 
             switchCharacter(type) {
                 if (this.isGameOver || this.isCountingDown) return;
-                
+
                 const oldPos = this.character.mesh.position.clone();
                 const oldQuat = this.character.mesh.quaternion.clone();
+                
+                // [추가] 이미 같은 캐릭터로 교체 시도 시 무시
+                if (type === 'FS' && this.character === this.characterFS) return;
+                if (type === 'EF' && this.character === this.characterEF) return;
+
                 this.character.mesh.visible = false;
 
                 if (type === 'FS') {
@@ -2747,32 +3017,55 @@
                 this.character.mesh.position.copy(oldPos);
                 this.character.mesh.quaternion.copy(oldQuat);
                 this.character.mesh.visible = true;
-                
+
                 // 카메라 타겟 업데이트
                 this.cameraRig.target = this.character;
 
-                // 교체 이펙트 (간단한 인디케이터)
+                // 교체 이펙트
                 this.triggerImpact(0.05, 0.1);
-                this.addScore(0, `SWITCH: ${type}`, oldPos.clone().add(new THREE.Vector3(0, 2, 0)));
+
+                // [추가] 퍼펙트 스왑 판점 (0.5초 ~ 0.75초 사이 교체)
+                let isPerfectSwap = false;
+                for (let d of this.dummies) {
+                    if (d.isAttacking && d.attackTimer >= 0.5 && d.attackTimer <= 0.75 && !d.isDodged) {
+                        d.isDodged = true;
+                        // 투창병의 경우 현재 날아가고 있는 창도 무효화
+                        if (d instanceof GoblinSpearman && d.activeSpear) {
+                            d.activeSpear.isDodged = true;
+                        }
+                        isPerfectSwap = true;
+                    }
+                }
+
+                if (isPerfectSwap) {
+                    this.triggerSlowMo(0.2, 2.0);
+                    this.addScore(15, "PERFECT SWAP", oldPos.clone().add(new THREE.Vector3(0, 2.5, 0)));
+                    
+                    // [추가] 퍼펙트 스왑 성공 시 즉시 타겟 정보를 갱신하고 거리에 따른 최적의 반격 발동
+                    this.character.update(0); 
+                    this.character.stateMachine.changeState('attack');
+                } else {
+                    this.addScore(0, `SWITCH: ${type}`, oldPos.clone().add(new THREE.Vector3(0, 2, 0)));
+                }
             }
 
             startGame() {
-                document.getElementById('start-overlay').style.display = 'none';
+                document.getElementById('game-menu-overlay').style.display = 'none';
                 this.startCountdown(true); // 최초 시작 시 카메라 리셋
             }
 
             startCountdown(resetCamera = false) {
                 this.isCountingDown = true;
-                this.isPaused = false; 
+                this.isPaused = false;
                 this.input.isLocked = true; // [추가] 카운트다운 중 입력 잠금
                 this.countdownValue = 3;
                 this.countdownTimer = 0;
-                
+
                 // [수정] 최초 시작 또는 요청 시에만 카메라 구도 초기화
                 if (resetCamera) {
                     this.cameraRig.setIntroView();
                 }
-                
+
                 document.getElementById('countdown-overlay').style.display = 'flex';
                 this.updateCountdownUI();
             }
@@ -2787,25 +3080,33 @@
             }
 
             togglePause() {
-                if (this.isGameOver || document.getElementById('start-overlay').style.display === 'flex' || this.isCountingDown) return;
-                
+                if (this.isGameOver || this.isCountingDown) return;
+
+                const menu = document.getElementById('game-menu-overlay');
+                const startGroup = document.getElementById('start-btn-group');
+                const pauseGroup = document.getElementById('pause-btn-group');
+                const menuTitle = document.getElementById('menu-title');
+
                 if (!this.isPaused) {
                     // 일시정지 진입
                     this.isPaused = true;
-                    document.getElementById('pause-overlay').style.display = 'flex';
+                    menu.style.display = 'flex';
+                    startGroup.style.display = 'none';
+                    pauseGroup.style.display = 'flex';
+                    menuTitle.innerText = "PAUSED - BATTLE GUIDE";
                 } else {
                     // 일시정지 해제 -> 카운트다운 시작
-                    document.getElementById('pause-overlay').style.display = 'none';
+                    menu.style.display = 'none';
                     this.startCountdown();
                     // resumes 시엔 기존 거리로 복구 (IntroView에서 거리가 늘어났을 수 있으므로)
-                    this.cameraRig.distance = 6.5; 
+                    this.cameraRig.distance = 6.5;
                 }
             }
 
             initThree() {
                 this.scene = new THREE.Scene(); this.scene.background = new THREE.Color(0xf0f0f0);
                 this.scene.fog = new THREE.Fog(0xf0f0f0, 20, 80);
-                this.camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 1000);
+                this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
                 this.renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('game-canvas'), antialias: true });
                 this.renderer.setSize(window.innerWidth, window.innerHeight);
                 this.scene.add(new THREE.AmbientLight(0xffffff, 0.7));
@@ -2821,11 +3122,11 @@
 
                 if (this.character.isCombatMode) {
                     stanceBadge.innerText = '상태: 전투 (무기 발도)';
-                    stanceBadge.style.background = '#d32f2f'; 
+                    stanceBadge.style.background = '#d32f2f';
                     uiLayer.style.borderColor = '#d32f2f';
                 } else {
                     stanceBadge.innerText = '상태: 평화 (무기 납도)';
-                    stanceBadge.style.background = '#4CAF50'; 
+                    stanceBadge.style.background = '#4CAF50';
                     uiLayer.style.borderColor = '#4CAF50';
                 }
 
@@ -2852,10 +3153,10 @@
                     distLabel.style.display = 'none';
                 }
 
-                // [추가] HP UI 업데이트
+                // [추가] HP UI 업데이트 (통합 피격 횟수 기준)
                 const hpBadge = document.getElementById('hp-badge');
                 if (hpBadge) {
-                    hpBadge.innerText = `피격 횟수: ${this.character.currentHits} / ${this.character.maxHits}`;
+                    hpBadge.innerText = `피격 횟수: ${this.totalPlayerHits} / ${this.maxPlayerHits}`;
                 }
 
                 // [추가] 점수 UI 업데이트
@@ -2894,15 +3195,15 @@
                 document.getElementById('gameover-overlay').style.display = 'flex';
             }
 
-            // [추가] 게임 재시작 메서드
-            resetGame() {
+            // [수정] 게임 재시작 메서드 (showStartMenu 옵션 추가)
+            resetGame(showStartMenu = false) {
                 this.isGameOver = false;
                 this.score = 0; // [추가] 점수 초기화
-                this.character.currentHits = 0;
+                this.totalPlayerHits = 0; // [수정] 통합 피격 횟수 초기화
                 this.character.mesh.position.set(0, 0, 0);
                 this.character.velocity.set(0, 0, 0);
                 this.character.stateMachine.changeState('idle');
-                
+
                 // [추가] 활성화된 모든 창 제거
                 this.spears.forEach(s => this.scene.remove(s.mesh));
                 this.spears = [];
@@ -2941,6 +3242,25 @@
                 this.isAIStarting = this.enableNPC_AI;
 
                 document.getElementById('gameover-overlay').style.display = 'none';
+                
+                if (showStartMenu) {
+                    // 시작 화면으로 전환
+                    const menu = document.getElementById('game-menu-overlay');
+                    const startGroup = document.getElementById('start-btn-group');
+                    const pauseGroup = document.getElementById('pause-btn-group');
+                    const menuTitle = document.getElementById('menu-title');
+
+                    menu.style.display = 'flex';
+                    startGroup.style.display = 'flex';
+                    pauseGroup.style.display = 'none';
+                    menuTitle.innerText = "BATTLE GUIDE & MENU";
+                    this.isPaused = true;
+                } else {
+                    // 즉시 시작
+                    document.getElementById('game-menu-overlay').style.display = 'none';
+                    this.isPaused = false;
+                }
+
                 this.clock.getDelta(); // 클락 리셋
             }
 
@@ -2956,14 +3276,14 @@
 
             triggerImpact(hitlag, shakeIntens) {
                 this.hitStopTimer = hitlag;
-                this.shakeTimer = hitlag + 0.1; 
+                this.shakeTimer = hitlag + 0.1;
                 this.shakeIntensity = shakeIntens;
             }
 
             // [추가] 점수 획득 및 연출 메서드
             addScore(amount, type, position) {
                 this.score += amount;
-                
+
                 // 점수 가산 연출 (상승하는 텍스트)
                 const color = 0x000000; // [수정] 검은색으로 고정
                 const text = (type === "DODGE") ? `DODGE +${amount}` : `+${amount}`;
@@ -2985,10 +3305,13 @@
                     return;
                 }
 
+                // [추가] 슬로우 모션 중에는 공격자 교체 금지
+                if (this.enemySlowTimer > 0) return;
+
                 // [추가/수정] 모든 상황에서 타이머 체크를 최우선으로 수행 (0.5초 대기 보장)
                 if (this.aiCoordinatorTimer > 0) {
                     this.aiCoordinatorTimer -= dt;
-                    return; 
+                    return;
                 }
                 this.isAIStarting = false;
 
@@ -2999,7 +3322,7 @@
                     if ((!currentAttacker.isAttacking && currentAttacker.attackCooldown > 0) || currentAttacker.hitTimer > 0) {
                         // [수정] 인터럽트 시 1.0초, 일반 종료 시 0.5초 지연 (기존 0.2초 -> 0.5초)
                         this.aiCoordinatorTimer = currentAttacker.attackInterrupted ? 1.0 : 0.5;
-                        
+
                         currentAttacker.attackInterrupted = false;
                         this.attackerIdx = -1;
                         currentAttacker.role = 'watcher';
@@ -3010,12 +3333,12 @@
                 if (this.attackerIdx === -1) {
                     // 주변 적들 중 하나를 무작위 선택
                     // [수정] 넉다운 상태인 적은 공격자 후보에서 제외
-                    const candidates = this.dummies.map((d, i) => ({d, i}))
+                    const candidates = this.dummies.map((d, i) => ({ d, i }))
                         .filter(item => {
                             const dist = item.d.mesh.position.distanceTo(this.character.mesh.position);
                             return dist < 15 && !item.d.isKnockdown;
                         });
-                    
+
                     if (candidates.length > 0) {
                         const pick = candidates[Math.floor(Math.random() * candidates.length)];
                         this.attackerIdx = pick.i;
@@ -3029,7 +3352,7 @@
             animate() {
                 requestAnimationFrame(() => this.animate());
                 let dt = this.clock.getDelta();
-                if (dt > 0.03) dt = 0.03; 
+                if (dt > 0.03) dt = 0.03;
 
                 if (this.isCountingDown) {
                     this.countdownTimer += dt;
@@ -3041,7 +3364,7 @@
                             this.isPaused = false;
                             this.input.isLocked = false; // [추가] 입력 잠금 해제
                             document.getElementById('countdown-overlay').style.display = 'none';
-                            
+
                             // 최초 시작 시 AI 활성화
                             if (!this.enableNPC_AI) {
                                 this.enableNPC_AI = true;
@@ -3073,7 +3396,7 @@
                     this.charSlowTimer -= dt;
                     charDt = dt * 0.5;
                 }
-                
+
                 if (this.enemySlowTimer > 0) {
                     this.enemySlowTimer -= dt;
                     enemyDt = dt * 0.1;
@@ -3094,25 +3417,25 @@
                         }
                     }
                 }
-                
+
                 if (this.hitStopTimer > 0 && !this.isCountingDown) { // 카운트다운 중엔 히트스탑 무시
                     this.hitStopTimer -= dt;
-                    this.cameraRig.update(dt); 
+                    this.cameraRig.update(dt);
                     this.renderer.render(this.scene, this.camera);
-                    return; 
+                    return;
                 }
 
                 if (this.shakeTimer > 0) this.shakeTimer -= dt;
 
                 if (!gamePaused) {
-                    for(let d of this.dummies) d.update(enemyDt, this);
-                    this.character.update(charDt); 
+                    for (let d of this.dummies) d.update(enemyDt, this);
+                    this.character.update(charDt);
                 }
-                
+
                 this.cameraRig.update(dt); // 카운트다운 중에도 카메라 업데이트 실행
-                this.updateSlowMoUI(); 
-                this.updateUI(); 
-                
+                this.updateSlowMoUI();
+                this.updateUI();
+
                 this.renderer.render(this.scene, this.camera);
                 this.input.resetTriggers();
             }
@@ -3120,4 +3443,5 @@
         window.onload = () => new Game();
     </script>
 </body>
+
 </html>
