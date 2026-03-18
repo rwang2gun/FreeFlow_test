@@ -3107,8 +3107,16 @@
                 this.scene = new THREE.Scene(); this.scene.background = new THREE.Color(0xf0f0f0);
                 this.scene.fog = new THREE.Fog(0xf0f0f0, 20, 80);
                 this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-                this.renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('game-canvas'), antialias: true });
+                 this.renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('game-canvas'), antialias: true });
                 this.renderer.setSize(window.innerWidth, window.innerHeight);
+                
+                // [추가] 브라우저 창 크기 변경 대응
+                window.addEventListener('resize', () => {
+                    this.camera.aspect = window.innerWidth / window.innerHeight;
+                    this.camera.updateProjectionMatrix();
+                    this.renderer.setSize(window.innerWidth, window.innerHeight);
+                });
+
                 this.scene.add(new THREE.AmbientLight(0xffffff, 0.7));
                 const dirLight = new THREE.DirectionalLight(0xffffff, 0.5); dirLight.position.set(10, 20, 10); this.scene.add(dirLight);
                 const floor = new THREE.Mesh(new THREE.PlaneGeometry(100, 100), new THREE.MeshStandardMaterial({ color: 0xffffff }));
