@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pose Editor</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0f0f0f; --bg2: #161616; --bg3: #1e1e1e;
+  --border: rgba(255,255,255,0.07); --border2: rgba(255,255,255,0.12);
+  --text: #e8e8e8; --text2: #888; --text3: #555;
+  --accent: #7c6aff; --accent2: #a599ff;
+  --red: #ff5c5c; --green: #5cffa0; --blue: #5cb8ff; --yellow: #ffd95c;
+}
+body {
+  background: var(--bg); color: var(--text);
+  font-family: 'SF Mono','Fira Code','Consolas',monospace;
+  height: 100vh; display: flex; flex-direction: column; overflow: hidden;
+}
+header {
+  display: flex; align-items: center; gap: 16px; padding: 10px 16px;
+  border-bottom: 1px solid var(--border); flex-shrink: 0; background: var(--bg2);
+}
+.logo { font-size: 13px; font-weight: 700; letter-spacing: 0.12em; color: var(--accent2); text-transform: uppercase; }
+.pose-tabs { display: flex; gap: 4px; flex: 1; overflow-x: auto; scrollbar-width: none; }
+.pose-tabs::-webkit-scrollbar { display: none; }
+.pose-tab {
+  flex-shrink: 0; padding: 4px 12px; border-radius: 4px; border: 1px solid var(--border);
+  background: transparent; color: var(--text2); font-family: inherit; font-size: 11px;
+  cursor: pointer; transition: all 0.15s; white-space: nowrap;
+}
+.pose-tab:hover { border-color: var(--border2); color: var(--text); }
+.pose-tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.pose-tab.modified::after { content: '·'; margin-left: 3px; color: var(--yellow); }
+.header-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.btn {
+  padding: 5px 14px; border-radius: 4px; border: 1px solid var(--border2);
+  background: transparent; color: var(--text); font-family: inherit; font-size: 11px;
+  cursor: pointer; transition: all 0.15s; white-space: nowrap;
+}
+.btn:hover { background: var(--bg3); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.primary:hover { background: var(--accent2); border-color: var(--accent2); }
+.btn.danger { border-color: var(--red); color: var(--red); }
+.btn.danger:hover { background: rgba(255,92,92,0.1); }
+.main { display: flex; flex: 1; overflow: hidden; }
+.viewport { flex: 1; position: relative; background: #0a0a0a; overflow: hidden; }
+#canvas { width: 100%; height: 100%; display: block; }
+.view-hint {
+  position: absolute; bottom: 12px; left: 12px; font-size: 10px;
+  color: var(--text3); line-height: 1.8; pointer-events: none;
+}
+.pose-name-overlay {
+  position: absolute; top: 12px; left: 12px; font-size: 11px; font-weight: 700;
+  letter-spacing: 0.08em; color: var(--accent2); text-transform: uppercase; pointer-events: none;
+}
+.side {
+  width: 300px; flex-shrink: 0; display: flex; flex-direction: column;
+  border-left: 1px solid var(--border); overflow: hidden; background: var(--bg2);
+}
+.section-tabs { display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.section-tab {
+  flex: 1; padding: 8px; text-align: center; font-size: 10px; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer;
+  color: var(--text3); border-bottom: 2px solid transparent; transition: all 0.15s;
+}
+.section-tab:hover { color: var(--text2); }
+.section-tab.active { color: var(--accent2); border-bottom-color: var(--accent); }
+.panel-scroll {
+  flex: 1; overflow-y: auto; overflow-x: hidden; padding: 10px;
+  scrollbar-width: thin; scrollbar-color: var(--border2) transparent;
+}
+.panel-scroll::-webkit-scrollbar { width: 4px; }
+.panel-scroll::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+.joint-group { margin-bottom: 14px; }
+.joint-label {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--text3); margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px solid var(--border);
+}
+.param-row { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
+.param-key { font-size: 10px; color: var(--text2); width: 38px; flex-shrink: 0; text-align: right; }
+.ax-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.ax-x .ax-dot { background: var(--red); }
+.ax-y .ax-dot { background: var(--green); }
+.ax-z .ax-dot { background: var(--blue); }
+.ax-w .ax-dot { background: var(--yellow); }
+input[type=range] {
+  flex: 1; -webkit-appearance: none; height: 3px; border-radius: 2px;
+  background: var(--bg3); outline: none; cursor: pointer;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 12px; height: 12px; border-radius: 50%;
+  background: var(--accent2); cursor: pointer; transition: transform 0.1s;
+}
+input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.3); }
+.ax-x input[type=range]::-webkit-slider-thumb { background: var(--red); }
+.ax-y input[type=range]::-webkit-slider-thumb { background: var(--green); }
+.ax-z input[type=range]::-webkit-slider-thumb { background: var(--blue); }
+.ax-w input[type=range]::-webkit-slider-thumb { background: var(--yellow); }
+.param-val {
+  font-size: 10px; width: 36px; flex-shrink: 0; text-align: right; color: var(--text);
+  cursor: text; background: transparent; border: none; font-family: inherit; outline: none;
+}
+.param-val:focus { background: var(--bg3); border-radius: 3px; color: var(--accent2); }
+.panel-hidden { display: none; }
+.panel-flex { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+.code-output {
+  flex: 1; padding: 12px; background: var(--bg); border: none; color: #a8d8a0;
+  font-family: 'SF Mono','Fira Code',monospace; font-size: 11px; line-height: 1.7;
+  resize: none; outline: none; overflow-y: auto;
+}
+.copy-bar { padding: 8px 10px; border-top: 1px solid var(--border); display: flex; gap: 8px; flex-shrink: 0; }
+.toast {
+  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(20px);
+  background: var(--accent); color: #fff; padding: 8px 20px; border-radius: 6px;
+  font-size: 12px; opacity: 0; transition: all 0.25s; pointer-events: none; z-index: 999;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.dialog-bg {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+  z-index: 200; align-items: center; justify-content: center;
+}
+.dialog-bg.open { display: flex; }
+.dialog {
+  background: var(--bg2); border: 1px solid var(--border2);
+  border-radius: 8px; padding: 20px; width: 300px;
+}
+.dialog.wide { width: 460px; }
+.dialog h3 { font-size: 13px; margin-bottom: 10px; color: var(--accent2); }
+.dialog-hint { font-size: 10px; color: var(--text3); margin-bottom: 8px; line-height: 1.7; }
+.dialog input[type=text] {
+  width: 100%; background: var(--bg3); border: 1px solid var(--border2); border-radius: 4px;
+  color: var(--text); font-family: inherit; font-size: 12px; padding: 7px 10px;
+  outline: none; margin-bottom: 10px;
+}
+.dialog input[type=text]:focus { border-color: var(--accent); }
+.dialog textarea {
+  width: 100%; height: 155px; background: var(--bg3); border: 1px solid var(--border2);
+  border-radius: 4px; color: var(--text); font-family: 'SF Mono','Fira Code',monospace;
+  font-size: 11px; padding: 8px; outline: none; resize: vertical; line-height: 1.5;
+}
+.dialog textarea:focus { border-color: var(--accent); }
+.dialog-error { font-size: 11px; color: var(--red); margin-top: 6px; min-height: 16px; }
+.dialog-btns { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="logo">Pose Editor</span>
+  <div class="pose-tabs" id="poseTabs"></div>
+  <div class="header-actions">
+    <button class="btn" onclick="openImportDialog()">Import</button>
+    <button class="btn" onclick="openNewPoseDialog()">+ New</button>
+    <button class="btn danger" onclick="deleteCurrentPose()">Delete</button>
+  </div>
+</header>
+
+<div class="main">
+  <div class="viewport">
+    <canvas id="canvas"></canvas>
+    <div class="pose-name-overlay" id="poseNameOverlay"></div>
+    <div class="view-hint">드래그: 회전 &nbsp;|&nbsp; 휠: 줌 &nbsp;|&nbsp; 우클릭: 패닝</div>
+  </div>
+  <div class="side">
+    <div class="section-tabs">
+      <div class="section-tab active" id="stab-controls" onclick="switchTab('controls')">Controls</div>
+      <div class="section-tab" id="stab-output" onclick="switchTab('output')">Export</div>
+    </div>
+    <div class="panel-flex panel-scroll" id="controls-panel"></div>
+    <div class="panel-flex panel-hidden" id="output-panel">
+      <textarea class="code-output" id="codeOutput" readonly></textarea>
+      <div class="copy-bar">
+        <button class="btn primary" style="flex:1" onclick="copyCode()">현재 포즈 복사</button>
+        <button class="btn" onclick="copyAllPoses()">전체 복사</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="dialog-bg" id="newPoseDialog">
+  <div class="dialog">
+    <h3>새 포즈 추가</h3>
+    <input type="text" id="newPoseName" placeholder="pose_name (예: spin_kick)">
+    <div class="dialog-btns">
+      <button class="btn" onclick="closeNewPoseDialog()">취소</button>
+      <button class="btn primary" onclick="confirmNewPose()">추가</button>
+    </div>
+  </div>
+</div>
+
+<div class="dialog-bg" id="importDialog">
+  <div class="dialog wide">
+    <h3>포즈 Import</h3>
+    <div class="dialog-hint">
+      이름 있는 형태 → 새 탭으로 추가<br>
+      이름 없는 형태 → 현재 탭 덮어쓰기
+    </div>
+    <textarea id="importText" placeholder="포즈 코드를 붙여넣으세요...
+
+이름 있음:
+quick_draw: { root:{y:0.55,rx:0,ry:0}, waist:{rx:0.4,ry:0.55}, ... }
+
+이름 없음:
+{ root:{y:0.55,rx:0,ry:0}, waist:{rx:0.4,ry:0.55}, ... }"></textarea>
+    <div class="dialog-error" id="importError"></div>
+    <div class="dialog-btns">
+      <button class="btn" onclick="closeImportDialog()">취소</button>
+      <button class="btn primary" onclick="confirmImport()">적용</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════
+// 데이터
+// ══════════════════════════
+const DEFAULT_POSE = () => ({
+  root:  { y:0.80, rx:0,     ry:0 },
+  waist: { rx:0,   ry:0 },
+  chest: { rx:0,   ry:0 },
+  rArm:  { sx:0,   sy:0,    sz:0,     ex:-0.15, wx:0,   wy:0 },
+  lArm:  { sx:0,   sy:0,    sz:0,     ex:-0.15 },
+  rHip:  { rx:0,   ry:0,    rz:0,     knee:0.05 },
+  lHip:  { rx:0,   ry:0,    rz:0,     knee:0.05 },
+});
+
+const PRESETS = {
+  idle:        { root:{y:0.80,rx:0,ry:0},    waist:{rx:0,ry:0},       chest:{rx:0,ry:0},       rArm:{sx:0,sy:0,sz:0,ex:-0.15,wx:0,wy:0},           lArm:{sx:0,sy:0,sz:0,ex:-0.15},       rHip:{rx:0,ry:0,rz:0,knee:0.05},   lHip:{rx:0,ry:0,rz:0,knee:0.05} },
+  combo1:      { root:{y:0.72,rx:0,ry:0},    waist:{rx:0.2,ry:1.0},   chest:{rx:0.1,ry:0.8},   rArm:{sx:-1.0,sy:0,sz:1.0,ex:-0.1,wx:1.5,wy:0.5},   lArm:{sx:0.8,sy:0,sz:0.5,ex:-0.2},   rHip:{rx:-0.6,ry:0,rz:0,knee:0.8}, lHip:{rx:0.2,ry:0,rz:0,knee:0.1} },
+  combo2:      { root:{y:0.72,rx:0,ry:0},    waist:{rx:0.2,ry:-1.2},  chest:{rx:0.1,ry:-0.8},  rArm:{sx:-1.0,sy:0,sz:-1.2,ex:-0.2,wx:1.5,wy:-0.5}, lArm:{sx:-0.8,sy:0,sz:-0.5,ex:-1.2}, rHip:{rx:-0.6,ry:0,rz:0,knee:0.8}, lHip:{rx:0.2,ry:0,rz:0,knee:0.1} },
+  dash:        { root:{y:0.62,rx:0.2,ry:0},  waist:{rx:0.5,ry:0.2},   chest:{rx:0.4,ry:0.1},   rArm:{sx:-0.3,sy:0,sz:0.5,ex:-0.3,wx:0.5,wy:0},     lArm:{sx:0.5,sy:0,sz:0.3,ex:-0.3},   rHip:{rx:-0.8,ry:0,rz:0,knee:1.0}, lHip:{rx:0.4,ry:0,rz:0,knee:0.2} },
+  dashAttack:  { root:{y:0.65,rx:0,ry:0},    waist:{rx:0.6,ry:0.4},   chest:{rx:0.5,ry:0.2},   rArm:{sx:-0.5,sy:0,sz:0.8,ex:-0.1,wx:1.0,wy:0.5},   lArm:{sx:1.2,sy:0,sz:0.4,ex:-0.1},   rHip:{rx:-1.0,ry:0,rz:0,knee:1.2}, lHip:{rx:0.6,ry:0,rz:0,knee:0.1} },
+  leap:        { root:{y:0.72,rx:0,ry:0},    waist:{rx:0.8,ry:0},     chest:{rx:0.2,ry:0},     rArm:{sx:-2.8,sy:0,sz:0.5,ex:-0.2,wx:1.5,wy:1.0},   lArm:{sx:-2.5,sy:0,sz:-0.5,ex:-0.5}, rHip:{rx:-0.4,ry:0,rz:0,knee:0.8}, lHip:{rx:0.2,ry:0,rz:0,knee:0.5} },
+  quick_draw:  { root:{y:0.55,rx:-0.20,ry:0},waist:{rx:0.40,ry:0.55}, chest:{rx:0.20,ry:-0.10},rArm:{sx:0.10,sy:1.30,sz:-0.85,ex:-1.20,wx:0.10,wy:1.10},lArm:{sx:0.60,sy:-0.20,sz:0.55,ex:-1.80},rHip:{rx:-1.10,ry:0.15,rz:-0.30,knee:1.65},lHip:{rx:0.90,ry:0.04,rz:0.30,knee:0.25} },
+  battle_idle: { root:{y:0.62,rx:0.18,ry:0.45}, waist:{rx:-0.06,ry:-1.50}, chest:{rx:-0.03,ry:1.26}, rArm:{sx:0.29,sy:-0.73,sz:-0.90,ex:-0.69,wx:0.46,wy:0.07}, lArm:{sx:0.32,sy:0.80,sz:0.32,ex:-1.59}, rHip:{rx:0.53,ry:0.07,rz:-0.60,knee:0.20}, lHip:{rx:-1.42,ry:-0.35,rz:0.49,knee:1.63} },
+};
+
+let poses = JSON.parse(JSON.stringify(PRESETS));
+let currentPose = 'battle_idle';
+const dc = o => JSON.parse(JSON.stringify(o));
+
+// ══════════════════════════
+// 슬라이더 스펙
+// ══════════════════════════
+const PARAMS = [
+  { g:'ROOT',  k:'root.y',    l:'y',    ax:'w', mn:0.4,  mx:1.1,  st:0.01 },
+  { g:'ROOT',  k:'root.rx',   l:'rx',   ax:'x', mn:-1.5, mx:1.5,  st:0.01 },
+  { g:'ROOT',  k:'root.ry',   l:'ry',   ax:'y', mn:-2.0, mx:2.0,  st:0.01 },
+  { g:'WAIST', k:'waist.rx',  l:'rx',   ax:'x', mn:-1.5, mx:1.5,  st:0.01 },
+  { g:'WAIST', k:'waist.ry',  l:'ry',   ax:'y', mn:-2.0, mx:2.0,  st:0.01 },
+  { g:'CHEST', k:'chest.rx',  l:'rx',   ax:'x', mn:-1.5, mx:1.5,  st:0.01 },
+  { g:'CHEST', k:'chest.ry',  l:'ry',   ax:'y', mn:-2.0, mx:2.0,  st:0.01 },
+  { g:'R-ARM', k:'rArm.sx',   l:'sx',   ax:'x', mn:-3.0, mx:3.0,  st:0.01 },
+  { g:'R-ARM', k:'rArm.sy',   l:'sy',   ax:'y', mn:-2.0, mx:2.0,  st:0.01 },
+  { g:'R-ARM', k:'rArm.sz',   l:'sz',   ax:'z', mn:-2.0, mx:2.0,  st:0.01 },
+  { g:'R-ARM', k:'rArm.ex',   l:'ex',   ax:'x', mn:-2.0, mx:2.0,  st:0.01 },
+  { g:'R-ARM', k:'rArm.wx',   l:'wx',   ax:'x', mn:-2.0, mx:2.0,  st:0.01 },
+  { g:'R-ARM', k:'rArm.wy',   l:'wy',   ax:'y', mn:-2.0, mx:2.0,  st:0.01 },
+  { g:'L-ARM', k:'lArm.sx',   l:'sx',   ax:'x', mn:-3.0, mx:3.0,  st:0.01 },
+  { g:'L-ARM', k:'lArm.sy',   l:'sy',   ax:'y', mn:-2.0, mx:2.0,  st:0.01 },
+  { g:'L-ARM', k:'lArm.sz',   l:'sz',   ax:'z', mn:-2.0, mx:2.0,  st:0.01 },
+  { g:'L-ARM', k:'lArm.ex',   l:'ex',   ax:'x', mn:-2.0, mx:2.0,  st:0.01 },
+  { g:'R-LEG', k:'rHip.rx',   l:'rx',   ax:'x', mn:-2.0, mx:2.0,  st:0.01 },
+  { g:'R-LEG', k:'rHip.ry',   l:'ry',   ax:'y', mn:-1.0, mx:1.0,  st:0.01 },
+  { g:'R-LEG', k:'rHip.rz',   l:'rz',   ax:'z', mn:-1.0, mx:1.0,  st:0.01 },
+  { g:'R-LEG', k:'rHip.knee', l:'knee', ax:'w', mn:0.0,  mx:2.0,  st:0.01 },
+  { g:'L-LEG', k:'lHip.rx',   l:'rx',   ax:'x', mn:-2.0, mx:2.0,  st:0.01 },
+  { g:'L-LEG', k:'lHip.ry',   l:'ry',   ax:'y', mn:-1.0, mx:1.0,  st:0.01 },
+  { g:'L-LEG', k:'lHip.rz',   l:'rz',   ax:'z', mn:-1.0, mx:1.0,  st:0.01 },
+  { g:'L-LEG', k:'lHip.knee', l:'knee', ax:'w', mn:0.0,  mx:2.0,  st:0.01 },
+];
+
+function gv(pose, key) {
+  const [a, b] = key.split('.');
+  return pose[a]?.[b] ?? 0;
+}
+function sv(pose, key, v) {
+  const [a, b] = key.split('.');
+  if (!pose[a]) pose[a] = {};
+  pose[a][b] = v;
+}
+
+// ══════════════════════════
+// Three.js
+// ══════════════════════════
+const canvas = document.getElementById('canvas');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.shadowMap.enabled = true;
+renderer.setClearColor(0x0a0a0a);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
+camera.position.set(0, 1.4, 5);
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.35));
+{ const d = new THREE.DirectionalLight(0xffffff, 1.0); d.position.set(3,6,4); d.castShadow=true; scene.add(d); }
+{ const d = new THREE.DirectionalLight(0x8899ff, 0.3); d.position.set(-3,2,-2); scene.add(d); }
+{ const d = new THREE.DirectionalLight(0x7c6aff, 0.4); d.position.set(0,3,-5); scene.add(d); }
+scene.add(new THREE.GridHelper(10, 20, 0x222222, 0x1a1a1a));
+
+const M = {
+  dark:  new THREE.MeshLambertMaterial({ color: 0x3a3a3a }),
+  mid:   new THREE.MeshLambertMaterial({ color: 0x2a2a2a }),
+  skin:  new THREE.MeshLambertMaterial({ color: 0xc9956b }),
+  hair:  new THREE.MeshLambertMaterial({ color: 0x1a1a2a }),
+  r:     new THREE.MeshLambertMaterial({ color: 0xcc2255 }),
+  l:     new THREE.MeshLambertMaterial({ color: 0x2266cc }),
+  sword: new THREE.MeshLambertMaterial({ color: 0x00d4ff, emissive: 0x003344 }),
+};
+
+const headH=0.23, chestH=0.25, waistH=0.14, pelvisH=0.19;
+const thighL=0.3, calfL=0.5, legH=thighL+calfL;
+const armW=0.08, upperArmL=0.32, forearmL=0.35, handS=0.07;
+
+function mkM(geo, mat) {
+  const m = new THREE.Mesh(geo, mat);
+  m.castShadow = true; m.receiveShadow = true; return m;
+}
+
+const P = {};
+const meshRoot = new THREE.Group(); scene.add(meshRoot);
+
+const rootG = new THREE.Group(); rootG.position.y = legH; meshRoot.add(rootG); P.root = rootG;
+
+{ const m = mkM(new THREE.BoxGeometry(0.3,pelvisH,0.22), M.dark); m.position.y=pelvisH/2; rootG.add(m); }
+
+const waistG = new THREE.Group(); waistG.position.y=pelvisH; rootG.add(waistG); P.waist=waistG;
+{ const m = mkM(new THREE.BoxGeometry(0.22,waistH,0.16), M.mid); m.position.y=waistH/2; waistG.add(m); }
+
+const chestG = new THREE.Group(); chestG.position.y=waistH; waistG.add(chestG); P.chest=chestG;
+{ const m = mkM(new THREE.BoxGeometry(0.33,chestH,0.2), M.dark); m.position.y=chestH/2; chestG.add(m); }
+
+const neckG = new THREE.Group(); neckG.position.y=chestH; chestG.add(neckG); P.neck=neckG;
+{
+  const head = mkM(new THREE.BoxGeometry(0.19,headH,0.21), M.skin);
+  head.position.y = headH/2+0.03; neckG.add(head);
+  const ht = mkM(new THREE.BoxGeometry(0.23,0.06,0.25), M.hair); ht.position.y=headH/2+0.01; head.add(ht);
+  const hf = mkM(new THREE.BoxGeometry(0.23,0.1,0.05), M.hair); hf.position.set(0,headH/2-0.03,0.125); head.add(hf);
+  const hb = mkM(new THREE.BoxGeometry(0.22,0.38,0.08), M.hair); hb.position.set(0,-0.05,-0.115); head.add(hb);
+}
+
+function buildArm(isRight) {
+  const side = isRight ? -1 : 1, mat = isRight ? M.r : M.l;
+  const sG = new THREE.Group(); sG.position.set(0.23*side, chestH*0.8, 0); chestG.add(sG);
+  { const m = mkM(new THREE.BoxGeometry(armW,upperArmL,armW),mat); m.position.y=-upperArmL/2; sG.add(m); }
+  const eG = new THREE.Group(); eG.position.y=-upperArmL; sG.add(eG);
+  { const m = mkM(new THREE.BoxGeometry(armW*0.9,forearmL,armW*0.9),mat); m.position.y=-forearmL/2; eG.add(m); }
+  const wG = new THREE.Group(); wG.position.y=-forearmL; eG.add(wG);
+  { const m = mkM(new THREE.BoxGeometry(handS,handS,handS),M.skin); m.position.y=-handS/2; wG.add(m); }
+  return { shoulder:sG, elbow:eG, wrist:wG };
+}
+P.rightArm = buildArm(true);
+P.leftArm  = buildArm(false);
+{ const s = mkM(new THREE.BoxGeometry(0.04,0.04,1.1),M.sword); s.position.set(0,-handS/2,0.55); P.rightArm.wrist.add(s); }
+
+function buildLeg(isRight) {
+  const side = isRight ? -1 : 1, mat = isRight ? M.r : M.l;
+  const hG = new THREE.Group(); hG.position.set(0.11*side,0,0); rootG.add(hG);
+  { const m = mkM(new THREE.BoxGeometry(0.16,thighL,0.16),mat); m.position.y=-thighL/2; hG.add(m); }
+  const kG = new THREE.Group(); kG.position.y=-thighL; hG.add(kG);
+  { const m = mkM(new THREE.BoxGeometry(0.11,calfL,0.11),mat); m.position.y=-calfL/2; kG.add(m); }
+  return { hip:hG, knee:kG };
+}
+P.rightLeg = buildLeg(true);
+P.leftLeg  = buildLeg(false);
+
+// ══════════════════════════
+// 포즈 적용
+// ══════════════════════════
+let dispPose = DEFAULT_POSE();
+let tFrom = null, tTo = null, tTimer = 0;
+const T_DUR = 0.3;
+
+function applyNow(p) {
+  P.root.position.y          = p.root.y   ?? 0.8;
+  P.root.rotation.x          = p.root.rx  ?? 0;
+  P.root.rotation.y          = p.root.ry  ?? 0;
+  P.waist.rotation.x         = p.waist.rx ?? 0;
+  P.waist.rotation.y         = p.waist.ry ?? 0;
+  P.chest.rotation.x         = p.chest.rx ?? 0;
+  P.chest.rotation.y         = p.chest.ry ?? 0;
+
+  // 목: waist + chest 회전을 역산해서 머리가 항상 정면을 바라보게 고정
+  const totalRx = (p.root.rx ?? 0) + (p.waist.rx ?? 0) + (p.chest.rx ?? 0);
+  const totalRy = (p.root.ry ?? 0) + (p.waist.ry ?? 0) + (p.chest.ry ?? 0);
+  P.neck.rotation.x = -totalRx;
+  P.neck.rotation.y = -totalRy;
+
+  P.rightArm.shoulder.rotation.x = p.rArm.sx ?? 0;
+  P.rightArm.shoulder.rotation.y = p.rArm.sy ?? 0;
+  P.rightArm.shoulder.rotation.z = p.rArm.sz ?? 0;
+  P.rightArm.elbow.rotation.x    = p.rArm.ex ?? 0;
+  P.rightArm.wrist.rotation.x    = p.rArm.wx ?? 0;
+  P.rightArm.wrist.rotation.y    = p.rArm.wy ?? 0;
+  P.leftArm.shoulder.rotation.x  = p.lArm.sx ?? 0;
+  P.leftArm.shoulder.rotation.y  = p.lArm.sy ?? 0;
+  P.leftArm.shoulder.rotation.z  = p.lArm.sz ?? 0;
+  P.leftArm.elbow.rotation.x     = p.lArm.ex ?? 0;
+  P.rightLeg.hip.rotation.x      = p.rHip.rx   ?? 0;
+  P.rightLeg.hip.rotation.y      = p.rHip.ry   ?? 0;
+  P.rightLeg.hip.rotation.z      = p.rHip.rz   ?? 0;
+  P.rightLeg.knee.rotation.x     = p.rHip.knee ?? 0.05;
+  P.leftLeg.hip.rotation.x       = p.lHip.rx   ?? 0;
+  P.leftLeg.hip.rotation.y       = p.lHip.ry   ?? 0;
+  P.leftLeg.hip.rotation.z       = p.lHip.rz   ?? 0;
+  P.leftLeg.knee.rotation.x      = p.lHip.knee ?? 0.05;
+}
+
+function startTrans(to) {
+  tFrom = dc(dispPose); tTo = dc(to); tTimer = 0;
+}
+
+// ══════════════════════════
+// 카메라
+// ══════════════════════════
+let camTheta=Math.PI, camPhi=Math.PI/6, camDist=4.5;
+const camTarget = new THREE.Vector3(0,1,0);
+let drag=false, rightDrag=false, lx=0, ly=0;
+
+canvas.addEventListener('mousedown', e => { drag=true; rightDrag=e.button===2; lx=e.clientX; ly=e.clientY; });
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+window.addEventListener('mouseup', () => drag=false);
+window.addEventListener('mousemove', e => {
+  if (!drag) return;
+  const dx=e.clientX-lx, dy=e.clientY-ly; lx=e.clientX; ly=e.clientY;
+  if (rightDrag) {
+    const r = new THREE.Vector3(-Math.sin(camTheta),0,Math.cos(camTheta));
+    camTarget.addScaledVector(r,-dx*0.005); camTarget.y+=dy*0.005;
+  } else {
+    camTheta -= dx*0.008;
+    camPhi = Math.max(0.05, Math.min(Math.PI/2.2, camPhi-dy*0.006));
+  }
+});
+canvas.addEventListener('wheel', e => { camDist=Math.max(1.5,Math.min(12,camDist+e.deltaY*0.005)); },{passive:true});
+
+function updateCam() {
+  camera.position.set(
+    camTarget.x + camDist*Math.sin(camTheta)*Math.cos(camPhi),
+    camTarget.y + camDist*Math.sin(camPhi),
+    camTarget.z + camDist*Math.cos(camTheta)*Math.cos(camPhi)
+  );
+  camera.lookAt(camTarget);
+}
+
+// ══════════════════════════
+// 렌더 루프
+// ══════════════════════════
+let lt = performance.now();
+function loop() {
+  requestAnimationFrame(loop);
+  const now=performance.now(), dt=Math.min((now-lt)/1000,0.05); lt=now;
+
+  if (tTo) {
+    tTimer += dt;
+    const t = Math.min(1, tTimer/T_DUR);
+    const e = t<0.5 ? 2*t*t : -1+(4-2*t)*t;
+    PARAMS.forEach(p => sv(dispPose, p.k, gv(tFrom,p.k)+(gv(tTo,p.k)-gv(tFrom,p.k))*e));
+    if (t>=1) { dispPose=dc(tTo); tTo=null; }
+  }
+
+  applyNow(dispPose);
+  updateCam();
+
+  const vp = canvas.parentElement.getBoundingClientRect();
+  renderer.setSize(vp.width, vp.height);
+  camera.aspect = vp.width/vp.height;
+  camera.updateProjectionMatrix();
+  renderer.render(scene, camera);
+}
+loop();
+
+// ══════════════════════════
+// 슬라이더 빌드
+// ══════════════════════════
+function buildSliders() {
+  const panel = document.getElementById('controls-panel');
+  panel.innerHTML = '';
+  let lastG='', gDiv=null;
+  PARAMS.forEach(p => {
+    if (p.g !== lastG) {
+      lastG = p.g;
+      gDiv = document.createElement('div'); gDiv.className='joint-group';
+      const lbl = document.createElement('div'); lbl.className='joint-label'; lbl.textContent=p.g;
+      gDiv.appendChild(lbl); panel.appendChild(gDiv);
+    }
+    const v = gv(poses[currentPose], p.k);
+    const row = document.createElement('div');
+    row.className = 'param-row ax-'+p.ax;
+    row.innerHTML = `<span class="param-key">${p.l}</span><span class="ax-dot"></span>
+      <input type="range" min="${p.mn}" max="${p.mx}" step="${p.st}" value="${v}" data-key="${p.k}">
+      <input type="text" class="param-val" value="${v.toFixed(2)}" data-key="${p.k}">`;
+    gDiv.appendChild(row);
+
+    const sl = row.querySelector('input[type=range]');
+    const nb = row.querySelector('.param-val');
+    sl.addEventListener('input', () => {
+      const val = parseFloat(sl.value);
+      nb.value = val.toFixed(2);
+      sv(poses[currentPose],p.k,val); sv(dispPose,p.k,val); tTo=null;
+      markMod(); updateCode();
+    });
+    nb.addEventListener('change', () => {
+      let val = parseFloat(nb.value);
+      if (isNaN(val)) val=0;
+      val = Math.max(p.mn,Math.min(p.mx,val));
+      nb.value=val.toFixed(2); sl.value=val;
+      sv(poses[currentPose],p.k,val); sv(dispPose,p.k,val); tTo=null;
+      markMod(); updateCode();
+    });
+  });
+}
+
+function refreshSliders() {
+  document.querySelectorAll('#controls-panel input[data-key]').forEach(el => {
+    const v = gv(poses[currentPose], el.dataset.key);
+    if (el.type==='range') el.value=v; else el.value=v.toFixed(2);
+  });
+}
+
+// ══════════════════════════
+// 탭 관리
+// ══════════════════════════
+function renderTabs() {
+  const wrap = document.getElementById('poseTabs');
+  wrap.innerHTML = '';
+  Object.keys(poses).forEach(name => {
+    const btn = document.createElement('button');
+    btn.className = 'pose-tab'+(name===currentPose?' active':'');
+    btn.textContent = name; btn.id='ptab-'+name;
+    btn.onclick = () => selectPose(name);
+    wrap.appendChild(btn);
+  });
+}
+
+function selectPose(name) {
+  currentPose = name;
+  document.querySelectorAll('.pose-tab').forEach(b=>b.classList.remove('active'));
+  const btn = document.getElementById('ptab-'+name);
+  if (btn) btn.classList.add('active');
+  document.getElementById('poseNameOverlay').textContent = name;
+  startTrans(poses[name]);
+  refreshSliders();
+  updateCode();
+}
+
+function markMod() {
+  const btn = document.getElementById('ptab-'+currentPose);
+  if (btn) btn.classList.add('modified');
+}
+
+// ══════════════════════════
+// 코드 출력
+// ══════════════════════════
+const fmt = v => parseFloat(v.toFixed(2));
+
+function poseToCode(name, p) {
+  return `    ${name}: {
+        root:  { y:${fmt(p.root.y)}, rx:${fmt(p.root.rx)}, ry:${fmt(p.root.ry)} },
+        waist: { rx:${fmt(p.waist.rx)}, ry:${fmt(p.waist.ry)} },
+        chest: { rx:${fmt(p.chest.rx)}, ry:${fmt(p.chest.ry)} },
+        rArm:  { sx:${fmt(p.rArm.sx)}, sy:${fmt(p.rArm.sy)}, sz:${fmt(p.rArm.sz)}, ex:${fmt(p.rArm.ex)}, wx:${fmt(p.rArm.wx)}, wy:${fmt(p.rArm.wy)} },
+        lArm:  { sx:${fmt(p.lArm.sx)}, sy:${fmt(p.lArm.sy)}, sz:${fmt(p.lArm.sz)}, ex:${fmt(p.lArm.ex)} },
+        rHip:  { rx:${fmt(p.rHip.rx)}, ry:${fmt(p.rHip.ry)}, rz:${fmt(p.rHip.rz)}, knee:${fmt(p.rHip.knee)} },
+        lHip:  { rx:${fmt(p.lHip.rx)}, ry:${fmt(p.lHip.ry)}, rz:${fmt(p.lHip.rz)}, knee:${fmt(p.lHip.knee)} },
+    },`;
+}
+
+function updateCode() {
+  document.getElementById('codeOutput').value = poseToCode(currentPose, poses[currentPose]);
+}
+function copyCode() {
+  navigator.clipboard.writeText(document.getElementById('codeOutput').value);
+  showToast('복사 완료!');
+}
+function copyAllPoses() {
+  const all = Object.entries(poses).map(([n,p])=>poseToCode(n,p)).join('\n');
+  navigator.clipboard.writeText('const POSES = {\n'+all+'\n};');
+  showToast('전체 POSES 복사 완료!');
+}
+
+// ══════════════════════════
+// 다이얼로그 — New
+// ══════════════════════════
+function openNewPoseDialog() {
+  document.getElementById('newPoseDialog').classList.add('open');
+  document.getElementById('newPoseName').value='';
+  setTimeout(()=>document.getElementById('newPoseName').focus(),50);
+}
+function closeNewPoseDialog() { document.getElementById('newPoseDialog').classList.remove('open'); }
+document.getElementById('newPoseName').addEventListener('keydown', e => {
+  if (e.key==='Enter') confirmNewPose();
+  if (e.key==='Escape') closeNewPoseDialog();
+});
+function confirmNewPose() {
+  const name = document.getElementById('newPoseName').value.trim().replace(/\s+/g,'_');
+  if (!name) return;
+  if (poses[name]) { showToast('이미 존재하는 이름!'); return; }
+  poses[name] = dc(poses[currentPose]);
+  closeNewPoseDialog(); renderTabs(); selectPose(name);
+}
+
+// ══════════════════════════
+// 다이얼로그 — Import
+// ══════════════════════════
+function openImportDialog() {
+  document.getElementById('importDialog').classList.add('open');
+  document.getElementById('importText').value='';
+  document.getElementById('importError').textContent='';
+  setTimeout(()=>document.getElementById('importText').focus(),50);
+}
+function closeImportDialog() { document.getElementById('importDialog').classList.remove('open'); }
+document.getElementById('importText').addEventListener('keydown', e => {
+  if (e.key==='Escape') closeImportDialog();
+});
+
+function parsePose(raw) {
+  let name=null, jsonStr=raw.trim();
+
+  const nm = jsonStr.match(/^([a-zA-Z_][a-zA-Z0-9_]*)\s*:\s*(\{[\s\S]*\}),?\s*$/);
+  if (nm) { name=nm[1]; jsonStr=nm[2]; }
+  else {
+    const am = jsonStr.match(/^(\{[\s\S]*\}),?\s*$/);
+    if (!am) throw new Error('형식을 인식할 수 없어요. 예시를 참고해 주세요.');
+    jsonStr=am[1];
+  }
+
+  const json = jsonStr
+    .replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g,'$1"$2":')
+    .replace(/,(\s*[}\]])/g,'$1');
+
+  let parsed;
+  try { parsed=JSON.parse(json); }
+  catch(e) { throw new Error('파싱 실패: '+e.message); }
+
+  const result = DEFAULT_POSE();
+  let found=false;
+  ['root','waist','chest','rArm','lArm','rHip','lHip'].forEach(k => {
+    if (parsed[k]) { found=true; Object.assign(result[k],parsed[k]); }
+  });
+  if (!found) throw new Error('포즈 키(root, waist 등)를 찾을 수 없어요.');
+  return { name, pose:result };
+}
+
+function confirmImport() {
+  const raw = document.getElementById('importText').value.trim();
+  const errEl = document.getElementById('importError');
+  errEl.textContent='';
+  if (!raw) { errEl.textContent='내용을 입력해 주세요.'; return; }
+
+  let name, pose;
+  try { ({name,pose}=parsePose(raw)); }
+  catch(e) { errEl.textContent=e.message; return; }
+
+  if (name && name!==currentPose) {
+    if (poses[name] && !confirm('"'+name+'" 포즈가 이미 있어요. 덮어쓸까요?')) return;
+    poses[name]=pose; closeImportDialog(); renderTabs(); selectPose(name);
+  } else {
+    poses[currentPose]=pose; closeImportDialog();
+    startTrans(pose); refreshSliders(); updateCode();
+    showToast('"'+currentPose+'" 업데이트 완료!');
+  }
+}
+
+// ══════════════════════════
+// 기타
+// ══════════════════════════
+function deleteCurrentPose() {
+  const keys=Object.keys(poses);
+  if (keys.length<=1) { showToast('최소 1개는 남겨야 해요'); return; }
+  if (!confirm('"'+currentPose+'" 포즈를 삭제할까요?')) return;
+  delete poses[currentPose]; renderTabs(); selectPose(Object.keys(poses)[0]);
+}
+
+function switchTab(tab) {
+  ['controls','output'].forEach(t => {
+    document.getElementById('stab-'+t).classList.toggle('active', t===tab);
+    const panel = t==='controls' ? 'controls-panel' : 'output-panel';
+    const el = document.getElementById(panel);
+    el.classList.toggle('panel-hidden', t!==tab);
+    el.classList.toggle('panel-flex', t===tab);
+    el.classList.toggle('panel-scroll', t===tab && t==='controls');
+  });
+  if (tab==='output') updateCode();
+}
+
+function showToast(msg) {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2000);
+}
+
+// ══════════════════════════
+// 초기화
+// ══════════════════════════
+renderTabs();
+buildSliders();
+selectPose('idle');
+</script>
+</body>
+</html>
