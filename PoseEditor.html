@@ -175,6 +175,7 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.3); }
       <div class="copy-bar">
         <button class="btn primary" style="flex:1" onclick="copyCode()">현재 포즈 복사</button>
         <button class="btn" onclick="copyAllPoses()">전체 복사</button>
+        <button class="btn" style="border-color:#5cffa0;color:#5cffa0" onclick="sendToFreeFlow()">🎮 FreeFlow 전송</button>
       </div>
     </div>
   </div>
@@ -693,6 +694,18 @@ function showToast(msg) {
   const t=document.getElementById('toast');
   t.textContent=msg; t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'),2000);
+}
+
+// ══════════════════════════
+// FreeFlow 연동
+// ══════════════════════════
+function sendToFreeFlow() {
+  try {
+    localStorage.setItem('pe_to_ff_poses', JSON.stringify(poses));
+    showToast('🎮 FreeFlow에 전송 완료! (' + Object.keys(poses).length + '개 포즈)');
+  } catch(e) {
+    showToast('전송 실패: ' + e.message);
+  }
 }
 
 // ══════════════════════════

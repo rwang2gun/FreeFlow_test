@@ -48,6 +48,58 @@
         #hp-badge { background: rgba(233, 30, 99, 0.9); }
         #score-badge { background: rgba(255, 193, 7, 0.9); color: black; }
 
+        /* PoseEditor 패널 */
+        #pe-toggle-btn {
+            position: fixed; bottom: 20px; right: 20px;
+            z-index: 500;
+            background: rgba(30,30,30,0.9); color: #5cffa0;
+            border: 1px solid #5cffa0; border-radius: 8px;
+            padding: 8px 14px; font-size: 13px; font-weight: bold;
+            cursor: pointer; backdrop-filter: blur(5px);
+            transition: background 0.2s;
+        }
+        #pe-toggle-btn:hover { background: rgba(92,255,160,0.15); }
+
+        #pe-panel {
+            position: fixed; bottom: 60px; right: 20px;
+            z-index: 500; width: 240px;
+            background: rgba(20,20,20,0.95); border: 1px solid rgba(92,255,160,0.4);
+            border-radius: 12px; padding: 14px;
+            backdrop-filter: blur(10px);
+            display: none; flex-direction: column; gap: 8px;
+            max-height: 60vh; overflow-y: auto;
+        }
+        #pe-panel.open { display: flex; }
+        #pe-panel h4 {
+            color: #5cffa0; font-size: 12px; font-weight: bold;
+            letter-spacing: 0.1em; text-transform: uppercase;
+            margin: 0 0 4px 0; padding-bottom: 6px;
+            border-bottom: 1px solid rgba(92,255,160,0.2);
+        }
+        #pe-panel .pe-empty { color: #555; font-size: 11px; text-align: center; padding: 8px 0; }
+        #pe-panel .pe-pose-row {
+            display: flex; align-items: center; gap: 6px;
+        }
+        #pe-panel .pe-pose-name {
+            flex: 1; font-size: 11px; color: #ccc;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        #pe-panel .pe-pose-name.builtin { color: #555; }
+        #pe-panel .pe-btn {
+            flex-shrink: 0; padding: 3px 8px; border-radius: 4px;
+            border: 1px solid rgba(92,255,160,0.5); background: transparent;
+            color: #5cffa0; font-size: 10px; cursor: pointer;
+            transition: background 0.15s;
+        }
+        #pe-panel .pe-btn:hover { background: rgba(92,255,160,0.15); }
+        #pe-panel .pe-reload-btn {
+            width: 100%; padding: 6px; border-radius: 6px;
+            border: 1px solid rgba(92,255,160,0.3); background: transparent;
+            color: #5cffa0; font-size: 11px; cursor: pointer;
+            transition: background 0.15s; margin-top: 4px;
+        }
+        #pe-panel .pe-reload-btn:hover { background: rgba(92,255,160,0.1); }
+
         /* 통합 메뉴 오버레이 */
         #game-menu-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -194,6 +246,14 @@
         <div id="attack-name-badge" class="status-badge"
             style="background: rgba(156, 39, 176, 0.8); display: none; font-weight: bold; border: 1px solid #ce93d8;">
             기술명: -</div>
+    </div>
+
+    <!-- PoseEditor 연동 패널 -->
+    <button id="pe-toggle-btn" onclick="togglePEPanel()">🎨 포즈</button>
+    <div id="pe-panel">
+        <h4>🎨 PoseEditor 포즈</h4>
+        <div id="pe-pose-list"><span class="pe-empty">불러온 포즈 없음</span></div>
+        <button class="pe-reload-btn" onclick="reloadPEPoses()">🔄 다시 불러오기</button>
     </div>
 
     <!-- 통합 메뉴 오버레이 -->
@@ -863,6 +923,23 @@
                 lHip:  { rx: -0.4, ry: 0,  rz: 0.2,   knee: 0.4 },
             },
         };
+
+        // ── PoseEditor 연동: localStorage에서 커스텀 포즈 자동 로드 ──
+        (function loadPoseEditorPoses() {
+            try {
+                const raw = localStorage.getItem('pe_to_ff_poses');
+                if (!raw) return;
+                const imported = JSON.parse(raw);
+                let count = 0;
+                for (const [name, pose] of Object.entries(imported)) {
+                    POSES[name] = pose;
+                    count++;
+                }
+                if (count > 0) console.log('[PoseEditor] 포즈 로드 완료:', Object.keys(imported).join(', '));
+            } catch(e) {
+                console.warn('[PoseEditor] 포즈 로드 실패:', e);
+            }
+        })();
 
         /**
          * ==========================================
@@ -3617,7 +3694,57 @@
                 this.input.resetTriggers();
             }
         }
-        window.onload = () => new Game();
+        // ── PoseEditor 연동 UI ────────────────────────────────
+        let _peGame = null;
+
+        window.onload = () => { _peGame = new Game(); buildPEPanel(); };
+
+        const BUILTIN_POSE_KEYS = new Set(Object.keys(POSES));
+
+        function buildPEPanel() {
+            const list = document.getElementById('pe-pose-list');
+            const keys = Object.keys(POSES);
+            const custom = keys.filter(k => !BUILTIN_POSE_KEYS.has(k));
+
+            if (custom.length === 0) {
+                list.innerHTML = '<span class="pe-empty">PoseEditor에서 포즈를 전송해 주세요</span>';
+                return;
+            }
+            list.innerHTML = '';
+            custom.forEach(name => {
+                const row = document.createElement('div');
+                row.className = 'pe-pose-row';
+                row.innerHTML = `
+                    <span class="pe-pose-name" title="${name}">${name}</span>
+                    <button class="pe-btn" onclick="previewPEPose('${name}')">미리보기</button>`;
+                list.appendChild(row);
+            });
+        }
+
+        function reloadPEPoses() {
+            try {
+                const raw = localStorage.getItem('pe_to_ff_poses');
+                if (!raw) { alert('PoseEditor에서 전송된 포즈가 없어요.\nPoseEditor의 Export → 🎮 FreeFlow 전송을 눌러주세요.'); return; }
+                const imported = JSON.parse(raw);
+                for (const [name, pose] of Object.entries(imported)) POSES[name] = pose;
+                buildPEPanel();
+            } catch(e) {
+                alert('로드 실패: ' + e.message);
+            }
+        }
+
+        function previewPEPose(name) {
+            if (!_peGame || !_peGame.character || !POSES[name]) return;
+            const char = _peGame.character;
+            // 현재 dt와 무관하게 즉시 포즈 적용을 위해 큰 speed값 사용
+            char.applyPose(POSES[name], 12, 0.016);
+        }
+
+        function togglePEPanel() {
+            const panel = document.getElementById('pe-panel');
+            panel.classList.toggle('open');
+            if (panel.classList.contains('open')) buildPEPanel();
+        }
 
     </script>
 
