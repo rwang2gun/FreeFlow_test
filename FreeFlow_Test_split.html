@@ -904,6 +904,25 @@
                 rHip:  { rx: -0.4, ry: 0,   rz: 0,    knee: 0.6 },
                 lHip:  { rx: 0.2,  ry: 0,   rz: 0,    knee: 0.1 },
             },
+            // ─── 전투 대기 (PoseEditor 연동) ──────────────
+            battle_idle: {
+                root:  { y: 0.62, rx: 0.33,  ry: -0.17 },
+                waist: { rx: -0.06, ry: -1.59 },
+                chest: { rx: 0.02, ry: 0.88 },
+                rArm:  { sx: -0.09, sy: -0.73, sz: -0.9,  ex: -0.69, wx: 0.46, wy: 0.07 },
+                lArm:  { sx: 0.76,  sy: 0.15,  sz: 0.61,  ex: -2.0 },
+                rHip:  { rx: 0.3,   ry: 0.07,  rz: -0.6,  knee: 0.20 },
+                lHip:  { rx: -1.42, ry: -0.35, rz: 0.63,  knee: 1.06 },
+            },
+            ef_battle_idle: {
+                root:  { y: 0.60, rx: 0.15,  ry: 0 },
+                waist: { rx: 0.3,  ry: 0.4 },
+                chest: { rx: 0.1,  ry: 0.2 },
+                rArm:  { sx: 0.8,  sy: -0.4,  sz: -0.6,  ex: -2.0,  wx: 0,    wy: 0 },
+                lArm:  { sx: 0.8,  sy: 0.4,   sz: 0.6,   ex: -2.0 },
+                rHip:  { rx: -0.6, ry: 0,     rz: -0.5,  knee: 1.2 },
+                lHip:  { rx: -0.6, ry: 0,     rz: 0.5,   knee: 1.2 },
+            },
             // ─── 피격 / 회복 ────────────────────────────
             hurt: {
                 root:  { y: 0.85, rx: 0,     ry: 0 },
@@ -1345,15 +1364,16 @@
             }
 
             animateBattleIdle(dt) {
+                const P = POSES.battle_idle;  // ← POSES 딕셔너리에서 기본 포즈 읽기
+                const L = THREE.MathUtils.lerp;
+
                 // ── 타이머 ──────────────────────────────────────────────
                 this.animTimer += dt * 1.0;
                 const t = this.animTimer;
 
-                // 호흡: 느리고 묵직하게
+                // 프로시저럴 오버레이
                 const breath   = Math.sin(t * 0.8) * 0.025;
-                // 체중 이동: 앞발에 실린 무게감, 미세하게
                 const sway     = Math.sin(t * 0.5) * 0.015;
-                // 검 끝 긴장감: 수평으로 뻗은 검의 미세한 떨림
                 const swordWig = Math.sin(t * 1.1) * 0.018;
 
                 // ── 적 시선 추적 ─────────────────────────────────────────
@@ -1370,55 +1390,52 @@
 
                 // ── 루트 ────────────────────────────────────────────────
                 const alpha8 = Math.min(1, 8 * dt);
-                this.parts.root.rotation.x = THREE.MathUtils.lerp(this.parts.root.rotation.x, 0.33 + breath * 0.15, alpha8);
-                this.parts.root.rotation.y = THREE.MathUtils.lerp(this.parts.root.rotation.y, -0.17 + sway * 0.1,   alpha8);
-                this.parts.root.position.y = THREE.MathUtils.lerp(this.parts.root.position.y,  0.62,                alpha8);
+                this.parts.root.position.y = L(this.parts.root.position.y, P.root.y, alpha8);
+                this.parts.root.rotation.x = L(this.parts.root.rotation.x, P.root.rx + breath * 0.15, alpha8);
+                this.parts.root.rotation.y = L(this.parts.root.rotation.y, P.root.ry + sway * 0.1, alpha8);
 
                 // ── 허리 / 가슴 ─────────────────────────────────────────
                 const alpha6 = Math.min(1, 6 * dt);
-                this.parts.waist.rotation.x = THREE.MathUtils.lerp(this.parts.waist.rotation.x, -0.06 + breath * 0.2, alpha6);
-                this.parts.waist.rotation.y = THREE.MathUtils.lerp(this.parts.waist.rotation.y, -1.59 + sway * 0.08,  alpha6);
-                this.parts.chest.rotation.x = THREE.MathUtils.lerp(this.parts.chest.rotation.x,  0.02 + breath * 0.15, alpha6);
-                this.parts.chest.rotation.y = THREE.MathUtils.lerp(this.parts.chest.rotation.y,  0.88,                 alpha6);
+                this.parts.waist.rotation.x = L(this.parts.waist.rotation.x, P.waist.rx + breath * 0.2, alpha6);
+                this.parts.waist.rotation.y = L(this.parts.waist.rotation.y, P.waist.ry + sway * 0.08, alpha6);
+                this.parts.chest.rotation.x = L(this.parts.chest.rotation.x, P.chest.rx + breath * 0.15, alpha6);
+                this.parts.chest.rotation.y = L(this.parts.chest.rotation.y, P.chest.ry, alpha6);
 
                 // ── 목: 상체 비틀림 보상 — 정면/적 응시 유지 ───────────
                 const bodyTwist = this.parts.root.rotation.y + this.parts.waist.rotation.y + this.parts.chest.rotation.y;
                 const neckAlpha = Math.min(1, 15 * dt);
-                this.parts.neck.rotation.x = THREE.MathUtils.lerp(this.parts.neck.rotation.x,
+                this.parts.neck.rotation.x = L(this.parts.neck.rotation.x,
                     -(this.parts.root.rotation.x + this.parts.waist.rotation.x + this.parts.chest.rotation.x), neckAlpha);
-                this.parts.neck.rotation.y = THREE.MathUtils.lerp(this.parts.neck.rotation.y,
+                this.parts.neck.rotation.y = L(this.parts.neck.rotation.y,
                     THREE.MathUtils.clamp(targetLookAngle - bodyTwist, -Math.PI / 2, Math.PI / 2), neckAlpha);
-                this.parts.neck.rotation.z = THREE.MathUtils.lerp(this.parts.neck.rotation.z, 0, neckAlpha);
+                this.parts.neck.rotation.z = L(this.parts.neck.rotation.z, 0, neckAlpha);
 
                 // ── 오른팔 ───────────────────────────────────────────────
                 const alpha10 = Math.min(1, 10 * dt);
                 this.lerpJoint(this.parts.rightArm.shoulder,
-                    new THREE.Vector3(-0.09 + breath * 0.1, -0.73, -0.9 + swordWig * 0.3), alpha10);
+                    new THREE.Vector3(P.rArm.sx + breath * 0.1, P.rArm.sy, P.rArm.sz + swordWig * 0.3), alpha10);
                 this.lerpJoint(this.parts.rightArm.elbow,
-                    new THREE.Vector3(-0.69, 0, 0), alpha10);
+                    new THREE.Vector3(P.rArm.ex, 0, 0), alpha10);
                 this.lerpJoint(this.parts.rightArm.wrist,
-                    new THREE.Vector3(0.46 + swordWig * 0.3, 0.07, 0), alpha10);
+                    new THREE.Vector3((P.rArm.wx || 0) + swordWig * 0.3, P.rArm.wy || 0, 0), alpha10);
 
                 // ── 왼팔 ────────────────────────────────────────────────
                 this.lerpJoint(this.parts.leftArm.shoulder,
-                    new THREE.Vector3(0.76 + breath * 0.1, 0.15, 0.61), alpha10);
+                    new THREE.Vector3(P.lArm.sx + breath * 0.1, P.lArm.sy || 0, P.lArm.sz || 0), alpha10);
                 this.lerpJoint(this.parts.leftArm.elbow,
-                    new THREE.Vector3(-2.0, 0, 0), alpha10);
+                    new THREE.Vector3(P.lArm.ex, 0, 0), alpha10);
 
                 // ── 다리 ────────────────────────────────────────────────
                 const alpha12 = Math.min(1, 12 * dt);
-
-                // 왼다리(앞발)
                 this.lerpJoint(this.parts.leftLeg.hip,
-                    new THREE.Vector3(-1.42, -0.35 + sway * 0.04, 0.63), alpha12);
-                this.parts.leftLeg.knee.rotation.x = THREE.MathUtils.lerp(
-                    this.parts.leftLeg.knee.rotation.x, 1.06, alpha12);
+                    new THREE.Vector3(P.lHip.rx, P.lHip.ry + sway * 0.04, P.lHip.rz), alpha12);
+                this.parts.leftLeg.knee.rotation.x = L(
+                    this.parts.leftLeg.knee.rotation.x, P.lHip.knee, alpha12);
 
-                // 오른다리(뒷발)
                 this.lerpJoint(this.parts.rightLeg.hip,
-                    new THREE.Vector3(0.3, 0.07 + sway * 0.03, -0.6), alpha12);
-                this.parts.rightLeg.knee.rotation.x = THREE.MathUtils.lerp(
-                    this.parts.rightLeg.knee.rotation.x, 0.20, alpha12);
+                    new THREE.Vector3(P.rHip.rx, P.rHip.ry + sway * 0.03, P.rHip.rz), alpha12);
+                this.parts.rightLeg.knee.rotation.x = L(
+                    this.parts.rightLeg.knee.rotation.x, P.rHip.knee, alpha12);
             }
 
             animateWalk(dt) {
@@ -1812,15 +1829,16 @@
 
             // [추가] 격투가 전용 전투 대기 애니메이션 (맨손 가드 스탠스)
             animateBattleIdle(dt) {
+                const P = POSES.ef_battle_idle;  // ← POSES 딕셔너리에서 기본 포즈 읽기
+                const L = THREE.MathUtils.lerp;
+
                 // ── 타이머 ──────────────────────────────────────────────
                 this.animTimer += dt * 1.0;
                 const t = this.animTimer;
 
-                // 호흡: 격투가의 집중된 호흡
+                // 프로시저럴 오버레이
                 const breath  = Math.sin(t * 0.8) * 0.02;
-                // 체중 이동: 가드 스탠스에서의 미세한 흔들림
                 const sway    = Math.sin(t * 0.5) * 0.012;
-                // 주먹 긴장: 미세한 손목 긴장
                 const fistWig = Math.sin(t * 1.2) * 0.015;
 
                 const alpha6  = Math.min(1, 6 * dt);
@@ -1829,39 +1847,41 @@
                 const alpha12 = Math.min(1, 12 * dt);
 
                 // ── 루트 ────────────────────────────────────────────────
-                this.parts.root.position.y = THREE.MathUtils.lerp(this.parts.root.position.y, 0.60, alpha8);
-                this.parts.root.rotation.x = THREE.MathUtils.lerp(this.parts.root.rotation.x, 0.15 + breath * 0.1, alpha8);
-                this.parts.root.rotation.y = THREE.MathUtils.lerp(this.parts.root.rotation.y, sway * 0.08, alpha8);
+                this.parts.root.position.y = L(this.parts.root.position.y, P.root.y, alpha8);
+                this.parts.root.rotation.x = L(this.parts.root.rotation.x, P.root.rx + breath * 0.1, alpha8);
+                this.parts.root.rotation.y = L(this.parts.root.rotation.y, P.root.ry + sway * 0.08, alpha8);
 
                 // ── 허리 / 가슴 ─────────────────────────────────────────
-                this.parts.waist.rotation.x = THREE.MathUtils.lerp(this.parts.waist.rotation.x, 0.3 + breath * 0.15, alpha6);
-                this.parts.waist.rotation.y = THREE.MathUtils.lerp(this.parts.waist.rotation.y, 0.4 + sway * 0.06, alpha6);
-                this.parts.chest.rotation.x = THREE.MathUtils.lerp(this.parts.chest.rotation.x, 0.1 + breath * 0.1, alpha6);
-                this.parts.chest.rotation.y = THREE.MathUtils.lerp(this.parts.chest.rotation.y, 0.2, alpha6);
+                this.parts.waist.rotation.x = L(this.parts.waist.rotation.x, P.waist.rx + breath * 0.15, alpha6);
+                this.parts.waist.rotation.y = L(this.parts.waist.rotation.y, P.waist.ry + sway * 0.06, alpha6);
+                this.parts.chest.rotation.x = L(this.parts.chest.rotation.x, P.chest.rx + breath * 0.1, alpha6);
+                this.parts.chest.rotation.y = L(this.parts.chest.rotation.y, P.chest.ry, alpha6);
 
                 // ── 팔: 맨손 가드 포즈 ──────────────────────────────────
                 this.lerpJoint(this.parts.rightArm.shoulder,
-                    new THREE.Vector3(0.8 + breath * 0.08, -0.4, -0.6 + fistWig * 0.2), alpha10);
-                this.parts.rightArm.elbow.rotation.x = THREE.MathUtils.lerp(
-                    this.parts.rightArm.elbow.rotation.x, -2.0, alpha10);
-                this.lerpJoint(this.parts.rightArm.wrist, new THREE.Vector3(0, 0, 0), alpha10);
+                    new THREE.Vector3(P.rArm.sx + breath * 0.08, P.rArm.sy, P.rArm.sz + fistWig * 0.2), alpha10);
+                this.parts.rightArm.elbow.rotation.x = L(
+                    this.parts.rightArm.elbow.rotation.x, P.rArm.ex, alpha10);
+                this.lerpJoint(this.parts.rightArm.wrist,
+                    new THREE.Vector3(P.rArm.wx || 0, P.rArm.wy || 0, 0), alpha10);
 
                 this.lerpJoint(this.parts.leftArm.shoulder,
-                    new THREE.Vector3(0.8 + breath * 0.08, 0.4, 0.6 + fistWig * 0.15), alpha10);
-                this.parts.leftArm.elbow.rotation.x = THREE.MathUtils.lerp(
-                    this.parts.leftArm.elbow.rotation.x, -2.0, alpha10);
-                this.lerpJoint(this.parts.leftArm.wrist, new THREE.Vector3(0, 0, 0), alpha10);
+                    new THREE.Vector3(P.lArm.sx + breath * 0.08, P.lArm.sy || 0, (P.lArm.sz || 0) + fistWig * 0.15), alpha10);
+                this.parts.leftArm.elbow.rotation.x = L(
+                    this.parts.leftArm.elbow.rotation.x, P.lArm.ex, alpha10);
+                this.lerpJoint(this.parts.leftArm.wrist,
+                    new THREE.Vector3(0, 0, 0), alpha10);
 
-                // ── 다리: 넓은 가드 스탠스 ──────────────────────────────
+                // ── 다리: 가드 스탠스 ───────────────────────────────────
                 this.lerpJoint(this.parts.rightLeg.hip,
-                    new THREE.Vector3(-0.6, sway * 0.03, -0.5), alpha12);
-                this.parts.rightLeg.knee.rotation.x = THREE.MathUtils.lerp(
-                    this.parts.rightLeg.knee.rotation.x, 1.2, alpha12);
+                    new THREE.Vector3(P.rHip.rx, P.rHip.ry + sway * 0.03, P.rHip.rz), alpha12);
+                this.parts.rightLeg.knee.rotation.x = L(
+                    this.parts.rightLeg.knee.rotation.x, P.rHip.knee, alpha12);
 
                 this.lerpJoint(this.parts.leftLeg.hip,
-                    new THREE.Vector3(-0.6, sway * 0.03, 0.5), alpha12);
-                this.parts.leftLeg.knee.rotation.x = THREE.MathUtils.lerp(
-                    this.parts.leftLeg.knee.rotation.x, 1.2, alpha12);
+                    new THREE.Vector3(P.lHip.rx, P.lHip.ry + sway * 0.03, P.lHip.rz), alpha12);
+                this.parts.leftLeg.knee.rotation.x = L(
+                    this.parts.leftLeg.knee.rotation.x, P.lHip.knee, alpha12);
 
                 // ── 목: 적 응시 ─────────────────────────────────────────
                 this.updateNeckRotation(dt, true);
