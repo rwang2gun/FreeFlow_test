@@ -662,28 +662,8 @@
                         this.parent.parts.rightArm.wrist.rotation.set(1.4, 0.2, 0);
 
                     } else {
-                        this.parent.parts.root.rotation.x = THREE.MathUtils.lerp(this.parent.parts.root.rotation.x, 0.2, lerpSpeed);
-                        this.parent.parts.root.rotation.y = THREE.MathUtils.lerp(this.parent.parts.root.rotation.y, 0, lerpSpeed);
-                        this.parent.parts.waist.rotation.y = THREE.MathUtils.lerp(this.parent.parts.waist.rotation.y, 0, lerpSpeed);
-                        this.parent.parts.chest.rotation.y = THREE.MathUtils.lerp(this.parent.parts.chest.rotation.y, 0, lerpSpeed);
-
-                        this.parent.parts.root.position.y = THREE.MathUtils.lerp(this.parent.parts.root.position.y, 0.62, lerpSpeed);
-                        this.parent.parts.waist.rotation.x = THREE.MathUtils.lerp(this.parent.parts.waist.rotation.x, 0.9, lerpSpeed);
-                        this.parent.parts.chest.rotation.x = THREE.MathUtils.lerp(this.parent.parts.chest.rotation.x, 0.3, lerpSpeed);
-                        this.parent.parts.neck.rotation.x = THREE.MathUtils.lerp(this.parent.parts.neck.rotation.x, -1.0, lerpSpeed);
-
-                        this.parent.lerpJoint(this.parent.parts.leftLeg.hip, new THREE.Vector3(-1.3, 0, 0), lerpSpeed);
-                        this.parent.parts.leftLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parent.parts.leftLeg.knee.rotation.x, 1.2, lerpSpeed);
-
-                        this.parent.lerpJoint(this.parent.parts.rightLeg.hip, new THREE.Vector3(1.1, 0, 0), lerpSpeed);
-                        this.parent.parts.rightLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parent.parts.rightLeg.knee.rotation.x, 0.1, lerpSpeed);
-
-                        this.parent.lerpJoint(this.parent.parts.leftArm.shoulder, new THREE.Vector3(-0.8, 0, 0.2), lerpSpeed);
-                        this.parent.parts.leftArm.elbow.rotation.x = THREE.MathUtils.lerp(this.parent.parts.leftArm.elbow.rotation.x, -0.3, lerpSpeed);
-
-                        this.parent.lerpJoint(this.parent.parts.rightArm.shoulder, new THREE.Vector3(1.2, 0, -0.4), lerpSpeed);
-                        this.parent.parts.rightArm.elbow.rotation.x = THREE.MathUtils.lerp(this.parent.parts.rightArm.elbow.rotation.x, -0.1, lerpSpeed);
-                        this.parent.parts.rightArm.wrist.rotation.set(1.5, -0.8, 0.2);
+                        // 전방 대시: POSES.dash 사용 (대시 공격과 동일한 포즈)
+                        this.parent.applyPose(POSES.dash, 25, dt);
                     }
 
                 } else { this.parent.stateMachine.changeState('idle'); }
@@ -701,31 +681,8 @@
                 } else if (params && params.forceDash) {
                     this.comboStep = 'dash';
                 } else {
-                    const target = this.parent.nearestDummy;
-                    const dist = target ? this.parent.mesh.position.distanceTo(target.mesh.position) : Infinity;
-
-                    if (target && dist <= 10.0) {
-                        if (this.parent.roleName === "FS") {
-                            if (dist < 1.0) this.comboStep = 'shoulder_bash';
-                            else if (dist < 3.0) this.comboStep = 1;
-                            else if (dist < 4.5) this.comboStep = 'step_strike';
-                            else if (dist < 7.0) this.comboStep = 'dash';
-                            else this.comboStep = 'leap';
-                        } else if (this.parent.roleName === "EF") {
-                            if (dist < 0.8) this.comboStep = 'uppercut';
-                            else if (dist < 2.0) this.comboStep = 1;
-                            else if (dist < 4.5) this.comboStep = 'elbow';
-                            else if (dist < 7.0) this.comboStep = 'dash';
-                            else this.comboStep = 'leap';
-                        } else {
-                            if (dist < 3.0) this.comboStep = 1;
-                            else if (dist < 4.5) this.comboStep = 'step_strike';
-                            else if (dist < 7.0) this.comboStep = 'dash';
-                            else if (dist <= 10.0) this.comboStep = 'leap';
-                        }
-                    } else {
-                        this.comboStep = 1;
-                    }
+                    // 각 캐릭터의 다형 메서드로 위임
+                    this.comboStep = this.parent.pickComboStep();
                 }
 
                 this.inputBuffered = false; this.timer = 0; this.hasHit = false;
@@ -780,64 +737,67 @@
          */
         const POSES = {
             // ─── 기본 ───────────────────────────────────
-            idle: {
-                root:  { y:0.8, rx:-0.04, ry:-0.41 },
-                waist: { rx:-0.12, ry:-0.11 },
-                chest: { rx:0.17, ry:0.25 },
-                rArm:  { sx:0.48, sy:0.72, sz:-0.46, ex:-0.67, wx:-0.56, wy:0.2 },
-                lArm:  { sx:0.37, sy:-0.2, sz:0.06, ex:-1.05 },
-                rHip:  { rx:-0.18, ry:-0.4, rz:-0.3, knee:0.22 },
-                lHip:  { rx:-0.18, ry:0.4, rz:0.11, knee:0.25 },
-            },
+    idle: {
+        root:  { y:0.8, rx:0, ry:-0.37 },
+        waist: { rx:-0.09, ry:0 },
+        chest: { rx:0.06, ry:0.22 },
+        rArm:  { sx:0.13, sy:-0.01, sz:-0.09, ex:-0.49, wx:-0.26, wy:0 },
+        lArm:  { sx:0.3, sy:-0.68, sz:0.32, ex:-0.51 },
+        rHip:  { rx:-0.22, ry:-0.14, rz:-0.18, knee:0.21 },
+        lHip:  { rx:0.07, ry:0.38, rz:0.1, knee:0.05 },
+    },
+
            // ─── 콤보 공격 ──────────────────────────────
-             combo1: {
-                root:  { y:0.6, rx:0, ry:0.04 },
-                waist: { rx:0.2, ry:-0.01 },
-                chest: { rx:0.49, ry:0.44 },
-                rArm:  { sx:-0.83, sy:-0.82, sz:0.77, ex:0.91, wx:0.67, wy:0.56 },
-                lArm:  { sx:0.09, sy:-0.2, sz:0.25, ex:-1.38 },
-                rHip:  { rx:-1.03, ry:-0.1, rz:-0.54, knee:1.53 },
-                lHip:  { rx:0.3, ry:0.02, rz:0.69, knee:0.39 },
-            },        
-             combo2: {
-                root:  { y:0.56, rx:0, ry:0 },
-                waist: { rx:0.58, ry:-0.65 },
-                chest: { rx:-0.06, ry:-0.34 },
-                rArm:  { sx:-0.66, sy:0.58, sz:-0.51, ex:0.06, wx:1.22, wy:-0.3 },
-                lArm:  { sx:0.05, sy:-0.51, sz:1.27, ex:-2 },
-                rHip:  { rx:0.84, ry:0.14, rz:-0.29, knee:0 },
-                lHip:  { rx:-1.31, ry:-0.01, rz:0.27, knee:1.44 },
-            },
+    combo1: {
+        root:  { y:0.6, rx:0, ry:0.04 },
+        waist: { rx:0.2, ry:-0.01 },
+        chest: { rx:0.49, ry:0.44 },
+        rArm:  { sx:-1.28, sy:-0.58, sz:0.83, ex:0.01, wx:1.48, wy:0.26 },
+        lArm:  { sx:0.09, sy:-0.2, sz:0.25, ex:-1.38 },
+        rHip:  { rx:-1.03, ry:-0.1, rz:-0.54, knee:1.53 },
+        lHip:  { rx:0.3, ry:0.02, rz:0.69, knee:0.39 },
+    },
+    combo2: {
+        root:  { y:0.56, rx:0, ry:0 },
+        waist: { rx:0.58, ry:-0.65 },
+        chest: { rx:-0.06, ry:-0.34 },
+        rArm:  { sx:-1.28, sy:0.62, sz:-1.06, ex:-0.14, wx:1.81, wy:-0.24 },
+        lArm:  { sx:0.05, sy:-0.51, sz:1.27, ex:-2 },
+        rHip:  { rx:0.84, ry:0.14, rz:-0.29, knee:0 },
+        lHip:  { rx:-1.31, ry:-0.01, rz:0.27, knee:1.44 },
+    },
+
             // 3타 전반부 — 우에서 좌로 1타
-            combo3a: {
-                root:  { y: 0.75, rx: 0,     ry: 0 },
-                waist: { rx: 0.3, ry: 0.4 },
-                chest: { rx: 0.1, ry: 0.4 },
-                rArm:  { sx: -0.8, sy: 0,   sz: 1.2,  ex: -0.2,  wx: 1.0,  wy: 0.5 },
-                lArm:  { sx: -0.2, sy: 0,   sz: -0.8, ex: -0.2 },
-                rHip:  { rx: -0.5, ry: 0,   rz: 0,    knee: 0.5 },
-                lHip:  { rx: 0.2,  ry: 0,   rz: 0,    knee: 0.1 },
-            },
-            // 3타 후반부 — 강하게 역방향 마무리
-            combo3b: {
-                root:  { y: 0.75, rx: 0,     ry: 0 },
-                waist: { rx: 0.2, ry: -1.2 },
-                chest: { rx: 0.1, ry: -0.8 },
-                rArm:  { sx: -1.0, sy: 0,   sz: -1.2, ex: -0.2,  wx: 1.5,  wy: -0.5 },
-                lArm:  { sx: -0.8, sy: 0,   sz: -0.5, ex: -1.2 },
-                rHip:  { rx: -0.5, ry: 0,   rz: 0,    knee: 0.5 },
-                lHip:  { rx: 0.2,  ry: 0,   rz: 0,    knee: 0.1 },
-            },
+    combo3a: {
+        root:  { y:0.6, rx:0, ry:0.04 },
+        waist: { rx:0.29, ry:0.37 },
+        chest: { rx:0.62, ry:0.66 },
+        rArm:  { sx:-1.22, sy:-0.05, sz:0.32, ex:0.01, wx:0.26, wy:-0.16 },
+        lArm:  { sx:-0.67, sy:-1.46, sz:0.55, ex:-0.68 },
+        rHip:  { rx:-1.03, ry:-0.1, rz:-0.54, knee:1.53 },
+        lHip:  { rx:0.3, ry:0.02, rz:0.69, knee:0.39 },
+    },
+    combo3b: {
+        root:  { y:0.56, rx:0, ry:0 },
+        waist: { rx:0.58, ry:-0.99 },
+        chest: { rx:-0.06, ry:-0.34 },
+        rArm:  { sx:-0.47, sy:0.76, sz:-1.5, ex:-1.6, wx:2, wy:-0.18 },
+        lArm:  { sx:-1.42, sy:0.56, sz:-0.89, ex:-0.03 },
+        rHip:  { rx:0.84, ry:0.14, rz:-0.29, knee:0 },
+        lHip:  { rx:-1.31, ry:-0.01, rz:0.27, knee:1.44 },
+    },
+
             // ─── 특수 공격 ──────────────────────────────
-            shoulder_bash: {
-                root:  { y: 0.65, rx: 0,     ry: 0 },
-                waist: { rx: 0.65, ry: 0.95 },
-                chest: { rx: 0.45, ry: 0.65 },
-                rArm:  { sx: -0.2, sy: 0,   sz: -0.2, ex: -1.5,  wx: 1.5,  wy: 0 },
-                lArm:  { sx: 0.5,  sy: 0,   sz: 0.5,  ex: -0.3 },
-                rHip:  { rx: -0.8, ry: 0,   rz: 0,    knee: 1.2 },
-                lHip:  { rx: 0.5,  ry: 0,   rz: 0,    knee: 0.1 },
-            },
+    shoulder_bash: {
+        root:  { y:0.65, rx:0, ry:0 },
+        waist: { rx:0.65, ry:0.95 },
+        chest: { rx:0.45, ry:0.65 },
+        rArm:  { sx:-0.2, sy:0, sz:-0.2, ex:-1.5, wx:1.5, wy:0 },
+        lArm:  { sx:0.5, sy:0, sz:0.5, ex:-0.3 },
+        rHip:  { rx:-0.8, ry:0, rz:0, knee:1.2 },
+        lHip:  { rx:0.5, ry:0, rz:0, knee:0.1 },
+    },
+
             step_strike: {
                 root:  { y: 0.65, rx: 0,     ry: 0 },
                 waist: { rx: 0.3, ry: 0.8 },
@@ -868,7 +828,17 @@
                 lHip:  { rx:-0.34, ry:0.56, rz:0.61, knee:0.47 },
             },
             // y는 updateCombo에서 점프 아크로 덮어씀
-            leap: {
+    leap: {
+        root:  { y:0.65, rx:0.35, ry:0.05 },
+        waist: { rx:0.04, ry:0 },
+        chest: { rx:-0.75, ry:0 },
+        rArm:  { sx:-3, sy:1.38, sz:0.37, ex:-0.63, wx:0.91, wy:-1.48 },
+        lArm:  { sx:-2.74, sy:-1.62, sz:-0.08, ex:-0.6 },
+        rHip:  { rx:-1.25, ry:0.22, rz:-0.17, knee:2 },
+        lHip:  { rx:0.18, ry:0.04, rz:0.4, knee:0.51 },
+    },
+            // 착지 후 내려치기 포즈
+            leapAttack: {
                 root:  { y:0.47, rx:0.61, ry:0.01 },
                 waist: { rx:0.8, ry:0 },
                 chest: { rx:0.2, ry:0 },
@@ -886,67 +856,156 @@
                 rHip:  { rx: -0.3, ry: 0,   rz: 0,    knee: 0.5 },
                 lHip:  { rx: 0.3,  ry: 0,   rz: 0,    knee: 0.2 },
             },
-            elbow: {
-                root:  { y: 0.70, rx: 0,     ry: 0 },
-                waist: { rx: 0.4, ry: -0.7 },
-                chest: { rx: 0.3, ry: -0.5 },
-                rArm:  { sx: 0.3,  sy: 1.5,  sz: 0,    ex: 1.8,   wx: 0.5,  wy: 0 },
-                lArm:  { sx: -0.5, sy: -0.3, sz: 0.5,  ex: -0.4 },
-                rHip:  { rx: -0.4, ry: 0,   rz: 0,    knee: 0.6 },
-                lHip:  { rx: 0.2,  ry: 0,   rz: 0,    knee: 0.1 },
-            },
+    elbow: {
+        root:  { y:0.5, rx:0.55, ry:-1.39 },
+        waist: { rx:-0.05, ry:-0.43 },
+        chest: { rx:-0.04, ry:0.47 },
+        rArm:  { sx:-1.31, sy:1.44, sz:-0.97, ex:-1.73, wx:0.09, wy:-0.09 },
+        lArm:  { sx:-1.02, sy:-0.62, sz:1.08, ex:-2 },
+        rHip:  { rx:-0.12, ry:-0.22, rz:-0.37, knee:0.31 },
+        lHip:  { rx:-1.52, ry:-0.96, rz:1, knee:1.99 },
+    },
             // ─── 전투 대기 (PoseEditor 연동) ──────────────
     battle_idle: {
         root:  { y:0.63, rx:0.03, ry:-0.93 },
-        waist: { rx:0.24, ry:0.08 },
-        chest: { rx:0.22, ry:0.18 },
-        rArm:  { sx:0.16, sy:-0.2, sz:-0.41, ex:-0.49, wx:0.2, wy:-0.49 },
-        lArm:  { sx:0.02, sy:-0.49, sz:0.72, ex:-0.86 },
+        waist: { rx:0.24, ry:0.09 },
+        chest: { rx:0.22, ry:-0.3 },
+        rArm:  { sx:-0.93, sy:-0.95, sz:-1.33, ex:-2, wx:-0.03, wy:0.11 },
+        lArm:  { sx:0.02, sy:-0.49, sz:0.72, ex:-1.56 },
         rHip:  { rx:-1.15, ry:-0.15, rz:-0.41, knee:1.12 },
         lHip:  { rx:-0.75, ry:-0.04, rz:0.92, knee:0.84 },
     },
-            ef_battle_idle: {
-                root:  { y: 0.60, rx: 0.15,  ry: 0 },
-                waist: { rx: 0.3,  ry: 0.4 },
-                chest: { rx: 0.1,  ry: 0.2 },
-                rArm:  { sx: 0.8,  sy: -0.4,  sz: -0.6,  ex: -2.0,  wx: 0,    wy: 0 },
-                lArm:  { sx: 0.8,  sy: 0.4,   sz: 0.6,   ex: -2.0 },
-                rHip:  { rx: -0.6, ry: 0,     rz: -0.5,  knee: 1.2 },
-                lHip:  { rx: -0.6, ry: 0,     rz: 0.5,   knee: 1.2 },
-            },
+    ef_battle_idle: {
+        root:  { y:0.74, rx:-0.04, ry:-0.95 },
+        waist: { rx:-0.18, ry:0.01 },
+        chest: { rx:0.45, ry:-0.3 },
+        rArm:  { sx:-0.27, sy:-0.12, sz:-0.12, ex:-0.74, wx:-0.11, wy:-0.07 },
+        lArm:  { sx:0.44, sy:-0.11, sz:0.14, ex:-2 },
+        rHip:  { rx:-0.2, ry:-0.13, rz:-0.32, knee:0.7 },
+        lHip:  { rx:-0.39, ry:0.58, rz:0.42, knee:0.25 },
+    },
+            // ─── EF 아이들 / 전투 포즈 ──────────────────
+    ef_idle: {
+        root:  { y:0.60, rx:0,     ry:0 },
+        waist: { rx:0.3,  ry:0.4 },
+        chest: { rx:0.1,  ry:0.2 },
+        rArm:  { sx:0.8,  sy:-0.4, sz:-0.6, ex:-2.0, wx:0, wy:0 },
+        lArm:  { sx:0.8,  sy: 0.4, sz: 0.6, ex:-2.0 },
+        rHip:  { rx:-0.6, ry:0,    rz:-0.5, knee:1.2 },
+        lHip:  { rx:-0.6, ry:0,    rz: 0.5, knee:1.2 },
+    },
+            // ─── EF 콤보 공격 ────────────────────────────
+    ef_combo1: {
+        root:  { y:0.67, rx:-0.04, ry:0.85 },
+        waist: { rx:0.32, ry:0.43 },
+        chest: { rx:0.28, ry:-0.05 },
+        rArm:  { sx:-0.56, sy:0.87, sz:-1.52, ex:-1.08, wx:-0.24, wy:-0.07 },
+        lArm:  { sx:0.44, sy:-0.11, sz:0.14, ex:-2 },
+        rHip:  { rx:-0.79, ry:-0.41, rz:-0.63, knee:0.66 },
+        lHip:  { rx:-0.89, ry:0.49, rz:0.68, knee:0.82 },
+    },
+    ef_combo2: {
+        root:  { y:0.67, rx:-0.04, ry:-1.22 },
+        waist: { rx:0.21, ry:0.43 },
+        chest: { rx:0.28, ry:-0.05 },
+        rArm:  { sx:0.53, sy:0.09, sz:-0.18, ex:-2, wx:-0.11, wy:-0.07 },
+        lArm:  { sx:-1.05, sy:-1.58, sz:1.14, ex:-0.7 },
+        rHip:  { rx:-0.79, ry:-0.41, rz:-0.63, knee:0.66 },
+        lHip:  { rx:-0.89, ry:0.49, rz:0.68, knee:0.82 },
+    },
+    ef_combo3: {
+        root:  { y:0.78, rx:-0.78, ry:1.94 },
+        waist: { rx:-0.72, ry:-0.56 },
+        chest: { rx:0.72, ry:-1.14 },
+        rArm:  { sx:0.59, sy:-0.03, sz:-0.2, ex:-2, wx:-0.11, wy:-0.07 },
+        lArm:  { sx:0.44, sy:-0.11, sz:0.14, ex:-2 },
+        rHip:  { rx:-2, ry:-0.33, rz:-1, knee:0 },
+        lHip:  { rx:-0.81, ry:0.02, rz:1, knee:0 },
+    },
+    ef_combo4: {
+        root:  { y:0.78, rx:-0.68, ry:-2 },
+        waist: { rx:-0.62, ry:1.23 },
+        chest: { rx:0.65, ry:0.11 },
+        rArm:  { sx:-0.19, sy:-0.03, sz:-0.2, ex:-1.67, wx:-0.11, wy:-0.07 },
+        lArm:  { sx:0.44, sy:-0.11, sz:0.14, ex:-2 },
+        rHip:  { rx:-0.79, ry:0.02, rz:-1, knee:0 },
+        lHip:  { rx:-2, ry:0.33, rz:1, knee:0 },
+    },
+    ef_uppercut: {
+        root:  { y:0.88, rx:-0.04, ry:-0.18 },
+        waist: { rx:0.21, ry:0.43 },
+        chest: { rx:0.28, ry:-0.05 },
+        rArm:  { sx:-3, sy:-0.03, sz:0.2, ex:-0.6, wx:-0.18, wy:-0.07 },
+        lArm:  { sx:0.33, sy:-0.11, sz:-0.2, ex:-2 },
+        rHip:  { rx:-0.39, ry:-0.05, rz:-0.03, knee:0.61 },
+        lHip:  { rx:-1.81, ry:0, rz:-0.03, knee:2 },
+    },
+    ef_elbow: {
+        root:  { y:0.67, rx:0.5, ry:-0.16 },
+        waist: { rx:-0.67, ry:0.09 },
+        chest: { rx:1.5, ry:-0.05 },
+        rArm:  { sx:0.67, sy:-0.09, sz:-0.18, ex:-1.44, wx:-0.11, wy:-0.07 },
+        lArm:  { sx:0.82, sy:0.18, sz:0.16, ex:-1.56 },
+        rHip:  { rx:-2, ry:-0.04, rz:0, knee:2 },
+        lHip:  { rx:0.51, ry:-0.01, rz:-0.03, knee:0.23 },
+    },
+            // ─── EF 도약 공격 (2페이즈) ──────────────────
+    ef_leap: {
+        root:  { y:0.62, rx:-1.5, ry:0.33 },
+        waist: { rx:0.51, ry:-0.05 },
+        chest: { rx:0.9, ry:-0.05 },
+        rArm:  { sx:-0.85, sy:0.93, sz:-0.03, ex:-2, wx:-0.11, wy:-0.07 },
+        lArm:  { sx:-3, sy:-1.73, sz:-1.92, ex:-2 },
+        rHip:  { rx:-2, ry:-0.05, rz:0.04, knee:2 },
+        lHip:  { rx:-2, ry:-0.04, rz:-0.14, knee:2 },
+    },
+     ef_leapAttack: {
+        root:  { y:0.4, rx:0.14, ry:-0.01 },
+        waist: { rx:0.48, ry:-0.05 },
+        chest: { rx:1.18, ry:-0.05 },
+        rArm:  { sx:0.22, sy:-0.18, sz:-0.05, ex:-1.58, wx:-0.11, wy:-0.07 },
+        lArm:  { sx:0.01, sy:0.43, sz:-0.01, ex:-2 },
+        rHip:  { rx:-1.29, ry:-0.05, rz:0.04, knee:0 },
+        lHip:  { rx:-1.02, ry:-0.04, rz:-0.14, knee:2 },
+    },
             // ─── 피격 / 회복 ────────────────────────────
-            hurt: {
-                root:  { y: 0.85, rx: 0,     ry: 0 },
-                waist: { rx: -0.4, ry: 0 },
-                chest: { rx: -0.3, ry: 0 },
-                rArm:  { sx: 0.5,  sy: 0,   sz: -1.2, ex: -0.5,  wx: 0,    wy: 0 },
-                lArm:  { sx: -0.5, sy: 0,   sz: 1.2,  ex: -0.5 },
-                rHip:  { rx: -0.4, ry: 0,   rz: -0.1, knee: 0.3 },
-                lHip:  { rx: -0.4, ry: 0,   rz: 0.1,  knee: 0.3 },
-            },
-            combat_recover: {
-                root:  { y: 0.72, rx: 0,     ry: -0.8 },
-                waist: { rx: 0.1, ry: 0.4 },
-                chest: { rx: 0.1, ry: 0.4 },
-                rArm:  { sx: 0.2, sy: 0.5,  sz: -0.6, ex: -0.1,  wx: 1.4,  wy: -1.0 },
-                lArm:  { sx: 0.2, sy: 0.2,  sz: 0.3,  ex: -1.2 },
-                rHip:  { rx: -0.1, ry: 0,  rz: -0.2,  knee: 0.1 },
-                lHip:  { rx: -0.4, ry: 0,  rz: 0.2,   knee: 0.4 },
-            },
-        };
+     hurt: {
+        root:  { y:0.59, rx:0.45, ry:0 },
+        waist: { rx:-0.28, ry:0 },
+        chest: { rx:-0.57, ry:0 },
+        rArm:  { sx:0.16, sy:-0.07, sz:-0.51, ex:-0.47, wx:-0.39, wy:-0.56 },
+        lArm:  { sx:-0.1, sy:0, sz:0.35, ex:-0.5 },
+        rHip:  { rx:-0.6, ry:0, rz:-0.1, knee:0.75 },
+        lHip:  { rx:-0.68, ry:0, rz:0.1, knee:0.95 },
+    },
+    combat_recover: {
+        root:  { y:0.72, rx:0, ry:-0.28 },
+        waist: { rx:0.32, ry:-0.01 },
+        chest: { rx:0.57, ry:-0.05 },
+        rArm:  { sx:-0.24, sy:0.49, sz:-0.33, ex:-1.73, wx:1.02, wy:-0.07 },
+        lArm:  { sx:-0.33, sy:0.09, sz:-0.16, ex:-2 },
+        rHip:  { rx:-0.76, ry:0, rz:-0.04, knee:0.87 },
+        lHip:  { rx:-0.76, ry:0, rz:0.2, knee:0.99 },
+        },
+    };
 
         // ── PoseEditor 연동: localStorage에서 커스텀 포즈 자동 로드 ──
+        // 기본(빌트인) 포즈는 HTML 값 우선 — 덮어쓰지 않음
         (function loadPoseEditorPoses() {
             try {
                 const raw = localStorage.getItem('pe_to_ff_poses');
                 if (!raw) return;
                 const imported = JSON.parse(raw);
+                const builtinKeys = new Set(Object.keys(POSES));
                 let count = 0;
                 for (const [name, pose] of Object.entries(imported)) {
+                    if (builtinKeys.has(name)) continue; // 기본 포즈는 건너뜀
                     POSES[name] = pose;
                     count++;
                 }
-                if (count > 0) console.log('[PoseEditor] 포즈 로드 완료:', Object.keys(imported).join(', '));
+                const skipped = Object.keys(imported).filter(k => builtinKeys.has(k));
+                if (skipped.length) console.log('[PoseEditor] 기본 포즈 유지(HTML 우선):', skipped.join(', '));
+                if (count > 0) console.log('[PoseEditor] 커스텀 포즈 로드 완료:', Object.keys(imported).filter(k => !builtinKeys.has(k)).join(', '));
             } catch(e) {
                 console.warn('[PoseEditor] 포즈 로드 실패:', e);
             }
@@ -1122,6 +1181,36 @@
                 joint.rotation.z = THREE.MathUtils.lerp(joint.rotation.z, targetVec.z, safeAlpha);
             }
 
+            // ── 타겟 획득 + 회전 + 거리 기반 이동 거리 계산 (setupCombo 공용) ──
+            _acquireTarget(state, step, dashSteps = ['dash', 'step_strike', 'leap'], stopDist = 1.2) {
+                const nearest = this.nearestDummy;
+                if (!nearest) return;
+                const dist = this.mesh.position.distanceTo(nearest.mesh.position);
+                if (dist > 10.0) return;
+
+                const dir = new THREE.Vector3().subVectors(nearest.mesh.position, this.mesh.position);
+                if (dashSteps.includes(state.comboStep || step)) {
+                    state.attackDashDist = Math.max(0.2, dir.length() - stopDist);
+                }
+                if (dir.lengthSq() > 0.001) {
+                    this.mesh.quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.atan2(dir.x, dir.z));
+                }
+            }
+
+            // ── 거리→콤보 매핑 (서브클래스에서 오버라이드) ────────────────
+            pickComboStep() {
+                const target = this.nearestDummy;
+                const dist = target ? this.mesh.position.distanceTo(target.mesh.position) : Infinity;
+                if (target && dist <= 10.0) {
+                    if (dist < 1.0) return 'shoulder_bash';
+                    if (dist < 3.0) return 1;
+                    if (dist < 4.5) return 'step_strike';
+                    if (dist < 7.0) return 'dash';
+                    return 'leap';
+                }
+                return 1;
+            }
+
             // ── POSE 시스템 ──────────────────────────────────────────────────
             // POSES 딕셔너리의 포즈 하나를 받아 모든 관절에 lerp 적용
             applyPose(pose, speed, dt) {
@@ -1164,29 +1253,34 @@
                     this.parts.leftLeg.knee.rotation.x, pose.lHip.knee ?? 0.05, a);
             }
 
-            // 목 시선 로직 — 공격/회복 페이즈 공용
-            _updateNeckLook(dt, speed, neckXTarget) {
+            // ── 목 시선 로직 (공용) ──────────────────────────────────────
+            // mode: 'combat' = 전투 타겟 우선, 'move' = 이동 방향, 'auto' = 타겟 있으면 타겟/없으면 이동
+            // neckXTarget: 목 상하 각도 (기본 -0.2)
+            // speed: lerp 속도 (기본 15)
+            updateNeckLook(dt, { mode = 'auto', neckX = -0.2, speed = 15 } = {}) {
                 const a = Math.min(1, speed * dt);
+                const L = THREE.MathUtils.lerp;
                 let targetLookAngle = 0;
 
-                if (this.nearestDummy) {
+                const useCombat = mode === 'combat' || (mode === 'auto' && this.isCombatMode);
+                const hasTarget = useCombat && this.nearestDummy;
+
+                if (hasTarget) {
                     const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(this.mesh.quaternion);
                     const toTarget = new THREE.Vector3()
                         .subVectors(this.nearestDummy.mesh.position, this.mesh.position).setY(0);
                     if (toTarget.lengthSq() > 0.001) {
                         toTarget.normalize();
                         const cross = new THREE.Vector3().crossVectors(forward, toTarget);
-                        const dot = forward.dot(toTarget);
                         targetLookAngle = THREE.MathUtils.clamp(
-                            Math.atan2(cross.y, dot), -Math.PI / 2.2, Math.PI / 2.2);
+                            Math.atan2(cross.y, forward.dot(toTarget)), -Math.PI / 2.2, Math.PI / 2.2);
                     }
                 } else if (this.velocity.lengthSq() > 0.01) {
                     const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(this.mesh.quaternion);
                     const moveDir = this.velocity.clone().setY(0).normalize();
                     const cross = new THREE.Vector3().crossVectors(forward, moveDir);
-                    const dot = forward.dot(moveDir);
                     targetLookAngle = THREE.MathUtils.clamp(
-                        Math.atan2(cross.y, dot), -Math.PI / 2.2, Math.PI / 2.2);
+                        Math.atan2(cross.y, forward.dot(moveDir)), -Math.PI / 2.2, Math.PI / 2.2);
                 }
 
                 const bodyTwist = this.parts.root.rotation.y
@@ -1195,12 +1289,19 @@
                 const targetNeckY = THREE.MathUtils.clamp(
                     targetLookAngle - bodyTwist, -Math.PI / 2, Math.PI / 2);
 
-                this.parts.neck.rotation.x = THREE.MathUtils.lerp(
-                    this.parts.neck.rotation.x, neckXTarget ?? -0.2, a);
-                this.parts.neck.rotation.y = THREE.MathUtils.lerp(
-                    this.parts.neck.rotation.y, targetNeckY, a);
-                this.parts.neck.rotation.z = THREE.MathUtils.lerp(
-                    this.parts.neck.rotation.z, 0, a);
+                // neckX 가 'compensate'이면 상체 기울기 보상 (idle 포즈용)
+                const neckXVal = neckX === 'compensate'
+                    ? -(this.parts.root.rotation.x + this.parts.waist.rotation.x + this.parts.chest.rotation.x)
+                    : neckX;
+
+                this.parts.neck.rotation.x = L(this.parts.neck.rotation.x, neckXVal, a);
+                this.parts.neck.rotation.y = L(this.parts.neck.rotation.y, targetNeckY, a);
+                this.parts.neck.rotation.z = L(this.parts.neck.rotation.z, 0, a);
+            }
+
+            // 하위 호환 래퍼 (기존 공격/회복 코드에서 호출)
+            _updateNeckLook(dt, speed, neckXTarget) {
+                this.updateNeckLook(dt, { mode: 'auto', neckX: neckXTarget ?? -0.2, speed });
             }
             // ─────────────────────────────────────────────────────────────────
 
@@ -1317,48 +1418,18 @@
                 this.animTimer += dt * 1.5;
                 const breath = Math.sin(this.animTimer) * 0.04;
 
-                // 카메라/이동 방향 시선
-                let targetLookAngle = 0;
-                if (this.velocity.lengthSq() > 0.01) {
-                    const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(this.mesh.quaternion);
-                    const moveDir = this.velocity.clone().setY(0).normalize();
-                    const cross = new THREE.Vector3().crossVectors(forward, moveDir);
-                    targetLookAngle = THREE.MathUtils.clamp(Math.atan2(cross.y, forward.dot(moveDir)), -Math.PI / 2.2, Math.PI / 2.2);
-                }
+                this.applyPose(POSES.idle, 8, dt);
+                // breath 오버레이
+                this.parts.root.rotation.x += breath * 0.1;
+                this.parts.waist.rotation.x += breath * 0.15;
+                this.parts.chest.rotation.x += breath * 0.1;
+                this.parts.rightArm.shoulder.rotation.x += breath * 0.1;
+                this.parts.leftArm.shoulder.rotation.x += breath * 0.1;
 
-                const alpha8 = Math.min(1, 8 * dt);
-                this.parts.root.rotation.x = THREE.MathUtils.lerp(this.parts.root.rotation.x, 0, alpha8);
-                this.parts.root.rotation.y = THREE.MathUtils.lerp(this.parts.root.rotation.y, 0, alpha8);
-                this.parts.root.position.y = THREE.MathUtils.lerp(this.parts.root.position.y, 0.8, alpha8);
-
-                this.parts.waist.rotation.x = THREE.MathUtils.lerp(this.parts.waist.rotation.x, 0, alpha8);
-                this.parts.waist.rotation.y = THREE.MathUtils.lerp(this.parts.waist.rotation.y, 0, alpha8);
-                this.parts.chest.rotation.set(0, 0, 0);
-
-                const currentBodyTwist = this.parts.root.rotation.y + this.parts.waist.rotation.y;
-                const neckAlpha = Math.min(1, 15 * dt);
-                this.parts.neck.rotation.x = THREE.MathUtils.lerp(this.parts.neck.rotation.x, -breath * 1.5, neckAlpha);
-                this.parts.neck.rotation.y = THREE.MathUtils.lerp(this.parts.neck.rotation.y, targetLookAngle - currentBodyTwist, neckAlpha);
-                this.parts.neck.rotation.z = THREE.MathUtils.lerp(this.parts.neck.rotation.z, 0, neckAlpha);
-
-                const alpha10 = Math.min(1, 10 * dt);
-                this.parts.rightLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parts.rightLeg.knee.rotation.x, 0.05, alpha10);
-                this.parts.leftLeg.knee.rotation.x  = THREE.MathUtils.lerp(this.parts.leftLeg.knee.rotation.x,  0.05, alpha10);
-                this.lerpJoint(this.parts.rightLeg.hip, new THREE.Vector3(0, 0, 0), alpha10);
-                this.lerpJoint(this.parts.leftLeg.hip,  new THREE.Vector3(0, 0, 0), alpha10);
-
-                this.lerpJoint(this.parts.rightArm.shoulder, new THREE.Vector3(breath * 1.5, 0, 0), 8 * dt);
-                this.lerpJoint(this.parts.rightArm.elbow,    new THREE.Vector3(-0.15, 0, 0),         8 * dt);
-                this.lerpJoint(this.parts.rightArm.wrist,    new THREE.Vector3(0, 0, 0),             8 * dt);
-                this.lerpJoint(this.parts.leftArm.shoulder,  new THREE.Vector3(breath * 1.5, 0, 0),  8 * dt);
-                this.lerpJoint(this.parts.leftArm.elbow,     new THREE.Vector3(-0.15, 0, 0),         8 * dt);
+                this.updateNeckLook(dt, { mode: 'move', neckX: 'compensate' });
             }
 
             animateBattleIdle(dt) {
-                const P = POSES.battle_idle;  // ← POSES 딕셔너리에서 기본 포즈 읽기
-                const L = THREE.MathUtils.lerp;
-
-                // ── 타이머 ──────────────────────────────────────────────
                 this.animTimer += dt * 1.0;
                 const t = this.animTimer;
 
@@ -1367,66 +1438,22 @@
                 const sway     = Math.sin(t * 0.5) * 0.015;
                 const swordWig = Math.sin(t * 1.1) * 0.018;
 
-                // ── 적 시선 추적 ─────────────────────────────────────────
-                let targetLookAngle = 0;
-                if (this.nearestDummy) {
-                    const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(this.mesh.quaternion);
-                    const toTarget = new THREE.Vector3().subVectors(this.nearestDummy.mesh.position, this.mesh.position).setY(0);
-                    if (toTarget.lengthSq() > 0.001) {
-                        toTarget.normalize();
-                        const cross = new THREE.Vector3().crossVectors(forward, toTarget);
-                        targetLookAngle = THREE.MathUtils.clamp(Math.atan2(cross.y, forward.dot(toTarget)), -Math.PI / 2.2, Math.PI / 2.2);
-                    }
-                }
+                this.applyPose(POSES.battle_idle, 8, dt);
 
-                // ── 루트 ────────────────────────────────────────────────
-                const alpha8 = Math.min(1, 8 * dt);
-                this.parts.root.position.y = L(this.parts.root.position.y, P.root.y, alpha8);
-                this.parts.root.rotation.x = L(this.parts.root.rotation.x, P.root.rx + breath * 0.15, alpha8);
-                this.parts.root.rotation.y = L(this.parts.root.rotation.y, P.root.ry + sway * 0.1, alpha8);
+                // 오버레이 적용
+                this.parts.root.rotation.x += breath * 0.15;
+                this.parts.root.rotation.y += sway * 0.1;
+                this.parts.waist.rotation.x += breath * 0.2;
+                this.parts.waist.rotation.y += sway * 0.08;
+                this.parts.chest.rotation.x += breath * 0.15;
+                this.parts.rightArm.shoulder.rotation.x += breath * 0.1;
+                this.parts.rightArm.shoulder.rotation.z += swordWig * 0.3;
+                this.parts.rightArm.wrist.rotation.x    += swordWig * 0.3;
+                this.parts.leftArm.shoulder.rotation.x  += breath * 0.1;
+                this.parts.leftLeg.hip.rotation.y  += sway * 0.04;
+                this.parts.rightLeg.hip.rotation.y += sway * 0.03;
 
-                // ── 허리 / 가슴 ─────────────────────────────────────────
-                const alpha6 = Math.min(1, 6 * dt);
-                this.parts.waist.rotation.x = L(this.parts.waist.rotation.x, P.waist.rx + breath * 0.2, alpha6);
-                this.parts.waist.rotation.y = L(this.parts.waist.rotation.y, P.waist.ry + sway * 0.08, alpha6);
-                this.parts.chest.rotation.x = L(this.parts.chest.rotation.x, P.chest.rx + breath * 0.15, alpha6);
-                this.parts.chest.rotation.y = L(this.parts.chest.rotation.y, P.chest.ry, alpha6);
-
-                // ── 목: 상체 비틀림 보상 — 정면/적 응시 유지 ───────────
-                const bodyTwist = this.parts.root.rotation.y + this.parts.waist.rotation.y + this.parts.chest.rotation.y;
-                const neckAlpha = Math.min(1, 15 * dt);
-                this.parts.neck.rotation.x = L(this.parts.neck.rotation.x,
-                    -(this.parts.root.rotation.x + this.parts.waist.rotation.x + this.parts.chest.rotation.x), neckAlpha);
-                this.parts.neck.rotation.y = L(this.parts.neck.rotation.y,
-                    THREE.MathUtils.clamp(targetLookAngle - bodyTwist, -Math.PI / 2, Math.PI / 2), neckAlpha);
-                this.parts.neck.rotation.z = L(this.parts.neck.rotation.z, 0, neckAlpha);
-
-                // ── 오른팔 ───────────────────────────────────────────────
-                const alpha10 = Math.min(1, 10 * dt);
-                this.lerpJoint(this.parts.rightArm.shoulder,
-                    new THREE.Vector3(P.rArm.sx + breath * 0.1, P.rArm.sy, P.rArm.sz + swordWig * 0.3), alpha10);
-                this.lerpJoint(this.parts.rightArm.elbow,
-                    new THREE.Vector3(P.rArm.ex, 0, 0), alpha10);
-                this.lerpJoint(this.parts.rightArm.wrist,
-                    new THREE.Vector3((P.rArm.wx || 0) + swordWig * 0.3, P.rArm.wy || 0, 0), alpha10);
-
-                // ── 왼팔 ────────────────────────────────────────────────
-                this.lerpJoint(this.parts.leftArm.shoulder,
-                    new THREE.Vector3(P.lArm.sx + breath * 0.1, P.lArm.sy || 0, P.lArm.sz || 0), alpha10);
-                this.lerpJoint(this.parts.leftArm.elbow,
-                    new THREE.Vector3(P.lArm.ex, 0, 0), alpha10);
-
-                // ── 다리 ────────────────────────────────────────────────
-                const alpha12 = Math.min(1, 12 * dt);
-                this.lerpJoint(this.parts.leftLeg.hip,
-                    new THREE.Vector3(P.lHip.rx, P.lHip.ry + sway * 0.04, P.lHip.rz), alpha12);
-                this.parts.leftLeg.knee.rotation.x = L(
-                    this.parts.leftLeg.knee.rotation.x, P.lHip.knee, alpha12);
-
-                this.lerpJoint(this.parts.rightLeg.hip,
-                    new THREE.Vector3(P.rHip.rx, P.rHip.ry + sway * 0.03, P.rHip.rz), alpha12);
-                this.parts.rightLeg.knee.rotation.x = L(
-                    this.parts.rightLeg.knee.rotation.x, P.rHip.knee, alpha12);
+                this.updateNeckLook(dt, { mode: 'combat', neckX: 'compensate' });
             }
 
             animateWalk(dt) {
@@ -1434,25 +1461,6 @@
                 const swing = Math.sin(this.animTimer);
                 const cosSwing = Math.cos(this.animTimer);
                 const walkBob = Math.abs(swing) * 0.04;
-
-                let targetLookAngle = 0;
-
-                if (this.isCombatMode && this.nearestDummy) {
-                    const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(this.mesh.quaternion);
-                    const toTarget = new THREE.Vector3().subVectors(this.nearestDummy.mesh.position, this.mesh.position).setY(0);
-                    if (toTarget.lengthSq() > 0.001) {
-                        toTarget.normalize();
-                        const cross = new THREE.Vector3().crossVectors(forward, toTarget);
-                        const dot = forward.dot(toTarget);
-                        targetLookAngle = THREE.MathUtils.clamp(Math.atan2(cross.y, dot), -Math.PI / 2.2, Math.PI / 2.2);
-                    }
-                } else if (this.velocity.lengthSq() > 0.01) {
-                    const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(this.mesh.quaternion);
-                    const moveDir = this.velocity.clone().setY(0).normalize();
-                    const cross = new THREE.Vector3().crossVectors(forward, moveDir);
-                    const dot = forward.dot(moveDir);
-                    targetLookAngle = THREE.MathUtils.clamp(Math.atan2(cross.y, dot), -Math.PI / 2.2, Math.PI / 2.2);
-                }
 
                 let targetRootYRot = 0;
                 let baseRootY = 0.8;
@@ -1500,13 +1508,7 @@
                 this.parts.waist.rotation.y = THREE.MathUtils.lerp(this.parts.waist.rotation.y, targetWaistY, alpha10);
                 this.parts.chest.rotation.y = THREE.MathUtils.lerp(this.parts.chest.rotation.y, Math.sin(this.animTimer) * 0.08, alpha10);
 
-                let currentBodyTwist = this.parts.root.rotation.y + this.parts.waist.rotation.y + this.parts.chest.rotation.y;
-
-                const neckAlpha = Math.min(1, 15 * dt);
-                this.parts.neck.rotation.x = THREE.MathUtils.lerp(this.parts.neck.rotation.x, -targetWaistX, neckAlpha);
-                this.parts.neck.rotation.y = THREE.MathUtils.lerp(this.parts.neck.rotation.y, targetLookAngle - currentBodyTwist, neckAlpha);
-                this.parts.neck.rotation.z = THREE.MathUtils.lerp(this.parts.neck.rotation.z, 0, neckAlpha);
-
+                this.updateNeckLook(dt, { mode: 'auto', neckX: -targetWaistX });
                 this.parts.chest.rotation.x = targetWaistX * 0.5;
 
                 const alpha15 = Math.min(1, 15 * dt);
@@ -1545,30 +1547,16 @@
                 } else if (step === 'step_strike') {
                     state.duration = 0.40; state.activeEnd = 0.25;
                 } else if (step === 'leap') {
-                    state.duration = 0.65; state.activeEnd = 0.50;
+                    state.duration  = 0.80;   // 전체 동작 시간
+                    state.dashEnd   = 0.40;   // 공중 → 착지 공격 전환 시점
+                    state.activeEnd = 0.65;   // 타격 판정 종료 시점
+                    state.phase     = 'leap'; // phase 초기화
                 } else {
                     state.duration = step === 3 ? 0.65 : (step === 1 ? 0.50 : 0.40);
                     state.activeEnd = step === 3 ? 0.45 : 0.25;
                 }
 
-                // [수정] 별도로 가까운 적을 찾지 않고, 이미 CharacterFS.update에서 결정된 (공격자 우선) nearestDummy 사용
-                let nearest = this.nearestDummy;
-                let minDist = nearest ? this.mesh.position.distanceTo(nearest.mesh.position) : Infinity;
-
-                if (nearest && minDist <= 10.0) { // 타겟 인식 거리를 10m로 넉넉하게 확장
-                    const dir = new THREE.Vector3().subVectors(nearest.mesh.position, this.mesh.position);
-
-                    // [수정] 대시, 스텝 스트라이크, 도약 공격 모두 타겟과의 거리에 맞춰 이동 거리 계산
-                    if (['dash', 'step_strike', 'leap'].includes(step)) {
-                        const distToTarget = dir.length();
-                        const targetDist = Math.max(0.2, distToTarget - 1.2); // 타겟 앞 1.2m 지점까지 이동
-                        state.attackDashDist = targetDist;
-                    }
-
-                    if (dir.lengthSq() > 0.001) {
-                        this.mesh.quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.atan2(dir.x, dir.z));
-                    }
-                }
+                this._acquireTarget(state, step, ['dash', 'step_strike', 'leap'], 1.2);
             }
             updateCombo(dt, state) {
                 const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(this.mesh.quaternion);
@@ -1615,10 +1603,55 @@
                             }
                         }
 
+                    // ── leap: 두 phase로 분리 (공중 → 착지 공격) ─────────
+                    } else if (state.comboStep === 'leap') {
+
+                        // phase 1: 공중 (leap)
+                        if (state.timer < state.dashEnd) {
+                            if (state.phase !== 'leap') state.phase = 'leap';
+
+                            const dist = state.attackDashDist || 6.0;
+                            const leapSpeed = dist / state.dashEnd;
+                            this.velocity.copy(forward).multiplyScalar(leapSpeed);
+
+                            // 점프 아크
+                            const jumpProgress = state.timer / state.dashEnd;
+                            const jumpArc = Math.sin(jumpProgress * Math.PI) * 2.0;
+                            this.applyPose(POSES.leap, 22, dt);
+                            this.parts.root.position.y = POSES.leap.root.y + jumpArc;
+                            this._updateNeckLook(dt, 18, -0.3);
+
+                        // phase 2: 착지 공격 (leapAttack)
+                        } else {
+                            if (state.phase !== 'leapAttack') {
+                                state.phase = 'leapAttack';
+                                this.velocity.set(0, 0, 0);
+                            }
+
+                            this.applyPose(POSES.leapAttack, 28, dt);
+                            this._updateNeckLook(dt, 18, -0.5);
+
+                            // 타격 판정 (dashEnd ~ activeEnd 구간)
+                            if (!state.hasHit && state.timer < state.activeEnd) {
+                                for (let d of this.game.dummies) {
+                                    const toD = new THREE.Vector3().subVectors(d.mesh.position, this.mesh.position).setY(0);
+                                    if (toD.length() < 2.5 + d.radius && toD.lengthSq() > 0.001) {
+                                        if (Math.acos(Math.min(1, forward.dot(toD.normalize()))) < this.attackAngle + 0.2) {
+                                            d.takeDamage(true, false);
+                                            d.logicalPos.add(forward.clone().multiplyScalar(1.0));
+                                            this.game.addScore(5, "HIT", d.mesh.position);
+                                            state.hasHit = true;
+                                            this.game.triggerImpact(0.08, 0.3);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
                     // ── 기존 나머지 공격들 ─────────────────────────────────
                     } else if (state.timer < state.activeEnd) {
                         let dashSpeed = 3.2;
-                        if (['step_strike', 'leap'].includes(state.comboStep)) {
+                        if (state.comboStep === 'step_strike') {
                             const dist = state.attackDashDist || 2.0;
                             dashSpeed = dist / state.activeEnd;
                         }
@@ -1636,9 +1669,6 @@
 
                         let targetRootY = 0.72;
                         if (state.comboStep === 'step_strike') targetRootY = 0.65;
-                        else if (state.comboStep === 'leap') {
-                            targetRootY = 0.72 + Math.sin((state.timer / state.activeEnd) * Math.PI) * 2.0;
-                        }
                         else if (state.comboStep === 'shoulder_bash') targetRootY = 0.65;
                         else if (state.comboStep === 3) targetRootY = 0.75;
                         this.parts.root.position.y = THREE.MathUtils.lerp(this.parts.root.position.y, targetRootY, rotAlpha);
@@ -1658,7 +1688,7 @@
                             const poseMap = {
                                 1: 'combo1', 2: 'combo2',
                                 step_strike: 'step_strike',
-                                leap: 'leap', uppercut: 'uppercut', elbow: 'elbow',
+                                uppercut: 'uppercut', elbow: 'elbow',
                             };
                             const poseKey = poseMap[state.comboStep];
                             if (poseKey && POSES[poseKey]) this.applyPose(POSES[poseKey], 20, dt);
@@ -1675,12 +1705,11 @@
                             for (let d of this.game.dummies) {
                                 const toD = new THREE.Vector3().subVectors(d.mesh.position, this.mesh.position).setY(0);
                                 let currentRange = this.attackRange;
-                                if (state.comboStep === 'leap') currentRange = 2.5;
-                                else if (state.comboStep === 'shoulder_bash') currentRange = 0.9;
+                                if (state.comboStep === 'shoulder_bash') currentRange = 0.9;
 
                                 if (toD.length() < currentRange + d.radius && toD.lengthSq() > 0.001) {
                                     if (Math.acos(Math.min(1, forward.dot(toD.normalize()))) < this.attackAngle + 0.2) {
-                                        const shouldFlinch = (state.comboStep === 'shoulder_bash' || state.comboStep === 'leap');
+                                        const shouldFlinch = (state.comboStep === 'shoulder_bash');
                                         const forceKnockdown = (state.comboStep === 'shoulder_bash');
                                         d.takeDamage(shouldFlinch, forceKnockdown);
                                         this.game.addScore(5, "HIT", d.mesh.position);
@@ -1688,12 +1717,10 @@
 
                                         if (state.comboStep === 'shoulder_bash') {
                                             d.logicalPos.add(forward.clone().multiplyScalar(2.0));
-                                        } else if (state.comboStep === 'leap') {
-                                            d.logicalPos.add(forward.clone().multiplyScalar(1.0));
                                         }
 
-                                        const hitlagTime = (state.comboStep === 3 || state.comboStep === 'leap') ? 0.08 : 0.04;
-                                        const shakeIntens = (state.comboStep === 3 || state.comboStep === 'leap') ? 0.3 : 0.1;
+                                        const hitlagTime = (state.comboStep === 3) ? 0.08 : 0.04;
+                                        const shakeIntens = (state.comboStep === 3) ? 0.3 : 0.1;
                                         this.game.triggerImpact(hitlagTime, shakeIntens);
                                     }
                                 }
@@ -1753,40 +1780,13 @@
                 this.updateToShortHair();
             }
 
-            // [수정] 격투가 전용 대기 애니메이션 (낮고 넓은 전투 스탠스)
+            // 격투가 전용 대기 애니메이션 — POSES.ef_idle 기반
             animateIdle(dt) {
                 this.animTimer += dt * 2.0;
                 const bounce = Math.abs(Math.sin(this.animTimer * 1.5)) * 0.04;
-                const lerpAlpha = Math.min(1, 15 * dt);
-
-                // 무게 중심 및 회전 초기화
-                this.parts.root.position.y = 0.6 + bounce;
-                this.parts.root.rotation.x = THREE.MathUtils.lerp(this.parts.root.rotation.x, 0, lerpAlpha);
-                this.parts.root.rotation.y = THREE.MathUtils.lerp(this.parts.root.rotation.y, 0, lerpAlpha);
-
-                // 상체를 약간 앞쪽으로 (웨이스트 회전)
-                this.lerpJoint(this.parts.waist, new THREE.Vector3(0.3, 0.4, 0), lerpAlpha);
-                this.lerpJoint(this.parts.chest, new THREE.Vector3(0.1, 0.2, 0), lerpAlpha);
-
-                // 가드 포즈 (양손 얼굴 높이로)
-                this.lerpJoint(this.parts.rightArm.shoulder, new THREE.Vector3(0.8, -0.4, -0.6), lerpAlpha);
-                this.parts.rightArm.elbow.rotation.x = THREE.MathUtils.lerp(this.parts.rightArm.elbow.rotation.x, -2.0, lerpAlpha);
-
-                this.lerpJoint(this.parts.leftArm.shoulder, new THREE.Vector3(0.8, 0.4, 0.6), lerpAlpha);
-                this.parts.leftArm.elbow.rotation.x = THREE.MathUtils.lerp(this.parts.leftArm.elbow.rotation.x, -2.0, lerpAlpha);
-
-                // [추가] 손목 꺾임 제거 (주먹 자세)
-                this.lerpJoint(this.parts.rightArm.wrist, new THREE.Vector3(0, 0, 0), lerpAlpha);
-                this.lerpJoint(this.parts.leftArm.wrist, new THREE.Vector3(0, 0, 0), lerpAlpha);
-
-                // 다리를 넓게 벌리고 무릎을 굽힘 (이미지 참고)
-                this.lerpJoint(this.parts.rightLeg.hip, new THREE.Vector3(-0.6, 0, -0.5), lerpAlpha);
-                this.parts.rightLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parts.rightLeg.knee.rotation.x, 1.2, lerpAlpha);
-
-                this.lerpJoint(this.parts.leftLeg.hip, new THREE.Vector3(-0.6, 0, 0.5), lerpAlpha);
-                this.parts.leftLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parts.leftLeg.knee.rotation.x, 1.2, lerpAlpha);
-
-                this.updateNeckRotation(dt, true);
+                this.applyPose(POSES.ef_idle, 15, dt);
+                this.parts.root.position.y = POSES.ef_idle.root.y + bounce;
+                this.updateNeckLook(dt, { mode: 'auto', neckX: 0 });
             }
 
             // [추가] 격투가 전용 달리기 (역동적인 팔 흔들기)
@@ -1815,104 +1815,43 @@
                 this.lerpJoint(this.parts.leftLeg.hip, new THREE.Vector3(-swing * 0.8, 0, 0), lerpAlpha);
                 this.parts.leftLeg.knee.rotation.x = swing < 0 ? -swing * 1.2 : 0.1;
 
-                this.updateNeckRotation(dt, false);
+                this.updateNeckLook(dt, { mode: 'move', neckX: 0 });
             }
 
-            // [추가] 격투가 전용 전투 대기 애니메이션 (맨손 가드 스탠스)
+            // 격투가 전투 대기 — applyPose + 프로시저럴 오버레이
             animateBattleIdle(dt) {
-                const P = POSES.ef_battle_idle;  // ← POSES 딕셔너리에서 기본 포즈 읽기
-                const L = THREE.MathUtils.lerp;
-
-                // ── 타이머 ──────────────────────────────────────────────
                 this.animTimer += dt * 1.0;
                 const t = this.animTimer;
 
-                // 프로시저럴 오버레이
                 const breath  = Math.sin(t * 0.8) * 0.02;
                 const sway    = Math.sin(t * 0.5) * 0.012;
                 const fistWig = Math.sin(t * 1.2) * 0.015;
 
-                const alpha6  = Math.min(1, 6 * dt);
-                const alpha8  = Math.min(1, 8 * dt);
-                const alpha10 = Math.min(1, 10 * dt);
-                const alpha12 = Math.min(1, 12 * dt);
+                this.applyPose(POSES.ef_battle_idle, 8, dt);
 
-                // ── 루트 ────────────────────────────────────────────────
-                this.parts.root.position.y = L(this.parts.root.position.y, P.root.y, alpha8);
-                this.parts.root.rotation.x = L(this.parts.root.rotation.x, P.root.rx + breath * 0.1, alpha8);
-                this.parts.root.rotation.y = L(this.parts.root.rotation.y, P.root.ry + sway * 0.08, alpha8);
+                // 오버레이
+                this.parts.root.rotation.x += breath * 0.1;
+                this.parts.root.rotation.y += sway * 0.08;
+                this.parts.waist.rotation.x += breath * 0.15;
+                this.parts.waist.rotation.y += sway * 0.06;
+                this.parts.chest.rotation.x += breath * 0.1;
+                this.parts.rightArm.shoulder.rotation.x += breath * 0.08;
+                this.parts.rightArm.shoulder.rotation.z += fistWig * 0.2;
+                this.parts.leftArm.shoulder.rotation.x  += breath * 0.08;
+                this.parts.leftArm.shoulder.rotation.z   += fistWig * 0.15;
+                this.parts.rightLeg.hip.rotation.y += sway * 0.03;
+                this.parts.leftLeg.hip.rotation.y  += sway * 0.03;
 
-                // ── 허리 / 가슴 ─────────────────────────────────────────
-                this.parts.waist.rotation.x = L(this.parts.waist.rotation.x, P.waist.rx + breath * 0.15, alpha6);
-                this.parts.waist.rotation.y = L(this.parts.waist.rotation.y, P.waist.ry + sway * 0.06, alpha6);
-                this.parts.chest.rotation.x = L(this.parts.chest.rotation.x, P.chest.rx + breath * 0.1, alpha6);
-                this.parts.chest.rotation.y = L(this.parts.chest.rotation.y, P.chest.ry, alpha6);
-
-                // ── 팔: 맨손 가드 포즈 ──────────────────────────────────
-                this.lerpJoint(this.parts.rightArm.shoulder,
-                    new THREE.Vector3(P.rArm.sx + breath * 0.08, P.rArm.sy, P.rArm.sz + fistWig * 0.2), alpha10);
-                this.parts.rightArm.elbow.rotation.x = L(
-                    this.parts.rightArm.elbow.rotation.x, P.rArm.ex, alpha10);
-                this.lerpJoint(this.parts.rightArm.wrist,
-                    new THREE.Vector3(P.rArm.wx || 0, P.rArm.wy || 0, 0), alpha10);
-
-                this.lerpJoint(this.parts.leftArm.shoulder,
-                    new THREE.Vector3(P.lArm.sx + breath * 0.08, P.lArm.sy || 0, (P.lArm.sz || 0) + fistWig * 0.15), alpha10);
-                this.parts.leftArm.elbow.rotation.x = L(
-                    this.parts.leftArm.elbow.rotation.x, P.lArm.ex, alpha10);
-                this.lerpJoint(this.parts.leftArm.wrist,
-                    new THREE.Vector3(0, 0, 0), alpha10);
-
-                // ── 다리: 가드 스탠스 ───────────────────────────────────
-                this.lerpJoint(this.parts.rightLeg.hip,
-                    new THREE.Vector3(P.rHip.rx, P.rHip.ry + sway * 0.03, P.rHip.rz), alpha12);
-                this.parts.rightLeg.knee.rotation.x = L(
-                    this.parts.rightLeg.knee.rotation.x, P.rHip.knee, alpha12);
-
-                this.lerpJoint(this.parts.leftLeg.hip,
-                    new THREE.Vector3(P.lHip.rx, P.lHip.ry + sway * 0.03, P.lHip.rz), alpha12);
-                this.parts.leftLeg.knee.rotation.x = L(
-                    this.parts.leftLeg.knee.rotation.x, P.lHip.knee, alpha12);
-
-                // ── 목: 적 응시 ─────────────────────────────────────────
-                this.updateNeckRotation(dt, true);
+                this.updateNeckLook(dt, { mode: 'combat', neckX: 'compensate' });
             }
 
-            // 목 회전 유틸리티 (부모의 animateIdle/Walk에서 추출)
-            updateNeckRotation(dt, useCombatMode) {
-                let targetLookAngle = 0;
-                if (useCombatMode && this.isCombatMode && this.nearestDummy) {
-                    const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(this.mesh.quaternion);
-                    const toTarget = new THREE.Vector3().subVectors(this.nearestDummy.mesh.position, this.mesh.position).setY(0);
-                    if (toTarget.lengthSq() > 0.001) {
-                        toTarget.normalize();
-                        const cross = new THREE.Vector3().crossVectors(forward, toTarget);
-                        const dot = forward.dot(toTarget);
-                        targetLookAngle = THREE.MathUtils.clamp(Math.atan2(cross.y, dot), -Math.PI / 2.2, Math.PI / 2.2);
-                    }
-                } else if (this.velocity.lengthSq() > 0.01) {
-                    const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(this.mesh.quaternion);
-                    const moveDir = this.velocity.clone().setY(0).normalize();
-                    const cross = new THREE.Vector3().crossVectors(forward, moveDir);
-                    const dot = forward.dot(moveDir);
-                    targetLookAngle = THREE.MathUtils.clamp(Math.atan2(cross.y, dot), -Math.PI / 2.2, Math.PI / 2.2);
-                }
-
-                const curTwist = this.parts.root.rotation.y + this.parts.waist.rotation.y + this.parts.chest.rotation.y;
-                let targetNeckY = targetLookAngle - curTwist;
-                targetNeckY = THREE.MathUtils.clamp(targetNeckY, -Math.PI / 2, Math.PI / 2);
-
-                const lerpAlpha = Math.min(1, 10 * dt);
-                this.parts.neck.rotation.y = THREE.MathUtils.lerp(this.parts.neck.rotation.y, targetNeckY, lerpAlpha);
-                this.parts.neck.rotation.x = THREE.MathUtils.lerp(this.parts.neck.rotation.x, 0, lerpAlpha);
-            }
-
+            // EF는 검 없음 — 부모의 update에서 검 스케일 lerp를 완전 우회
             update(dt) {
+                // 부모 update의 검 관리 전에 sword 참조 제거 후 복원
+                const sword = this.parts.sword;
+                this.parts.sword = null;   // FS.update의 검 로직 스킵
                 super.update(dt);
-                if (this.parts.sword) {
-                    this.parts.sword.visible = false;
-                    this.parts.sword.scale.set(0.0001, 0.0001, 0.0001);
-                }
+                this.parts.sword = sword;  // 복원 (PoseEditor 등 참조 유지)
             }
 
             updateToShortHair() {
@@ -1948,11 +1887,20 @@
                 headMesh.add(hairL);
             }
 
-            // FS의 애니메이션을 격투가 스타일로 오버라이드
-            setupCombo(state, step) {
-                // [수정] EF는 무기가 없으므로 sword.visible 관련 로직 제거
-                // super.setupCombo(state, step); // Call super to handle common logic like target acquisition and rotation
+            pickComboStep() {
+                const target = this.nearestDummy;
+                const dist = target ? this.mesh.position.distanceTo(target.mesh.position) : Infinity;
+                if (target && dist <= 10.0) {
+                    if (dist < 0.8) return 'uppercut';
+                    if (dist < 2.0) return 1;
+                    if (dist < 4.5) return 'elbow';
+                    if (dist < 7.0) return 'dash';
+                    return 'leap';
+                }
+                return 1;
+            }
 
+            setupCombo(state, step) {
                 if (step === 'dash') {
                     state.duration = 0.45; state.activeEnd = 0.30;
                 } else if (step === 'shoulder_bash') {
@@ -1965,8 +1913,11 @@
                     state.duration = 0.45; state.activeEnd = 0.25;
                     state.attackDashDist = 3.5;
                 } else if (step === 'leap') {
-                    state.comboStep = 'leap'; // 니킥
-                    state.duration = 0.75; state.activeEnd = 0.60;
+                    state.comboStep = 'leap';
+                    state.duration  = 0.85;
+                    state.dashEnd   = 0.40; // 공중 → 착지 공격 전환
+                    state.activeEnd = 0.65;
+                    state.phase     = 'leap';
                     state.attackDashDist = 6.0;
                 } else {
                     // [보정] 1, 2타 입력 시간 확장 반영 / 3, 4타 발차기 타이밍 추가
@@ -1977,367 +1928,160 @@
                     else { state.duration = 0.40; state.activeEnd = 0.25; }
                 }
 
-                let nearest = this.nearestDummy;
-                let minDist = nearest ? this.mesh.position.distanceTo(nearest.mesh.position) : Infinity;
-
-                if (nearest && minDist <= 10.0) {
-                    const dir = new THREE.Vector3().subVectors(nearest.mesh.position, this.mesh.position);
-
-                    if (['dash', 'step_strike', 'leap', 'uppercut'].includes(state.comboStep)) { // Add uppercut
-                        const distToTarget = dir.length();
-                        const targetDist = Math.max(0.2, distToTarget - 0.6); // 1.2 -> 0.6으로 단축하여 더 밀착
-                        state.attackDashDist = targetDist;
-                    }
-
-                    if (dir.lengthSq() > 0.001) {
-                        this.mesh.quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.atan2(dir.x, dir.z));
-                    }
-                }
+                this._acquireTarget(state, step, ['dash', 'step_strike', 'leap', 'uppercut'], 0.6);
             }
 
             updateCombo(dt, state) {
                 const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(this.mesh.quaternion);
+                const L = THREE.MathUtils.lerp;
 
-                if (state.timer < state.activeEnd) {
-                    let dashSpeed = 3.2;
-                    if (['dash', 'step_strike', 'leap'].includes(state.comboStep)) {
-                        const dist = state.attackDashDist || 2.0;
-                        dashSpeed = dist / state.activeEnd;
-                    } else if (state.comboStep === 'uppercut') dashSpeed = 5.0; // 어퍼컷 전진 속도
+                if (state.timer >= state.duration) return;
 
-                    this.velocity.copy(forward).multiplyScalar(dashSpeed);
-                    const rotAlpha = Math.min(1, 20 * dt);
-
-                    // 공통 포즈 초기화 (무기 스윙이 없으므로 더 단순화)
-                    this.parts.root.rotation.set(0, 0, 0);
-                    this.parts.waist.rotation.y = 0;
-                    this.parts.chest.rotation.y = 0;
-                    this.parts.root.position.y = THREE.MathUtils.lerp(this.parts.root.position.y, 0.72, rotAlpha); // 기본 높이
-
-                    // 머리 회전 로직 (공격 중에도 적 또는 전방 주시)
-                    let targetLookAngle = 0;
-                    if (this.nearestDummy) {
-                        const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(this.mesh.quaternion);
-                        const toTarget = new THREE.Vector3().subVectors(this.nearestDummy.mesh.position, this.mesh.position).setY(0);
-                        if (toTarget.lengthSq() > 0.001) {
-                            toTarget.normalize();
-                            const cross = new THREE.Vector3().crossVectors(forward, toTarget);
-                            const dot = forward.dot(toTarget);
-                            targetLookAngle = THREE.MathUtils.clamp(Math.atan2(cross.y, dot), -Math.PI / 2.2, Math.PI / 2.2);
+                // ── leap: 두 phase + 회복 구간 ───────────────────────────
+                if (state.comboStep === 'leap') {
+                    if (state.timer < state.dashEnd) {
+                        // Phase 1: 공중 말기 + 전진
+                        if (state.phase !== 'leap') state.phase = 'leap';
+                        const dist = state.attackDashDist || 6.0;
+                        this.velocity.copy(forward).multiplyScalar(dist / state.dashEnd);
+                        const jumpArc = Math.sin((state.timer / state.dashEnd) * Math.PI) * 3.5;
+                        this.applyPose(POSES.ef_leap, 22, dt);
+                        this.parts.root.position.y = POSES.ef_leap.root.y + jumpArc;
+                        this._updateNeckLook(dt, 18, -0.3);
+                    } else if (state.timer < state.activeEnd) {
+                        // Phase 2: 뒤꿈치 내려찍기 + 타격 판정
+                        if (state.phase !== 'leapAttack') {
+                            state.phase = 'leapAttack';
+                            this.velocity.set(0, 0, 0);
                         }
-                    } else if (this.velocity.lengthSq() > 0.01) {
-                        const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(this.mesh.quaternion);
-                        const moveDir = this.velocity.clone().setY(0).normalize();
-                        const cross = new THREE.Vector3().crossVectors(forward, moveDir);
-                        const dot = forward.dot(moveDir);
-                        targetLookAngle = THREE.MathUtils.clamp(Math.atan2(cross.y, dot), -Math.PI / 2.2, Math.PI / 2.2);
-                    }
-
-                    let currentBodyTwist = this.parts.root.rotation.y + this.parts.waist.rotation.y + this.parts.chest.rotation.y;
-                    let targetNeckY = targetLookAngle - currentBodyTwist;
-                    targetNeckY = THREE.MathUtils.clamp(targetNeckY, -Math.PI / 2, Math.PI / 2);
-
-                    this.parts.neck.rotation.x = THREE.MathUtils.lerp(this.parts.neck.rotation.x, -0.2, rotAlpha);
-                    this.parts.neck.rotation.y = THREE.MathUtils.lerp(this.parts.neck.rotation.y, targetNeckY, rotAlpha);
-                    this.parts.neck.rotation.z = THREE.MathUtils.lerp(this.parts.neck.rotation.z, 0, rotAlpha);
-
-
-                    if (state.comboStep === 'uppercut') {
-                        // [개편] 스크류 어퍼: 회전하며 솟구치는 강력한 상단 가격
-                        const progress = Math.min(1.0, state.timer / state.activeEnd);
-                        const soarArc = Math.sin(progress * Math.PI * 0.5); // 초반에 빠르게 솟구침
-
-                        // 몸체 회전 및 상승
-                        this.parts.root.position.y = 0.72 + soarArc * 2.2;
-
-                        // [수정] 상승 구간(70%까지)에서만 360도 회전하고 하강 시에는 정면 유지
-                        let rotY = 0;
-                        if (progress < 0.7) {
-                            rotY = (progress / 0.7) * Math.PI * 2;
-                        } else {
-                            rotY = Math.PI * 2;
-                        }
-                        this.parts.root.rotation.y = rotY;
-
-                        // 상체: 솟구치는 방향으로 비틀기
-                        this.lerpJoint(this.parts.waist, new THREE.Vector3(0.5, 0.4, 0), rotAlpha);
-                        this.lerpJoint(this.parts.chest, new THREE.Vector3(0.3, 0.2, 0), rotAlpha);
-
-                        // 오른팔: 하늘을 향해 곧게 뻗음 (타격 팔)
-                        this.lerpJoint(this.parts.rightArm.shoulder, new THREE.Vector3(-2.8, 0, 0), rotAlpha * 2);
-                        this.parts.rightArm.elbow.rotation.x = THREE.MathUtils.lerp(this.parts.rightArm.elbow.rotation.x, -0.1, rotAlpha * 2);
-                        this.lerpJoint(this.parts.rightArm.wrist, new THREE.Vector3(0, 0, 0), rotAlpha * 2);
-
-                        // 왼팔: 균형을 위해 몸쪽으로 당김
-                        this.lerpJoint(this.parts.leftArm.shoulder, new THREE.Vector3(0.8, 0, 0.5), rotAlpha);
-                        this.parts.leftArm.elbow.rotation.x = -2.0;
-
-                        // 다리: 도약하는 역동적인 포즈 (오른다리는 쭉 펴고 왼다리는 굽힘)
-                        this.lerpJoint(this.parts.rightLeg.hip, new THREE.Vector3(-0.5, 0, -0.2), rotAlpha);
-                        this.parts.rightLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parts.rightLeg.knee.rotation.x, 0.2, rotAlpha);
-                        this.lerpJoint(this.parts.leftLeg.hip, new THREE.Vector3(1.2, 0, 0.3), rotAlpha);
-                        this.parts.leftLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parts.leftLeg.knee.rotation.x, 1.8, rotAlpha);
-                        this.lerpJoint(this.parts.rightArm.wrist, new THREE.Vector3(2.5, 0, 0), rotAlpha); // 주먹을 위로!
-
-                        this.lerpJoint(this.parts.leftArm.shoulder, new THREE.Vector3(-0.5, 0, -0.5), rotAlpha); // 왼팔은 균형
-                        this.parts.leftArm.elbow.rotation.x = THREE.MathUtils.lerp(this.parts.leftArm.elbow.rotation.x, -0.5, rotAlpha);
-
-                        this.lerpJoint(this.parts.rightLeg.hip, new THREE.Vector3(-0.8, 0, 0), rotAlpha);
-                        this.parts.rightLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parts.rightLeg.knee.rotation.x, 1.0, rotAlpha);
-                        this.lerpJoint(this.parts.leftLeg.hip, new THREE.Vector3(0.5, 0, 0), rotAlpha);
-                        this.parts.leftLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parts.leftLeg.knee.rotation.x, 0.1, rotAlpha);
-
-                    } else if (state.comboStep === 1) {
-                        // 1타: 버스트 펀치 (왼팔 정면 타격, 타격 각도 상향 보정)
-                        const rotAlpha = Math.min(1, 25 * dt);
-
-                        // [보정] 골반을 확실히 뒤로 빼고(root.z) 무게 중심을 낮춤
-                        this.parts.root.position.y = THREE.MathUtils.lerp(this.parts.root.position.y, 0.48, rotAlpha);
-                        this.parts.root.position.z = THREE.MathUtils.lerp(this.parts.root.position.z, -0.4, rotAlpha);
-
-                        // [허리/골반] 상체가 앞으로 쏟아지지 않게 골반 회전을 뒤로 (waist.x)
-                        this.lerpJoint(this.parts.waist, new THREE.Vector3(0.8, -0.3, 0), rotAlpha);
-                        this.lerpJoint(this.parts.chest, new THREE.Vector3(0.2, -0.2, 0), rotAlpha);
-
-                        // 왼팔 (정면 타격 - 각도 보정: -1.05 -> -1.75 상향)
-                        this.lerpJoint(this.parts.leftArm.shoulder, new THREE.Vector3(-1.75, 0.1, 0), rotAlpha);
-                        this.parts.leftArm.elbow.rotation.x = THREE.MathUtils.lerp(this.parts.leftArm.elbow.rotation.x, -0.1, rotAlpha);
-
-                        // 오른팔 (가드 & 균형 보조)
-                        this.lerpJoint(this.parts.rightArm.shoulder, new THREE.Vector3(-0.4, -0.3, -0.6), rotAlpha);
-                        this.parts.rightArm.elbow.rotation.x = THREE.MathUtils.lerp(this.parts.rightArm.elbow.rotation.x, -2.2, rotAlpha);
-
-                        // [다리 방향 교정] 왼다리 전방(음수), 오른다리 후방(양수)
-                        this.lerpJoint(this.parts.leftLeg.hip, new THREE.Vector3(-1.2, 0, 0.2), rotAlpha);
-                        this.parts.leftLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parts.leftLeg.knee.rotation.x, 1.4, rotAlpha);
-                        this.lerpJoint(this.parts.rightLeg.hip, new THREE.Vector3(0.8, 0, -0.2), rotAlpha);
-                        this.parts.rightLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parts.rightLeg.knee.rotation.x, 0.6, rotAlpha);
-
-                    } else if (state.comboStep === 2) {
-                        // 2타: 연계 펀치 (오른팔 정면 타격, 왼팔 가드 고정, 오른다리 전방 런지)
-                        const rotAlpha = Math.min(1, 25 * dt);
-
-                        // [보정] 골반 안착 및 무게 중심 유지
-                        this.parts.root.position.y = THREE.MathUtils.lerp(this.parts.root.position.y, 0.40, rotAlpha);
-                        this.parts.root.position.z = THREE.MathUtils.lerp(this.parts.root.position.z, -0.4, rotAlpha);
-
-                        // 회전력을 위한 상체 트위스트 (오른손 타격을 위해 왼쪽으로 회전)
-                        this.lerpJoint(this.parts.waist, new THREE.Vector3(0.7, 0.5, 0), rotAlpha);
-                        this.lerpJoint(this.parts.chest, new THREE.Vector3(0.2, 0.3, 0), rotAlpha);
-
-                        // 왼팔 (가드 고정 - 회전하지 않도록 보정)
-                        this.lerpJoint(this.parts.leftArm.shoulder, new THREE.Vector3(-0.4, 0.3, 0.6), rotAlpha);
-                        this.parts.leftArm.elbow.rotation.x = THREE.MathUtils.lerp(this.parts.leftArm.elbow.rotation.x, -2.0, rotAlpha);
-
-                        // 오른팔 (정면 타격 - 1타 왼손 각도 참조하여 -1.75 상향 타격)
-                        this.lerpJoint(this.parts.rightArm.shoulder, new THREE.Vector3(-1.75, -0.1, 0), rotAlpha);
-                        this.parts.rightArm.elbow.rotation.x = THREE.MathUtils.lerp(this.parts.rightArm.elbow.rotation.x, -0.1, rotAlpha);
-
-                        // 다리: 오른다리 전방(음수), 왼다리 후방(양수)
-                        this.lerpJoint(this.parts.rightLeg.hip, new THREE.Vector3(-1.4, 0, -0.3), rotAlpha);
-                        this.parts.rightLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parts.rightLeg.knee.rotation.x, 1.6, rotAlpha);
-                        this.lerpJoint(this.parts.leftLeg.hip, new THREE.Vector3(0.8, 0, 0.3), rotAlpha);
-                        this.parts.leftLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parts.leftLeg.knee.rotation.x, 0.4, rotAlpha);
-
-                    } else if (state.comboStep === 3) {
-                        // 3타: 왼발 하이킥 (상체 뒤로 젖히며 왼발을 높게 지름)
-                        const rotAlpha = Math.min(1, 25 * dt);
-
-                        // [보정] 몸을 뒤로 젖히고 디딤발이 지면에 닿도록 높이 조정
-                        this.parts.root.position.y = THREE.MathUtils.lerp(this.parts.root.position.y, 0.75, rotAlpha);
-                        this.parts.root.position.z = THREE.MathUtils.lerp(this.parts.root.position.z, -0.6, rotAlpha);
-                        this.parts.root.rotation.x = THREE.MathUtils.lerp(this.parts.root.rotation.x, -0.4, rotAlpha);
-
-                        // 상체 뒤틀기 (오른쪽으로 비틀어 발차기 공간 확보)
-                        this.lerpJoint(this.parts.waist, new THREE.Vector3(0.3, -0.8, 0), rotAlpha);
-                        this.lerpJoint(this.parts.chest, new THREE.Vector3(0.2, -0.6, 0.2), rotAlpha);
-
-                        // 팔 가드/균형
-                        this.lerpJoint(this.parts.leftArm.shoulder, new THREE.Vector3(0.5, 0.4, 0.8), rotAlpha);
-                        this.lerpJoint(this.parts.rightArm.shoulder, new THREE.Vector3(1.2, -0.4, -0.5), rotAlpha);
-
-                        // 다리: 왼다리 하이킥, 오른다리(디딤발) 지탱 보정
-                        this.lerpJoint(this.parts.leftLeg.hip, new THREE.Vector3(-1.8, 0, 0.1), rotAlpha);
-                        this.parts.leftLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parts.leftLeg.knee.rotation.x, 0.1, rotAlpha);
-
-                        // [디딤발] 무릎을 펴고(0.1) 각도를 세워(0.4) 지면에 안착
-                        this.lerpJoint(this.parts.rightLeg.hip, new THREE.Vector3(0.4, 0, -0.3), rotAlpha);
-                        this.parts.rightLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parts.rightLeg.knee.rotation.x, 0.1, rotAlpha);
-
-                    } else if (state.comboStep === 4) {
-                        // 4타: 오른발 하이킥 (강력한 마무리, 반대쪽 발차기)
-                        const rotAlpha = Math.min(1, 25 * dt);
-
-                        // [보정] 골반 높이 상향하여 디딤발 안착
-                        this.parts.root.position.y = THREE.MathUtils.lerp(this.parts.root.position.y, 0.75, rotAlpha);
-                        this.parts.root.position.z = THREE.MathUtils.lerp(this.parts.root.position.z, -0.6, rotAlpha);
-                        this.parts.root.rotation.x = THREE.MathUtils.lerp(this.parts.root.rotation.x, -0.4, rotAlpha);
-
-                        // 상체 뒤틀기 (왼쪽으로 비틀기)
-                        this.lerpJoint(this.parts.waist, new THREE.Vector3(0.3, 0.8, 0), rotAlpha);
-                        this.lerpJoint(this.parts.chest, new THREE.Vector3(0.2, 0.6, -0.2), rotAlpha);
-
-                        // 팔 가드/균형
-                        this.lerpJoint(this.parts.rightArm.shoulder, new THREE.Vector3(0.5, -0.4, -0.8), rotAlpha);
-                        this.lerpJoint(this.parts.leftArm.shoulder, new THREE.Vector3(1.2, 0.4, 0.5), rotAlpha);
-
-                        // 다리: 오른다리 하이킥, 왼다리(디딤발) 지탱 보정
-                        this.lerpJoint(this.parts.rightLeg.hip, new THREE.Vector3(-1.8, 0, -0.1), rotAlpha);
-                        this.parts.rightLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parts.rightLeg.knee.rotation.x, 0.1, rotAlpha);
-
-                        // [디딤발] 무릎을 펴고(0.1) 각도를 세워(0.4) 지면에 안착
-                        this.lerpJoint(this.parts.leftLeg.hip, new THREE.Vector3(0.4, 0, 0.3), rotAlpha);
-                        this.parts.leftLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parts.leftLeg.knee.rotation.x, 0.1, rotAlpha);
-
-                    } else if (state.comboStep === 'leap') {
-                        // [개편] 도약 공격: 공중 회전 뒤꿈치 내려차기
-                        const progress = Math.min(1.2, state.timer / state.activeEnd); // 진행도 (0~1.0+)
-                        const jumpArc = Math.sin(Math.min(1, progress) * Math.PI);
-
-                        // 공중 높이 및 회전 (360도 전방 회전)
-                        this.parts.root.position.y = 0.72 + jumpArc * 3.5;
-                        this.parts.root.rotation.x = THREE.MathUtils.lerp(this.parts.root.rotation.x, -progress * Math.PI * 2, 10 * dt);
-
-                        if (progress < 0.6) {
-                            // 1단계: 몸 말기 (상승 및 회전 시작)
-                            this.lerpJoint(this.parts.waist, new THREE.Vector3(1.2, 0, 0), rotAlpha);
-                            this.lerpJoint(this.parts.rightLeg.hip, new THREE.Vector3(1.5, 0, 0), rotAlpha);
-                            this.parts.rightLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parts.rightLeg.knee.rotation.x, 2.0, rotAlpha);
-                            this.lerpJoint(this.parts.leftLeg.hip, new THREE.Vector3(1.5, 0, 0), rotAlpha);
-                            this.parts.leftLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parts.leftLeg.knee.rotation.x, 2.0, rotAlpha);
-                        } else {
-                            // 2단계: 다리 뻗어 내려찍기 (하강 및 타격)
-                            this.lerpJoint(this.parts.waist, new THREE.Vector3(-0.5, 0, 0), rotAlpha);
-                            // 오른발을 쭉 뻗어 내려침
-                            this.lerpJoint(this.parts.rightLeg.hip, new THREE.Vector3(-1.2, 0, 0), rotAlpha * 1.5);
-                            this.parts.rightLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parts.rightLeg.knee.rotation.x, 0, rotAlpha * 1.5);
-
-                            // 왼발은 균형을 위해 살짝 접음
-                            this.lerpJoint(this.parts.leftLeg.hip, new THREE.Vector3(0.5, 0.2, 0), rotAlpha);
-                            this.parts.leftLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parts.leftLeg.knee.rotation.x, 0.8, rotAlpha);
-                        }
-
-                        // 팔은 균형을 위해 넓게 벌림
-                        this.lerpJoint(this.parts.rightArm.shoulder, new THREE.Vector3(-0.8, 0, 1.2), rotAlpha);
-                        this.lerpJoint(this.parts.leftArm.shoulder, new THREE.Vector3(-0.8, 0, -1.2), rotAlpha);
-
-                    } else if (state.comboStep === 'elbow' || state.comboStep === 'dash') {
-                        // [개편] 정면 돌진 니킥 (Knee Strike)
-                        const dashProgress = Math.min(1.2, state.timer / state.activeEnd);
-
-                        // 상체: 전방으로 깊게 숙임 (돌진 에너지 표현)
-                        this.lerpJoint(this.parts.waist, new THREE.Vector3(0.9, 0, 0), rotAlpha);
-                        this.lerpJoint(this.parts.chest, new THREE.Vector3(0.3, 0, 0), rotAlpha);
-
-                        // 공격 발: 니킥 (오른다리 고관절을 전방으로 높게, 무릎을 완전히 굽힘)
-                        // [수정] 부호 반전: 양수(1.3)가 후방이므로, 전방을 위해 음수(-1.3) 사용
-                        this.lerpJoint(this.parts.rightLeg.hip, new THREE.Vector3(-1.3, 0, 0), rotAlpha * 1.5);
-                        this.parts.rightLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parts.rightLeg.knee.rotation.x, 2.5, rotAlpha * 1.5);
-
-                        // 디딤 발: 전방 추진력을 위해 뒤로 쭉 뻗음 (왼다리)
-                        // [수정] 부호 반전: 양수(0.8) 사용하여 뒤로 쭉 뻗게 함
-                        this.lerpJoint(this.parts.leftLeg.hip, new THREE.Vector3(0.8, 0, 0), rotAlpha);
-                        this.parts.leftLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parts.leftLeg.knee.rotation.x, 0.2, rotAlpha);
-
-                        // 양팔: 가로도를 위해 뒤로 젖히거나 균형을 잡음 (이미지 참고 - 오른쪽 니킥 대응 스왑)
-                        this.lerpJoint(this.parts.rightArm.shoulder, new THREE.Vector3(1.2, 0, 0.4), rotAlpha);
-                        this.lerpJoint(this.parts.leftArm.shoulder, new THREE.Vector3(1.0, 0, -0.6), rotAlpha);
-
-                        // 정면 돌진을 위해 낮은 Y축 유지
-                        this.parts.root.position.y = THREE.MathUtils.lerp(this.parts.root.position.y, 0.6, rotAlpha);
-
-                    } else if (state.comboStep === 3) {
-                        // 3타: 라운드하우스 킥 (360도 전신 회전)
-                        const pivotAlpha = Math.min(1, state.timer / state.activeEnd);
-                        this.parts.root.rotation.y = THREE.MathUtils.lerp(0, Math.PI * 2, pivotAlpha); // 360도 회전
-
-                        this.lerpJoint(this.parts.rightLeg.hip, new THREE.Vector3(1.5, 0, 0.8), rotAlpha);
-                        this.parts.rightLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parts.rightLeg.knee.rotation.x, 0.4, rotAlpha);
-
-                        this.parts.root.position.y = 1.02; // 높이 상향
-
-                        this.lerpJoint(this.parts.leftArm.shoulder, new THREE.Vector3(-0.5, 0, 0.5), rotAlpha);
-                        this.lerpJoint(this.parts.rightArm.shoulder, new THREE.Vector3(0.5, 0, -0.5), rotAlpha);
-
-                    } else {
-                        // 잽(1), 훅(2) 등 이미 처리된 경우는 여기 오지 않음
-                        super.updateCombo(dt, state);
-                        return;
-                    }
-
-                    // 타격 판정
-                    if (!state.hasHit) {
-                        for (let d of this.game.dummies) {
-                            const toD = new THREE.Vector3().subVectors(d.mesh.position, this.mesh.position).setY(0);
-                            let range = 1.5;
-                            let angle = 1.143; // 약 131도 (총 아크)
-
-                            if (state.comboStep === 'uppercut') range = 1.8;
-                            else if (state.comboStep === 'leap') { range = 2.2; angle = Math.PI / 1.5; }
-                            else if (state.comboStep === 'elbow' || state.comboStep === 'dash') range = 2.0;
-                            else if (state.comboStep === 3 || state.comboStep === 4) { range = 2.0; angle = 1.143; }
-
-                            if (toD.length() < range + d.radius && Math.acos(forward.dot(toD.normalize())) < angle) {
-                                if (state.comboStep === 'uppercut') {
-                                    const kbDir = forward.clone().multiplyScalar(5.0); // 2m 이동을 위해 5.0으로 하향
-                                    d.takeDamage(true, true, 22.0, kbDir);
-                                } else {
-                                    const launchForce = (state.comboStep === 3 ? 5.0 : 0);
-                                    d.takeDamage(true, false, launchForce);
+                        this.applyPose(POSES.ef_leapAttack, 28, dt);
+                        this._updateNeckLook(dt, 18, -0.5);
+                        if (!state.hasHit) {
+                            for (const d of this.game.dummies) {
+                                const toD = new THREE.Vector3().subVectors(d.mesh.position, this.mesh.position).setY(0);
+                                if (toD.length() < 2.2 + d.radius && toD.lengthSq() > 0.001 &&
+                                    Math.acos(Math.min(1, forward.dot(toD.clone().normalize()))) < Math.PI / 1.5) {
+                                    d.takeDamage(true, false);
+                                    d.logicalPos.add(forward.clone().multiplyScalar(1.0));
+                                    this.game.addScore(5, "HIT", d.mesh.position);
+                                    state.hasHit = true;
+                                    this.game.triggerImpact(0.06, 0.25);
                                 }
-
-                                this.game.addScore(state.comboStep === 'uppercut' ? 15 : 5, "HIT", d.mesh.position);
-                                state.hasHit = true;
-                                this.game.triggerImpact(0.06, 0.2);
                             }
                         }
+                    } else {
+                        // Phase 3: 회복 (착지 후 가드 복원)
+                        this.velocity.lerp(new THREE.Vector3(0, 0, 0), this.damping * dt);
+                        if (this.velocity.lengthSq() < 0.01) this.velocity.set(0, 0, 0);
+                        const recAlpha = Math.min(1, 14 * dt);
+                        this.applyPose(POSES.ef_battle_idle, recAlpha * 14, dt);
+                        this.updateNeckLook(dt, { mode: 'combat', neckX: 0 });
                     }
-                } else {
-                    // 회복 페이즈: 벨로시티 감쇄 및 가드 포즈로 복원
+                    return;
+                }
+
+                // ── 회복 페이즈 ─────────────────────────────────────────────
+                if (state.timer >= state.activeEnd) {
                     this.velocity.lerp(new THREE.Vector3(0, 0, 0), this.damping * dt);
                     if (this.velocity.lengthSq() < 0.01) this.velocity.set(0, 0, 0);
-
-                    // [수정] 어퍼컷인 경우 낙하 및 복귀 속도를 2배 이상 상향하여 기민함 강조
-                    let recoverAlpha = Math.min(1, (state.comboStep === 'uppercut' ? 30 : 12) * dt);
-
-                    this.parts.root.position.y = THREE.MathUtils.lerp(this.parts.root.position.y, 0.72, recoverAlpha);
-                    this.parts.root.position.z = THREE.MathUtils.lerp(this.parts.root.position.z, 0, recoverAlpha);
-                    this.parts.root.rotation.x = THREE.MathUtils.lerp(this.parts.root.rotation.x, 0, recoverAlpha);
-
-                    // [수정] 어퍼컷의 나선 회전(Math.PI * 2) 이후 반대로 돌며 복구되지 않도록 즉시 0(또는 2PI)으로 고정
+                    const recAlpha = Math.min(1, (state.comboStep === 'uppercut' ? 30 : 12) * dt);
+                    // root.position.z / rotation.x 를 공격 중 변경했으므로 명시적 복원
+                    this.parts.root.position.z = L(this.parts.root.position.z, 0, recAlpha);
+                    this.parts.root.rotation.x = L(this.parts.root.rotation.x, 0, recAlpha);
                     if (state.comboStep === 'uppercut' && this.parts.root.rotation.y > Math.PI) {
                         this.parts.root.rotation.y = 0;
                     } else {
-                        this.parts.root.rotation.y = THREE.MathUtils.lerp(this.parts.root.rotation.y, 0, recoverAlpha);
+                        this.parts.root.rotation.y = L(this.parts.root.rotation.y, 0, recAlpha);
                     }
+                    this.applyPose(POSES.ef_battle_idle, recAlpha * 15, dt);
+                    this.updateNeckLook(dt, { mode: 'combat', neckX: 0 });
+                    return;
+                }
 
-                    // 가드 포즈 복원
-                    this.lerpJoint(this.parts.waist, new THREE.Vector3(0.05, 0.4, 0), recoverAlpha);
-                    this.lerpJoint(this.parts.chest, new THREE.Vector3(0.1, 0.2, 0), recoverAlpha);
-                    this.lerpJoint(this.parts.rightArm.shoulder, new THREE.Vector3(0.8, -0.2, -0.6), recoverAlpha);
-                    this.parts.rightArm.elbow.rotation.x = THREE.MathUtils.lerp(this.parts.rightArm.elbow.rotation.x, -1.8, recoverAlpha);
-                    this.lerpJoint(this.parts.leftArm.shoulder, new THREE.Vector3(0.8, 0.2, 0.6), recoverAlpha);
-                    this.parts.leftArm.elbow.rotation.x = THREE.MathUtils.lerp(this.parts.leftArm.elbow.rotation.x, -1.8, recoverAlpha);
+                // ── 공격 활성 구간 ──────────────────────────────────────────
+                const rotAlpha = Math.min(1, 25 * dt);
 
-                    // [추가] 손목 꺾임 제거 (주먹 자세)
-                    this.lerpJoint(this.parts.rightArm.wrist, new THREE.Vector3(0, 0, 0), recoverAlpha);
-                    this.lerpJoint(this.parts.leftArm.wrist, new THREE.Vector3(0, 0, 0), recoverAlpha);
+                // 이동 속도
+                let dashSpeed = 3.2;
+                if (['dash', 'elbow'].includes(state.comboStep)) {
+                    dashSpeed = (state.attackDashDist || 2.0) / state.activeEnd;
+                } else if (state.comboStep === 'uppercut') {
+                    dashSpeed = 5.0;
+                } else if ([3, 4].includes(state.comboStep)) {
+                    dashSpeed = (state.attackDashDist || 2.0) / state.activeEnd;
+                }
+                this.velocity.copy(forward).multiplyScalar(dashSpeed);
+                this._updateNeckLook(dt, 18, -0.2);
 
-                    this.updateNeckRotation(dt, true);
+                // ── 포즈 적용 ───────────────────────────────────────────────
+                if (state.comboStep === 'uppercut') {
+                    const progress = Math.min(1.0, state.timer / state.activeEnd);
+                    this.applyPose(POSES.ef_uppercut, 22, dt);
+                    // 프로시저럴 오버레이: 솟구침 + 360도 스핀
+                    this.parts.root.position.y = L(this.parts.root.position.y,
+                        0.72 + Math.sin(progress * Math.PI * 0.5) * 2.2, rotAlpha);
+                    this.parts.root.rotation.y = progress < 0.7
+                        ? (progress / 0.7) * Math.PI * 2
+                        : Math.PI * 2;
+
+                } else if (state.comboStep === 1) {
+                    this.applyPose(POSES.ef_combo1, 25, dt);
+                    this.parts.root.position.z = L(this.parts.root.position.z, -0.4, rotAlpha);
+
+                } else if (state.comboStep === 2) {
+                    this.applyPose(POSES.ef_combo2, 25, dt);
+                    this.parts.root.position.z = L(this.parts.root.position.z, -0.4, rotAlpha);
+
+                } else if (state.comboStep === 3) {
+                    this.applyPose(POSES.ef_combo3, 25, dt);
+                    this.parts.root.position.z = L(this.parts.root.position.z, -0.6, rotAlpha);
+
+                } else if (state.comboStep === 4) {
+                    this.applyPose(POSES.ef_combo4, 25, dt);
+                    this.parts.root.position.z = L(this.parts.root.position.z, -0.6, rotAlpha);
+
+                } else if (state.comboStep === 'elbow' || state.comboStep === 'dash') {
+                    this.applyPose(POSES.ef_elbow, 22, dt);
+                }
+
+                // ── 타격 판정 ───────────────────────────────────────────────
+                if (!state.hasHit) {
+                    for (const d of this.game.dummies) {
+                        const toD = new THREE.Vector3().subVectors(d.mesh.position, this.mesh.position).setY(0);
+                        if (toD.lengthSq() < 0.001) continue;
+                        let range = 1.5, angle = 1.143;
+                        if (state.comboStep === 'uppercut') { range = 1.8; angle = Math.PI; }
+                        else if (state.comboStep === 'elbow' || state.comboStep === 'dash') range = 2.0;
+                        else if (state.comboStep === 3 || state.comboStep === 4) range = 2.0;
+
+                        if (toD.length() < range + d.radius && Math.acos(Math.min(1, forward.dot(toD.normalize()))) < angle) {
+                            // 강타(어퍼컷)만 flinch+knockdown, 일반 콤보는 flinch 없음 (적 공격 취소 방지)
+                            if (state.comboStep === 'uppercut') {
+                                d.takeDamage(true, true, 22.0, forward.clone().multiplyScalar(5.0));
+                            } else if (state.comboStep === 3 || state.comboStep === 4) {
+                                d.takeDamage(false, false, 5.0); // 3~4타: 넉백만, flinch 없음
+                            } else {
+                                d.takeDamage(false, false); // 1~2타, elbow, dash: flinch 없음
+                            }
+                            this.game.addScore(state.comboStep === 'uppercut' ? 15 : 5, "HIT", d.mesh.position);
+                            state.hasHit = true;
+                            // 히트스탑: 어퍼컷 0.06s, 3~4타 0.04s, 일반 0.025s
+                            const hitlag = state.comboStep === 'uppercut' ? 0.06
+                                         : (state.comboStep === 3 || state.comboStep === 4) ? 0.04 : 0.025;
+                            const shake  = state.comboStep === 'uppercut' ? 0.2
+                                         : (state.comboStep === 3 || state.comboStep === 4) ? 0.15 : 0.08;
+                            this.game.triggerImpact(hitlag, shake);
+                        }
+                    }
                 }
             }
 
-            // [추가] 격투가 전용 피격 애니메이션 (고개가 더 젖히고 가드가 일시적으로 무너짐)
+            // [수정] 격투가 전용 피격 — POSES.hurt 기반 + 목 오버라이드
             animateHurt(dt) {
-                const lerpAlpha = Math.min(1, 15 * dt);
-                this.parts.root.position.y = 0.72;
-
-                this.lerpJoint(this.parts.waist, new THREE.Vector3(-0.4, 0.2, 0.1), lerpAlpha);
-                this.parts.neck.rotation.x = THREE.MathUtils.lerp(this.parts.neck.rotation.x, -0.6, lerpAlpha);
-
-                // 타격에 의해 팔이 뒤로 밀려남
-                this.lerpJoint(this.parts.rightArm.shoulder, new THREE.Vector3(1.0, -0.5, -0.2), lerpAlpha);
-                this.lerpJoint(this.parts.leftArm.shoulder, new THREE.Vector3(1.2, 0.5, 0.2), lerpAlpha);
+                this.applyPose(POSES.hurt, 15, dt);
+                // 격투가 특화: 고개가 더 젖혀지고 가드가 무너지는 오버레이
+                const a = Math.min(1, 15 * dt);
+                this.parts.neck.rotation.x = THREE.MathUtils.lerp(this.parts.neck.rotation.x, -0.6, a);
             }
         }
 
@@ -3157,8 +2901,6 @@
             constructor() {
                 this.initThree();
                 this.input = new InputManager();
-                this.enableDummyAttack = false;
-                this.enableDummyMove = false;
                 this.isPaused = true;
                 this.isCountingDown = false;
                 this.countdownValue = 3;
@@ -3234,9 +2976,9 @@
                     }
                 });
 
-                window.addEventListener('blur', () => { this.isPaused = true; document.getElementById('pause-overlay').style.display = 'flex'; });
+                window.addEventListener('blur', () => { this.isPaused = true; document.getElementById('game-menu-overlay').style.display = 'flex'; });
                 window.addEventListener('mousedown', () => {
-                    if (this.isPaused && document.getElementById('pause-overlay').style.display === 'flex') {
+                    if (this.isPaused && document.getElementById('game-menu-overlay').style.display === 'flex') {
                         this.togglePause();
                     }
                 });
@@ -3257,12 +2999,12 @@
             switchCharacter(type) {
                 if (this.isGameOver || this.isCountingDown) return;
 
-                const oldPos = this.character.mesh.position.clone();
-                const oldQuat = this.character.mesh.quaternion.clone();
-                
-                // [추가] 이미 같은 캐릭터로 교체 시도 시 무시
+                // 이미 같은 캐릭터로 교체 시도 시 무시
                 if (type === 'FS' && this.character === this.characterFS) return;
                 if (type === 'EF' && this.character === this.characterEF) return;
+
+                const oldPos = this.character.mesh.position.clone();
+                const oldQuat = this.character.mesh.quaternion.clone();
 
                 this.character.mesh.visible = false;
 
@@ -3466,9 +3208,17 @@
                 this.isGameOver = false;
                 this.score = 0; // [추가] 점수 초기화
                 this.totalPlayerHits = 0; // [수정] 통합 피격 횟수 초기화
-                this.character.mesh.position.set(0, 0, 0);
-                this.character.velocity.set(0, 0, 0);
-                this.character.stateMachine.changeState('idle');
+                // 모든 캐릭터 초기화 (비활성 캐릭터 포함)
+                [this.characterFS, this.characterEF].forEach(c => {
+                    c.mesh.position.set(0, 0, 0);
+                    c.velocity.set(0, 0, 0);
+                    c.stateMachine.changeState('idle');
+                    c.combatTimer = 0;
+                    c.isCombatMode = false;
+                    c.knockbackTimer = 0;
+                    c.knockbackVelocity.set(0, 0, 0);
+                    c.comboCooldown = 0;
+                });
 
                 // [추가] 활성화된 모든 창 제거
                 this.spears.forEach(s => this.scene.remove(s.mesh));
@@ -3738,7 +3488,10 @@
                 const raw = localStorage.getItem('pe_to_ff_poses');
                 if (!raw) { alert('PoseEditor에서 전송된 포즈가 없어요.\nPoseEditor의 Export → 🎮 FreeFlow 전송을 눌러주세요.'); return; }
                 const imported = JSON.parse(raw);
-                for (const [name, pose] of Object.entries(imported)) POSES[name] = pose;
+                for (const [name, pose] of Object.entries(imported)) {
+                    if (BUILTIN_POSE_KEYS.has(name)) continue; // 빌트인 포즈 덮어쓰기 방지
+                    POSES[name] = pose;
+                }
                 buildPEPanel();
             } catch(e) {
                 alert('로드 실패: ' + e.message);

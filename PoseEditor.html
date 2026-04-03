@@ -20,21 +20,24 @@ body {
   height: 100vh; display: flex; flex-direction: column; overflow: hidden;
 }
 header {
-  display: flex; align-items: center; gap: 16px; padding: 10px 16px;
+  display: flex; align-items: center; gap: 10px; padding: 8px 12px;
   border-bottom: 1px solid var(--border); flex-shrink: 0; background: var(--bg2);
+  flex-wrap: wrap;
 }
-.logo { font-size: 13px; font-weight: 700; letter-spacing: 0.12em; color: var(--accent2); text-transform: uppercase; }
-.pose-tabs { display: flex; gap: 4px; flex: 1; overflow-x: auto; scrollbar-width: none; }
-.pose-tabs::-webkit-scrollbar { display: none; }
-.pose-tab {
-  flex-shrink: 0; padding: 4px 12px; border-radius: 4px; border: 1px solid var(--border);
-  background: transparent; color: var(--text2); font-family: inherit; font-size: 11px;
-  cursor: pointer; transition: all 0.15s; white-space: nowrap;
+.logo { font-size: 13px; font-weight: 700; letter-spacing: 0.12em; color: var(--accent2); text-transform: uppercase; flex-shrink: 0; }
+.pose-select-wrap { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; }
+.pose-select {
+  flex: 1; min-width: 100px; max-width: 220px;
+  background: var(--bg3); color: var(--text); border: 1px solid var(--border2);
+  border-radius: 4px; padding: 5px 8px; font-family: inherit; font-size: 12px;
+  cursor: pointer; outline: none; appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23888'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 8px center;
+  padding-right: 24px;
 }
-.pose-tab:hover { border-color: var(--border2); color: var(--text); }
-.pose-tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
-.pose-tab.modified::after { content: '·'; margin-left: 3px; color: var(--yellow); }
-.header-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.pose-select:focus { border-color: var(--accent); }
+.pose-select option { background: var(--bg2); color: var(--text); }
+.header-actions { display: flex; gap: 6px; flex-shrink: 0; }
 .btn {
   padding: 5px 14px; border-radius: 4px; border: 1px solid var(--border2);
   background: transparent; color: var(--text); font-family: inherit; font-size: 11px;
@@ -45,13 +48,24 @@ header {
 .btn.primary:hover { background: var(--accent2); border-color: var(--accent2); }
 .btn.danger { border-color: var(--red); color: var(--red); }
 .btn.danger:hover { background: rgba(255,92,92,0.1); }
-.main { display: flex; flex: 1; overflow: hidden; }
-.viewport { flex: 1; position: relative; background: #0a0a0a; overflow: hidden; }
+.char-toggle { display: flex; gap: 3px; flex-shrink: 0; }
+.char-btn { padding: 4px 10px; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; }
+.char-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.main { display: flex; flex: 1; overflow: hidden; min-height: 0; }
+.viewport { flex: 1; position: relative; background: #0a0a0a; overflow: hidden; min-width: 200px; }
 #canvas { width: 100%; height: 100%; display: block; }
 .view-hint {
   position: absolute; bottom: 12px; left: 12px; font-size: 10px;
   color: var(--text3); line-height: 1.8; pointer-events: none;
 }
+.cam-reset-btn {
+  position: absolute; bottom: 12px; right: 12px;
+  background: rgba(20,20,20,0.75); border: 1px solid var(--border2);
+  color: var(--text2); font-family: inherit; font-size: 10px;
+  padding: 4px 10px; border-radius: 4px; cursor: pointer;
+  transition: all 0.15s; backdrop-filter: blur(4px);
+}
+.cam-reset-btn:hover { background: var(--bg3); color: var(--text); border-color: var(--accent); }
 .pose-name-overlay {
   position: absolute; top: 12px; left: 12px; font-size: 11px; font-weight: 700;
   letter-spacing: 0.08em; color: var(--accent2); text-transform: uppercase; pointer-events: none;
@@ -59,6 +73,21 @@ header {
 .side {
   width: 300px; flex-shrink: 0; display: flex; flex-direction: column;
   border-left: 1px solid var(--border); overflow: hidden; background: var(--bg2);
+  min-height: 0;
+}
+/* 반응형 */
+@media (max-width: 700px) {
+  .main { flex-direction: column; }
+  .side { width: 100%; height: 50%; border-left: none; border-top: 1px solid var(--border); }
+  .viewport { min-height: 200px; }
+  header { gap: 6px; padding: 6px 10px; }
+  .header-actions .btn { padding: 4px 8px; font-size: 10px; }
+}
+@media (min-width: 701px) and (max-width: 1000px) {
+  .side { width: 260px; }
+}
+@media (min-width: 1400px) {
+  .side { width: 340px; }
 }
 .section-tabs { display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0; }
 .section-tab {
@@ -104,7 +133,7 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.3); }
   cursor: text; background: transparent; border: none; font-family: inherit; outline: none;
 }
 .param-val:focus { background: var(--bg3); border-radius: 3px; color: var(--accent2); }
-.panel-hidden { display: none; }
+.panel-hidden { display: none !important; }
 .panel-flex { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
 .code-output {
   flex: 1; padding: 12px; background: var(--bg); border: none; color: #a8d8a0;
@@ -150,8 +179,16 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.3); }
 
 <header>
   <span class="logo">Pose Editor</span>
-  <div class="pose-tabs" id="poseTabs"></div>
+  <div class="char-toggle">
+    <button class="btn char-btn active" id="btn-fs" onclick="setCharacter('FS')">FS</button>
+    <button class="btn char-btn" id="btn-ef" onclick="setCharacter('EF')">EF</button>
+  </div>
+  <div class="pose-select-wrap">
+    <select class="pose-select" id="poseSelect" onchange="selectPose(this.value)"></select>
+  </div>
   <div class="header-actions">
+    <button class="btn" style="border-color:#ff9f5c;color:#ff9f5c" onclick="openFFDialog()">📥 FreeFlow</button>
+    <input type="file" id="ffFileInput" accept=".html" style="display:none" onchange="loadFromFreeFlowFile(event)">
     <button class="btn" onclick="openImportDialog()">Import</button>
     <button class="btn" onclick="openNewPoseDialog()">+ New</button>
     <button class="btn danger" onclick="deleteCurrentPose()">Delete</button>
@@ -163,19 +200,25 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.3); }
     <canvas id="canvas"></canvas>
     <div class="pose-name-overlay" id="poseNameOverlay"></div>
     <div class="view-hint">드래그: 회전 &nbsp;|&nbsp; 휠: 줌 &nbsp;|&nbsp; 우클릭: 패닝</div>
+    <button class="cam-reset-btn" onclick="resetCameraToGame()" title="게임 카메라 각도로 초기화">🎮 CAM</button>
   </div>
   <div class="side">
     <div class="section-tabs">
       <div class="section-tab active" id="stab-controls" onclick="switchTab('controls')">Controls</div>
       <div class="section-tab" id="stab-output" onclick="switchTab('output')">Export</div>
     </div>
-    <div class="panel-flex panel-scroll" id="controls-panel"></div>
-    <div class="panel-flex panel-hidden" id="output-panel">
+    <div class="panel-flex panel-scroll" id="controls-panel" style="overflow-y:auto"></div>
+    <div class="panel-hidden" id="output-panel">
       <textarea class="code-output" id="codeOutput" readonly></textarea>
       <div class="copy-bar">
         <button class="btn primary" style="flex:1" onclick="copyCode()">현재 포즈 복사</button>
         <button class="btn" onclick="copyAllPoses()">전체 복사</button>
         <button class="btn" style="border-color:#5cffa0;color:#5cffa0" onclick="sendToFreeFlow()">🎮 FreeFlow 전송</button>
+      </div>
+      <div class="copy-bar" style="border-top:none;padding-top:0">
+        <button class="btn" style="flex:1;border-color:#5cb8ff;color:#5cb8ff" onclick="saveToFile()">💾 파일 저장</button>
+        <button class="btn" style="flex:1;border-color:#ffd95c;color:#ffd95c" onclick="document.getElementById('fileInput').click()">📂 파일 불러오기</button>
+        <input type="file" id="fileInput" accept=".txt,.json" style="display:none" onchange="loadFromFile(event)">
       </div>
     </div>
   </div>
@@ -216,6 +259,22 @@ quick_draw: { root:{y:0.55,rx:0,ry:0}, waist:{rx:0.4,ry:0.55}, ... }
   </div>
 </div>
 
+<div class="dialog-bg" id="ffDialog">
+  <div class="dialog wide">
+    <h3>📥 FreeFlow에서 불러오기</h3>
+    <div class="dialog-hint">GitHub raw URL 또는 로컬 파일에서 POSES를 불러옵니다.</div>
+    <input type="text" id="ffUrlInput"
+      placeholder="https://raw.githubusercontent.com/..."
+      value="https://raw.githubusercontent.com/rwang2gun/FreeFlow_test/main/FreeFlow_Test_split.html">
+    <div class="dialog-error" id="ffError"></div>
+    <div class="dialog-btns">
+      <button class="btn" onclick="closeFFDialog()">취소</button>
+      <button class="btn" onclick="document.getElementById('ffFileInput').click()">📂 파일 선택</button>
+      <button class="btn primary" id="ffFetchBtn" onclick="loadFromURL()">🔗 URL 불러오기</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ══════════════════════════
 // 데이터
@@ -231,14 +290,39 @@ const DEFAULT_POSE = () => ({
 });
 
 const PRESETS = {
-  idle:        { root:{y:0.80,rx:0,ry:0},    waist:{rx:0,ry:0},       chest:{rx:0,ry:0},       rArm:{sx:0,sy:0,sz:0,ex:-0.15,wx:0,wy:0},           lArm:{sx:0,sy:0,sz:0,ex:-0.15},       rHip:{rx:0,ry:0,rz:0,knee:0.05},   lHip:{rx:0,ry:0,rz:0,knee:0.05} },
-  combo1:      { root:{y:0.72,rx:0,ry:0},    waist:{rx:0.2,ry:1.0},   chest:{rx:0.1,ry:0.8},   rArm:{sx:-1.0,sy:0,sz:1.0,ex:-0.1,wx:1.5,wy:0.5},   lArm:{sx:0.8,sy:0,sz:0.5,ex:-0.2},   rHip:{rx:-0.6,ry:0,rz:0,knee:0.8}, lHip:{rx:0.2,ry:0,rz:0,knee:0.1} },
-  combo2:      { root:{y:0.72,rx:0,ry:0},    waist:{rx:0.2,ry:-1.2},  chest:{rx:0.1,ry:-0.8},  rArm:{sx:-1.0,sy:0,sz:-1.2,ex:-0.2,wx:1.5,wy:-0.5}, lArm:{sx:-0.8,sy:0,sz:-0.5,ex:-1.2}, rHip:{rx:-0.6,ry:0,rz:0,knee:0.8}, lHip:{rx:0.2,ry:0,rz:0,knee:0.1} },
-  dash:        { root:{y:0.62,rx:0.2,ry:0},  waist:{rx:0.5,ry:0.2},   chest:{rx:0.4,ry:0.1},   rArm:{sx:-0.3,sy:0,sz:0.5,ex:-0.3,wx:0.5,wy:0},     lArm:{sx:0.5,sy:0,sz:0.3,ex:-0.3},   rHip:{rx:-0.8,ry:0,rz:0,knee:1.0}, lHip:{rx:0.4,ry:0,rz:0,knee:0.2} },
-  dashAttack:  { root:{y:0.65,rx:0,ry:0},    waist:{rx:0.6,ry:0.4},   chest:{rx:0.5,ry:0.2},   rArm:{sx:-0.5,sy:0,sz:0.8,ex:-0.1,wx:1.0,wy:0.5},   lArm:{sx:1.2,sy:0,sz:0.4,ex:-0.1},   rHip:{rx:-1.0,ry:0,rz:0,knee:1.2}, lHip:{rx:0.6,ry:0,rz:0,knee:0.1} },
-  leap:        { root:{y:0.72,rx:0,ry:0},    waist:{rx:0.8,ry:0},     chest:{rx:0.2,ry:0},     rArm:{sx:-2.8,sy:0,sz:0.5,ex:-0.2,wx:1.5,wy:1.0},   lArm:{sx:-2.5,sy:0,sz:-0.5,ex:-0.5}, rHip:{rx:-0.4,ry:0,rz:0,knee:0.8}, lHip:{rx:0.2,ry:0,rz:0,knee:0.5} },
-  quick_draw:  { root:{y:0.55,rx:-0.20,ry:0},waist:{rx:0.40,ry:0.55}, chest:{rx:0.20,ry:-0.10},rArm:{sx:0.10,sy:1.30,sz:-0.85,ex:-1.20,wx:0.10,wy:1.10},lArm:{sx:0.60,sy:-0.20,sz:0.55,ex:-1.80},rHip:{rx:-1.10,ry:0.15,rz:-0.30,knee:1.65},lHip:{rx:0.90,ry:0.04,rz:0.30,knee:0.25} },
-  battle_idle: { root:{y:0.62,rx:0.18,ry:0.45}, waist:{rx:-0.06,ry:-1.50}, chest:{rx:-0.03,ry:1.26}, rArm:{sx:0.29,sy:-0.73,sz:-0.90,ex:-0.69,wx:0.46,wy:0.07}, lArm:{sx:0.32,sy:0.80,sz:0.32,ex:-1.59}, rHip:{rx:0.53,ry:0.07,rz:-0.60,knee:0.20}, lHip:{rx:-1.42,ry:-0.35,rz:0.49,knee:1.63} },
+  // ─── 기본 ───────────────────────────────────
+  idle:           { root:{y:0.80,rx:0,ry:0}, waist:{rx:0,ry:0}, chest:{rx:0,ry:0}, rArm:{sx:0,sy:0,sz:0,ex:-0.15,wx:0,wy:0}, lArm:{sx:0,sy:0,sz:0,ex:-0.15}, rHip:{rx:0,ry:0,rz:0,knee:0.05}, lHip:{rx:0,ry:0,rz:0,knee:0.05} },
+  // ─── 콤보 공격 ──────────────────────────────
+  combo1:         { root:{y:0.6,rx:0,ry:0.04}, waist:{rx:0.2,ry:-0.01}, chest:{rx:0.49,ry:0.44}, rArm:{sx:-0.83,sy:-0.82,sz:0.77,ex:0.91,wx:0.67,wy:0.56}, lArm:{sx:0.09,sy:-0.2,sz:0.25,ex:-1.38}, rHip:{rx:-1.03,ry:-0.1,rz:-0.54,knee:1.53}, lHip:{rx:0.3,ry:0.02,rz:0.69,knee:0.39} },
+  combo2:         { root:{y:0.56,rx:0,ry:0}, waist:{rx:0.58,ry:-0.65}, chest:{rx:-0.06,ry:-0.34}, rArm:{sx:-0.66,sy:0.58,sz:-0.51,ex:0.06,wx:1.22,wy:-0.3}, lArm:{sx:0.05,sy:-0.51,sz:1.27,ex:-2}, rHip:{rx:0.84,ry:0.14,rz:-0.29,knee:0}, lHip:{rx:-1.31,ry:-0.01,rz:0.27,knee:1.44} },
+  combo3a:        { root:{y:0.75,rx:0,ry:0}, waist:{rx:0.3,ry:0.4}, chest:{rx:0.1,ry:0.4}, rArm:{sx:-0.8,sy:0,sz:1.2,ex:-0.2,wx:1.0,wy:0.5}, lArm:{sx:-0.2,sy:0,sz:-0.8,ex:-0.2}, rHip:{rx:-0.5,ry:0,rz:0,knee:0.5}, lHip:{rx:0.2,ry:0,rz:0,knee:0.1} },
+  combo3b:        { root:{y:0.75,rx:0,ry:0}, waist:{rx:0.2,ry:-1.2}, chest:{rx:0.1,ry:-0.8}, rArm:{sx:-1.0,sy:0,sz:-1.2,ex:-0.2,wx:1.5,wy:-0.5}, lArm:{sx:-0.8,sy:0,sz:-0.5,ex:-1.2}, rHip:{rx:-0.5,ry:0,rz:0,knee:0.5}, lHip:{rx:0.2,ry:0,rz:0,knee:0.1} },
+  // ─── 특수 공격 ──────────────────────────────
+  shoulder_bash:  { root:{y:0.65,rx:0,ry:0}, waist:{rx:0.65,ry:0.95}, chest:{rx:0.45,ry:0.65}, rArm:{sx:-0.2,sy:0,sz:-0.2,ex:-1.5,wx:1.5,wy:0}, lArm:{sx:0.5,sy:0,sz:0.5,ex:-0.3}, rHip:{rx:-0.8,ry:0,rz:0,knee:1.2}, lHip:{rx:0.5,ry:0,rz:0,knee:0.1} },
+  step_strike:    { root:{y:0.65,rx:0,ry:0}, waist:{rx:0.3,ry:0.8}, chest:{rx:0.1,ry:0.6}, rArm:{sx:-1.2,sy:0,sz:1.0,ex:-0.1,wx:1.5,wy:0.5}, lArm:{sx:0.8,sy:0,sz:0.5,ex:-0.3}, rHip:{rx:-0.6,ry:0,rz:0,knee:1.0}, lHip:{rx:0.2,ry:0,rz:0,knee:0.1} },
+  // ─── 대시 ───────────────────────────────────
+  dash:           { root:{y:0.5,rx:0.28,ry:-0.01}, waist:{rx:0.65,ry:-0.25}, chest:{rx:0.12,ry:-0.04}, rArm:{sx:0.02,sy:-0.15,sz:-0.25,ex:0.06,wx:-0.15,wy:-1.31}, lArm:{sx:-1.69,sy:-2,sz:-0.3,ex:-2}, rHip:{rx:-1.46,ry:-0.16,rz:-0.25,knee:2}, lHip:{rx:0.65,ry:0.38,rz:0.01,knee:0} },
+  dashAttack:     { root:{y:0.65,rx:0,ry:0}, waist:{rx:0.52,ry:0.46}, chest:{rx:0.03,ry:0.34}, rArm:{sx:-0.59,sy:-0.75,sz:0.79,ex:0.15,wx:0.79,wy:-0.15}, lArm:{sx:-0.27,sy:-0.77,sz:0.6,ex:-1.17}, rHip:{rx:-1.2,ry:-0.04,rz:-0.47,knee:1.69}, lHip:{rx:-0.34,ry:0.56,rz:0.61,knee:0.47} },
+  leap:           { root:{y:0.47,rx:0.61,ry:0.01}, waist:{rx:0.8,ry:0}, chest:{rx:0.2,ry:0}, rArm:{sx:-1.83,sy:1.38,sz:0.37,ex:-0.63,wx:0.91,wy:-1.48}, lArm:{sx:-1.72,sy:-1.62,sz:-0.08,ex:-0.6}, rHip:{rx:-2,ry:0,rz:-0.61,knee:1.85}, lHip:{rx:-2,ry:0,rz:0.73,knee:1.25} },
+  leapAttack:     { root:{y:0.55,rx:0.3,ry:0}, waist:{rx:0.7,ry:0.5}, chest:{rx:0.4,ry:0.3}, rArm:{sx:-1.5,sy:-0.5,sz:0.8,ex:-0.1,wx:1.2,wy:0.5}, lArm:{sx:0.6,sy:0,sz:0.4,ex:-0.5}, rHip:{rx:-1.2,ry:0,rz:-0.3,knee:1.6}, lHip:{rx:0.3,ry:0,rz:0.2,knee:0.3} },
+  uppercut:       { root:{y:0.72,rx:0,ry:0}, waist:{rx:-0.3,ry:0.6}, chest:{rx:-0.4,ry:0.5}, rArm:{sx:2.0,sy:0,sz:0.5,ex:1.0,wx:0.5,wy:0}, lArm:{sx:0.3,sy:0,sz:-0.3,ex:-0.3}, rHip:{rx:-0.3,ry:0,rz:0,knee:0.5}, lHip:{rx:0.3,ry:0,rz:0,knee:0.2} },
+  elbow:          { root:{y:0.70,rx:0,ry:0}, waist:{rx:0.4,ry:-0.7}, chest:{rx:0.3,ry:-0.5}, rArm:{sx:0.3,sy:1.5,sz:0,ex:1.8,wx:0.5,wy:0}, lArm:{sx:-0.5,sy:-0.3,sz:0.5,ex:-0.4}, rHip:{rx:-0.4,ry:0,rz:0,knee:0.6}, lHip:{rx:0.2,ry:0,rz:0,knee:0.1} },
+  // ─── 전투 대기 ──────────────────────────────
+  battle_idle:    { root:{y:0.63,rx:0.03,ry:-0.93}, waist:{rx:0.24,ry:0.08}, chest:{rx:0.22,ry:0.18}, rArm:{sx:0.16,sy:-0.2,sz:-0.41,ex:-0.49,wx:0.2,wy:-0.49}, lArm:{sx:0.02,sy:-0.49,sz:0.72,ex:-0.86}, rHip:{rx:-1.15,ry:-0.15,rz:-0.41,knee:1.12}, lHip:{rx:-0.75,ry:-0.04,rz:0.92,knee:0.84} },
+  ef_battle_idle: { root:{y:0.60,rx:0.15,ry:0}, waist:{rx:0.3,ry:0.4}, chest:{rx:0.1,ry:0.2}, rArm:{sx:0.8,sy:-0.4,sz:-0.6,ex:-2.0,wx:0,wy:0}, lArm:{sx:0.8,sy:0.4,sz:0.6,ex:-2.0}, rHip:{rx:-0.6,ry:0,rz:-0.5,knee:1.2}, lHip:{rx:-0.6,ry:0,rz:0.5,knee:1.2} },
+  // ─── EF 아이들 / 콤보 공격 ──────────────────
+  ef_idle:        { root:{y:0.60,rx:0,ry:0}, waist:{rx:0.3,ry:0.4}, chest:{rx:0.1,ry:0.2}, rArm:{sx:0.8,sy:-0.4,sz:-0.6,ex:-2.0,wx:0,wy:0}, lArm:{sx:0.8,sy:0.4,sz:0.6,ex:-2.0}, rHip:{rx:-0.6,ry:0,rz:-0.5,knee:1.2}, lHip:{rx:-0.6,ry:0,rz:0.5,knee:1.2} },
+  ef_combo1:      { root:{y:0.48,rx:0,ry:0}, waist:{rx:0.8,ry:-0.3}, chest:{rx:0.2,ry:-0.2}, rArm:{sx:-0.4,sy:-0.3,sz:-0.6,ex:-2.2,wx:0,wy:0}, lArm:{sx:-1.75,sy:0.1,sz:0,ex:-0.1}, rHip:{rx:0.8,ry:0,rz:-0.2,knee:0.6}, lHip:{rx:-1.2,ry:0,rz:0.2,knee:1.4} },
+  ef_combo2:      { root:{y:0.40,rx:0,ry:0}, waist:{rx:0.7,ry:0.5}, chest:{rx:0.2,ry:0.3}, rArm:{sx:-1.75,sy:-0.1,sz:0,ex:-0.1,wx:0,wy:0}, lArm:{sx:-0.4,sy:0.3,sz:0.6,ex:-2.0}, rHip:{rx:-1.4,ry:0,rz:-0.3,knee:1.6}, lHip:{rx:0.8,ry:0,rz:0.3,knee:0.4} },
+  ef_combo3:      { root:{y:0.75,rx:-0.4,ry:0}, waist:{rx:0.3,ry:-0.8}, chest:{rx:0.2,ry:-0.6}, rArm:{sx:1.2,sy:-0.4,sz:-0.5,ex:0,wx:0,wy:0}, lArm:{sx:0.5,sy:0.4,sz:0.8,ex:0}, rHip:{rx:0.4,ry:0,rz:-0.3,knee:0.1}, lHip:{rx:-1.8,ry:0,rz:0.1,knee:0.1} },
+  ef_combo4:      { root:{y:0.75,rx:-0.4,ry:0}, waist:{rx:0.3,ry:0.8}, chest:{rx:0.2,ry:0.6}, rArm:{sx:0.5,sy:-0.4,sz:-0.8,ex:0,wx:0,wy:0}, lArm:{sx:1.2,sy:0.4,sz:0.5,ex:0}, rHip:{rx:-1.8,ry:0,rz:-0.1,knee:0.1}, lHip:{rx:0.4,ry:0,rz:0.3,knee:0.1} },
+  ef_uppercut:    { root:{y:0.72,rx:0,ry:0}, waist:{rx:0.5,ry:0.4}, chest:{rx:0.3,ry:0.2}, rArm:{sx:-2.8,sy:0,sz:0,ex:-0.1,wx:2.5,wy:0}, lArm:{sx:-0.5,sy:0,sz:-0.5,ex:-0.5}, rHip:{rx:-0.8,ry:0,rz:0,knee:1.0}, lHip:{rx:0.5,ry:0,rz:0,knee:0.1} },
+  ef_elbow:       { root:{y:0.60,rx:0,ry:0}, waist:{rx:0.9,ry:0}, chest:{rx:0.3,ry:0}, rArm:{sx:1.2,sy:0,sz:0.4,ex:0,wx:0,wy:0}, lArm:{sx:1.0,sy:0,sz:-0.6,ex:0}, rHip:{rx:-1.3,ry:0,rz:0,knee:2.5}, lHip:{rx:0.8,ry:0,rz:0,knee:0.2} },
+  ef_leap:        { root:{y:0.65,rx:0,ry:0}, waist:{rx:1.2,ry:0}, chest:{rx:0.1,ry:0}, rArm:{sx:-0.8,sy:0,sz:1.2,ex:-0.5,wx:0,wy:0}, lArm:{sx:-0.8,sy:0,sz:-1.2,ex:-0.5}, rHip:{rx:1.5,ry:0,rz:0,knee:2.0}, lHip:{rx:1.5,ry:0,rz:0,knee:2.0} },
+  ef_leapAttack:  { root:{y:0.65,rx:0,ry:0}, waist:{rx:-0.5,ry:0}, chest:{rx:0.1,ry:0}, rArm:{sx:-0.8,sy:0,sz:1.2,ex:-0.5,wx:0,wy:0}, lArm:{sx:-0.8,sy:0,sz:-1.2,ex:-0.5}, rHip:{rx:-1.2,ry:0,rz:0,knee:0}, lHip:{rx:0.5,ry:0.2,rz:0,knee:0.8} },
+  // ─── 피격 / 회복 ────────────────────────────
+  hurt:           { root:{y:0.85,rx:0,ry:0}, waist:{rx:-0.4,ry:0}, chest:{rx:-0.3,ry:0}, rArm:{sx:0.5,sy:0,sz:-1.2,ex:-0.5,wx:0,wy:0}, lArm:{sx:-0.5,sy:0,sz:1.2,ex:-0.5}, rHip:{rx:-0.4,ry:0,rz:-0.1,knee:0.3}, lHip:{rx:-0.4,ry:0,rz:0.1,knee:0.3} },
+  combat_recover: { root:{y:0.72,rx:0,ry:-0.8}, waist:{rx:0.1,ry:0.4}, chest:{rx:0.1,ry:0.4}, rArm:{sx:0.2,sy:0.5,sz:-0.6,ex:-0.1,wx:1.4,wy:-1.0}, lArm:{sx:0.2,sy:0.2,sz:0.3,ex:-1.2}, rHip:{rx:-0.1,ry:0,rz:-0.2,knee:0.1}, lHip:{rx:-0.4,ry:0,rz:0.2,knee:0.4} },
 };
 
 let poses = JSON.parse(JSON.stringify(PRESETS));
@@ -358,7 +442,7 @@ function buildArm(isRight) {
 }
 P.rightArm = buildArm(true);
 P.leftArm  = buildArm(false);
-{ const s = mkM(new THREE.BoxGeometry(0.04,0.04,1.1),M.sword); s.position.set(0,-handS/2,0.55); P.rightArm.wrist.add(s); }
+const swordMesh = mkM(new THREE.BoxGeometry(0.04,0.04,1.1),M.sword); swordMesh.position.set(0,-handS/2,0.55); P.rightArm.wrist.add(swordMesh);
 
 function buildLeg(isRight) {
   const side = isRight ? -1 : 1, mat = isRight ? M.r : M.l;
@@ -439,6 +523,16 @@ window.addEventListener('mousemove', e => {
   }
 });
 canvas.addEventListener('wheel', e => { camDist=Math.max(1.5,Math.min(12,camDist+e.deltaY*0.005)); },{passive:true});
+
+function resetCameraToGame() {
+  // 게임: phi = zenith 각도(수직 기준), 에디터: camPhi = elevation 각도(수평 기준)
+  // 변환: editor_phi = π/2 - game_phi
+  // 게임 초기값: theta=π, phi=π/3.2, distance=6.5
+  camTheta = Math.PI;
+  camPhi   = Math.PI / 2 - Math.PI / 3.2;  // ≈ 0.589 rad (약 33.7°)
+  camDist  = 6.5;
+  camTarget.set(0, 1.0, 0);
+}
 
 function updateCam() {
   camera.position.set(
@@ -528,22 +622,44 @@ function refreshSliders() {
 // 탭 관리
 // ══════════════════════════
 function renderTabs() {
-  const wrap = document.getElementById('poseTabs');
-  wrap.innerHTML = '';
-  Object.keys(poses).forEach(name => {
-    const btn = document.createElement('button');
-    btn.className = 'pose-tab'+(name===currentPose?' active':'');
-    btn.textContent = name; btn.id='ptab-'+name;
-    btn.onclick = () => selectPose(name);
-    wrap.appendChild(btn);
+  const sel = document.getElementById('poseSelect');
+  sel.innerHTML = '';
+
+  const allKeys = Object.keys(poses);
+  // FS: ef_ 포즈는 맨 뒤에 구분선과 함께 표시
+  // EF: ef_ 포즈를 맨 앞에, 나머지는 뒤에
+  const isEF = currentChar === 'EF';
+  const efKeys  = allKeys.filter(k => k.startsWith(EF_PREFIX));
+  const fsKeys  = allKeys.filter(k => !k.startsWith(EF_PREFIX));
+
+  const ordered = isEF ? [...efKeys, ...fsKeys] : [...fsKeys, ...efKeys];
+
+  let addedSep = false;
+  ordered.forEach(name => {
+    // 구분선 (EF 모드에서 공유 포즈 전, FS 모드에서 ef_ 포즈 전)
+    const isEfPose = name.startsWith(EF_PREFIX);
+    if (!addedSep && (isEF ? !isEfPose : isEfPose) && efKeys.length > 0 && fsKeys.length > 0) {
+      const sep = document.createElement('option');
+      sep.disabled = true;
+      sep.textContent = '── ' + (isEF ? '공유 포즈' : 'EF 전용') + ' ──';
+      sel.appendChild(sep);
+      addedSep = true;
+    }
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name + (modifiedPoses.has(name) ? ' *' : '');
+    if (name === currentPose) opt.selected = true;
+    sel.appendChild(opt);
   });
 }
 
+const modifiedPoses = new Set();
+
 function selectPose(name) {
+  if (!poses[name]) return;
   currentPose = name;
-  document.querySelectorAll('.pose-tab').forEach(b=>b.classList.remove('active'));
-  const btn = document.getElementById('ptab-'+name);
-  if (btn) btn.classList.add('active');
+  const sel = document.getElementById('poseSelect');
+  if (sel.value !== name) sel.value = name;
   document.getElementById('poseNameOverlay').textContent = name;
   startTrans(poses[name]);
   refreshSliders();
@@ -551,8 +667,8 @@ function selectPose(name) {
 }
 
 function markMod() {
-  const btn = document.getElementById('ptab-'+currentPose);
-  if (btn) btn.classList.add('modified');
+  modifiedPoses.add(currentPose);
+  renderTabs();
 }
 
 // ══════════════════════════
@@ -683,9 +799,14 @@ function switchTab(tab) {
     document.getElementById('stab-'+t).classList.toggle('active', t===tab);
     const panel = t==='controls' ? 'controls-panel' : 'output-panel';
     const el = document.getElementById(panel);
-    el.classList.toggle('panel-hidden', t!==tab);
-    el.classList.toggle('panel-flex', t===tab);
-    el.classList.toggle('panel-scroll', t===tab && t==='controls');
+    if (t === tab) {
+      el.classList.remove('panel-hidden');
+      el.classList.add('panel-flex');
+      if (t === 'controls') el.classList.add('panel-scroll');
+    } else {
+      el.classList.remove('panel-flex', 'panel-scroll');
+      el.classList.add('panel-hidden');
+    }
   });
   if (tab==='output') updateCode();
 }
@@ -694,6 +815,27 @@ function showToast(msg) {
   const t=document.getElementById('toast');
   t.textContent=msg; t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'),2000);
+}
+
+// ══════════════════════════
+// 캐릭터 선택 (FS / EF)
+// ══════════════════════════
+let currentChar = 'FS';
+
+// EF 전용 포즈 접두사 (이 접두사로 시작하면 EF 포즈로 간주)
+const EF_PREFIX = 'ef_';
+
+function setCharacter(char) {
+  currentChar = char;
+  swordMesh.visible = (char === 'FS');
+  document.getElementById('btn-fs').classList.toggle('active', char === 'FS');
+  document.getElementById('btn-ef').classList.toggle('active', char === 'EF');
+  renderTabs();
+  // EF 모드로 전환 시 ef_ 포즈가 있으면 첫 번째 ef_ 포즈 선택
+  if (char === 'EF') {
+    const efPose = Object.keys(poses).find(k => k.startsWith(EF_PREFIX));
+    if (efPose) selectPose(efPose);
+  }
 }
 
 // ══════════════════════════
@@ -706,6 +848,142 @@ function sendToFreeFlow() {
   } catch(e) {
     showToast('전송 실패: ' + e.message);
   }
+}
+
+// ── FreeFlow 다이얼로그 ──────────────────────────────────────
+function openFFDialog() {
+  document.getElementById('ffError').textContent = '';
+  document.getElementById('ffDialog').classList.add('open');
+}
+function closeFFDialog() {
+  document.getElementById('ffDialog').classList.remove('open');
+}
+document.getElementById('ffUrlInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') loadFromURL();
+  if (e.key === 'Escape') closeFFDialog();
+});
+
+// POSES 텍스트 파싱 공통 로직
+function parsePosesFromText(text) {
+  const declIdx = text.indexOf('const POSES = {');
+  if (declIdx < 0) throw new Error('POSES 딕셔너리를 찾을 수 없어요. FreeFlow_Test_split.html 파일인지 확인해 주세요.');
+  const braceStart = text.indexOf('{', declIdx);
+  let depth = 0, end = -1;
+  for (let i = braceStart; i < text.length; i++) {
+    if (text[i] === '{') depth++;
+    else if (text[i] === '}') { depth--; if (depth === 0) { end = i; break; } }
+  }
+  if (end < 0) throw new Error('POSES 블록 끝을 찾을 수 없어요.');
+  // eslint-disable-next-line no-new-func
+  const imported = (new Function('return ' + text.slice(braceStart, end + 1)))();
+  let count = 0;
+  for (const [name, raw] of Object.entries(imported)) {
+    if (!raw || typeof raw !== 'object' || !raw.root) continue;
+    const p = DEFAULT_POSE();
+    ['root','waist','chest','rArm','lArm','rHip','lHip'].forEach(k => { if (raw[k]) Object.assign(p[k], raw[k]); });
+    poses[name] = p;
+    count++;
+  }
+  if (count === 0) throw new Error('유효한 포즈를 찾을 수 없어요.');
+  return count;
+}
+
+// URL에서 fetch
+async function loadFromURL() {
+  const url = document.getElementById('ffUrlInput').value.trim();
+  const errEl = document.getElementById('ffError');
+  const btn = document.getElementById('ffFetchBtn');
+  if (!url) { errEl.textContent = 'URL을 입력해 주세요.'; return; }
+
+  btn.textContent = '불러오는 중...'; btn.disabled = true;
+  errEl.textContent = '';
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+    const text = await res.text();
+    const count = parsePosesFromText(text);
+    closeFFDialog();
+    renderTabs();
+    selectPose(Object.keys(poses)[0]);
+    showToast('📥 FreeFlow에서 ' + count + '개 포즈 불러오기 완료!');
+  } catch(err) {
+    errEl.textContent = '실패: ' + err.message;
+    console.error('[FreeFlow URL 불러오기]', err);
+  } finally {
+    btn.textContent = '🔗 URL 불러오기'; btn.disabled = false;
+  }
+}
+
+// 파일에서 로드 (파일 선택 버튼용)
+function loadFromFreeFlowFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const count = parsePosesFromText(e.target.result);
+      closeFFDialog();
+      renderTabs();
+      selectPose(Object.keys(poses)[0]);
+      showToast('📥 FreeFlow에서 ' + count + '개 포즈 불러오기 완료!');
+    } catch(err) {
+      document.getElementById('ffError').textContent = '실패: ' + err.message;
+      console.error('[FreeFlow 파일 불러오기]', err);
+    }
+    event.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+// ══════════════════════════
+// 파일 저장 / 불러오기
+// ══════════════════════════
+function saveToFile() {
+  const all = Object.entries(poses).map(([n,p]) => poseToCode(n,p)).join('\n');
+  const content = 'const POSES = {\n' + all + '\n};';
+  const blob = new Blob([content], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const now = new Date();
+  const ts = now.getFullYear().toString().slice(2)
+    + String(now.getMonth()+1).padStart(2,'0')
+    + String(now.getDate()).padStart(2,'0')
+    + '_' + String(now.getHours()).padStart(2,'0')
+    + String(now.getMinutes()).padStart(2,'0');
+  a.download = 'poses_' + ts + '.txt';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('💾 파일 저장 완료! (' + a.download + ')');
+}
+
+function loadFromFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const text = e.target.result;
+      // "name: { ... }," 패턴을 반복 추출
+      const regex = /([a-zA-Z_][a-zA-Z0-9_]*)\s*:\s*(\{[\s\S]*?\})\s*,/g;
+      let match, count = 0;
+      while ((match = regex.exec(text)) !== null) {
+        try {
+          const {name, pose} = parsePose(match[1] + ': ' + match[2] + ',');
+          if (name && pose) { poses[name] = pose; count++; }
+        } catch(err) { /* 개별 포즈 파싱 실패 무시 */ }
+      }
+      if (count === 0) throw new Error('포즈를 찾을 수 없어요.');
+      renderTabs(); selectPose(Object.keys(poses)[0]);
+      showToast('📂 ' + count + '개 포즈 불러오기 완료!');
+    } catch(err) {
+      showToast('불러오기 실패: ' + err.message);
+    }
+    event.target.value = ''; // 같은 파일 재선택 가능하도록 초기화
+  };
+  reader.readAsText(file);
 }
 
 // ══════════════════════════
