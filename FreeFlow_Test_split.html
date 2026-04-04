@@ -802,7 +802,7 @@
          *       lHip  : { rx,ry,rz=고관절, knee=무릎X }
          * ==========================================
          */
-        const GAME_VERSION = '0.005';
+        const GAME_VERSION = '0.006';
         document.getElementById('game-version-display').textContent = 'ver ' + GAME_VERSION;
 
         const POSES = {
@@ -1218,6 +1218,26 @@
         lArm:  { sx:0.55, sy:0.15, sz:-0.35, ex:-1.5 },
         rHip:  { rx:-0.85, ry:-0.08, rz:-0.42, knee:1.35 },
         lHip:  { rx:-0.35, ry:0.45, rz:0.52, knee:0.42 },
+    },
+    // EF 지진파: 양팔 들어올리는 예비 동작
+    ef_skill_windup: {
+        root:  { y:0.80, rx:-0.18, ry:0 },
+        waist: { rx:-0.28, ry:0 },
+        chest: { rx:-0.18, ry:0 },
+        rArm:  { sx:2.4, sy:-0.18, sz:-0.12, ex:-0.35, wx:0, wy:0 },
+        lArm:  { sx:2.4, sy: 0.18, sz: 0.12, ex:-0.35 },
+        rHip:  { rx:-0.12, ry:0.05, rz:-0.1, knee:0.18 },
+        lHip:  { rx:-0.12, ry:-0.05, rz:0.1, knee:0.18 },
+    },
+    // EF 지진파: 지면 강타 순간 포즈
+    ef_skill_slam: {
+        root:  { y:0.52, rx:0.38, ry:0 },
+        waist: { rx:0.48, ry:0 },
+        chest: { rx:0.28, ry:0 },
+        rArm:  { sx:-1.75, sy:-0.12, sz:0.18, ex:-0.25, wx:0, wy:0 },
+        lArm:  { sx:-1.75, sy: 0.12, sz:-0.18, ex:-0.25 },
+        rHip:  { rx:0.22, ry:0.08, rz:-0.14, knee:0.48 },
+        lHip:  { rx:0.22, ry:-0.08, rz:0.14, knee:0.48 },
     },
     // WM 별자리 폭발: 양팔을 위로 뻗어 완드가 하늘을 향하는 포즈
     wm_skill: {
@@ -2130,51 +2150,51 @@
                 this.maxSkillCooldown = 8;
             }
 
-            // ── 스킬: 폭풍연격 (EF 전용) ─────────────────────────────
+            // ── 스킬: 지진파 (EF 전용, 지면 3연타 AOE) ──────────────
             setupSkill(state) {
-                state.duration = 0.9;
-                state.firedCount = 0;
-                state.fireTimes = [0.25, 0.50, 0.75];
+                state.duration = 1.65;
+                state.hitCount = 0;
+                // 각 타격 시점 (0.38 / 0.80 / 1.22s)
+                state.hitTimes = [0.38, 0.80, 1.22];
                 this.skillCooldown = this.maxSkillCooldown;
 
-                if (this.nearestDummy) {
-                    const dir = new THREE.Vector3().subVectors(this.nearestDummy.mesh.position, this.mesh.position).setY(0);
-                    if (dir.lengthSq() > 0.001) {
-                        this.mesh.quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.atan2(dir.x, dir.z));
-                    }
-                }
-
                 const badge = document.getElementById('attack-name-badge');
-                if (badge) { badge.innerText = '폭풍연격'; badge.style.display = 'block'; }
+                if (badge) { badge.innerText = '지진파'; badge.style.display = 'block'; }
                 clearTimeout(this._attackNameBadgeTimer);
-                this._attackNameBadgeTimer = setTimeout(() => { if (badge) badge.style.display = 'none'; }, 1200);
+                this._attackNameBadgeTimer = setTimeout(() => { if (badge) badge.style.display = 'none'; }, 1800);
             }
 
             executeSkill(dt, state) {
-                this.applyPose(POSES.ef_skill_punch, 22, dt);
                 this.velocity.set(0, 0, 0);
-                this._updateNeckLook(dt, 20, -0.2);
 
-                const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(this.mesh.quaternion);
-                for (let i = state.firedCount; i < state.fireTimes.length; i++) {
-                    if (state.timer >= state.fireTimes[i]) {
-                        const wristWorld = new THREE.Vector3();
-                        this.parts.rightArm.wrist.getWorldPosition(wristWorld);
-                        const target = this.nearestDummy
-                            ? new THREE.Vector3().subVectors(
-                                this.nearestDummy.mesh.position.clone().add(new THREE.Vector3(0, 0.8, 0)),
-                                wristWorld).normalize()
-                            : forward.clone();
-                        this.game.magicBolts.push(new MagicBolt(
-                            this.game.scene, wristWorld, target, this.game,
-                            { color: 0xff8c00, emissive: 0xff4500, trailColor: 0xff6000, trailEmissive: 0xff2200,
-                              speed: 22, lifeTimer: 0.8, maxRange: 6,
-                              damageStrong: true, onHitScore: 5 }
-                        ));
-                        state.firedCount++;
-                    } else {
-                        break;
+                // 타격 직후 0.12s는 slam 포즈, 나머지는 windup 포즈
+                const lastHitTime = state.hitCount > 0 ? state.hitTimes[state.hitCount - 1] : -99;
+                const isSlam = (state.timer - lastHitTime) < 0.14;
+                if (isSlam) {
+                    this.applyPose(POSES.ef_skill_slam, 40, dt);
+                } else {
+                    this.applyPose(POSES.ef_skill_windup, 12, dt);
+                }
+                this._updateNeckLook(dt, 18, -0.25);
+
+                // 타격 판정
+                const SKILL_RANGE = 3.5;
+                for (let i = state.hitCount; i < state.hitTimes.length; i++) {
+                    if (state.timer < state.hitTimes[i]) break;
+
+                    // 지면 충격 링 이펙트
+                    this.game.spawnShockwaveRing(this.mesh.position, SKILL_RANGE);
+                    this.game.triggerImpact(0.07, 0.28);
+
+                    // 범위 내 전 방향 AOE 경직
+                    for (const d of this.game.dummies) {
+                        const toD = new THREE.Vector3().subVectors(d.mesh.position, this.mesh.position).setY(0);
+                        if (toD.length() < SKILL_RANGE + d.radius) {
+                            d.takeDamage(true, false, 0);
+                            this.game.addScore(8, "SEISMIC!", d.mesh.position);
+                        }
                     }
+                    state.hitCount++;
                 }
             }
 
@@ -3819,6 +3839,7 @@
                 this.indicators = [];
                 this.spears = [];
                 this.magicBolts = [];
+                this.vfxRings = [];
                 this.score = 0;
                 this.totalPlayerHits = 0;
                 this.maxPlayerHits = 10;
@@ -4160,6 +4181,8 @@
                 this.spears = [];
                 this.magicBolts.forEach(b => this.scene.remove(b.mesh));
                 this.magicBolts = [];
+                this.vfxRings.forEach(r => this.scene.remove(r.mesh));
+                this.vfxRings = [];
 
                 // 적 위치 초기화 및 상태 리셋
                 this.dummies.forEach((d, i) => {
@@ -4225,6 +4248,17 @@
                 } else {
                     overlay.style.opacity = '0';
                 }
+            }
+
+            spawnShockwaveRing(pos, maxRadius = 3.5, color = 0xffcc44) {
+                const geo = new THREE.RingGeometry(0.75, 1.0, 48);
+                geo.rotateX(-Math.PI / 2);
+                const mat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.75, side: THREE.DoubleSide, depthWrite: false });
+                const mesh = new THREE.Mesh(geo, mat);
+                mesh.position.set(pos.x, 0.06, pos.z);
+                mesh.scale.setScalar(0.01);
+                this.scene.add(mesh);
+                this.vfxRings.push({ mesh, mat, timer: 0, maxTimer: 0.42, maxScale: maxRadius });
             }
 
             triggerImpact(hitlag, shakeIntens) {
@@ -4373,6 +4407,18 @@
                     for (let i = this.indicators.length - 1; i >= 0; i--) {
                         if (!this.indicators[i].update(dt)) {
                             this.indicators.splice(i, 1);
+                        }
+                    }
+
+                    for (let i = this.vfxRings.length - 1; i >= 0; i--) {
+                        const r = this.vfxRings[i];
+                        r.timer += dt;
+                        const p = Math.min(r.timer / r.maxTimer, 1);
+                        r.mesh.scale.setScalar(r.maxScale * p);
+                        r.mat.opacity = 0.75 * (1 - p);
+                        if (r.timer >= r.maxTimer) {
+                            this.scene.remove(r.mesh);
+                            this.vfxRings.splice(i, 1);
                         }
                     }
                 }
