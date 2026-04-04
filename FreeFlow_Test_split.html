@@ -730,6 +730,9 @@
             }
             update(dt) {
                 if (this.parent.input.shiftTriggered) { this.parent.stateMachine.changeState('dash'); return; }
+                if (this.parent.input.skillTriggered && this.parent.skillCooldown <= 0) {
+                    this.parent.stateMachine.changeState('skill'); return;
+                }
                 this.timer += dt;
 
                 if (this.parent.input.attackTriggered && this.timer > 0.05) this.inputBuffered = true;
@@ -794,7 +797,7 @@
          *       lHip  : { rx,ry,rz=고관절, knee=무릎X }
          * ==========================================
          */
-        const GAME_VERSION = '0.003';
+        const GAME_VERSION = '0.004';
         document.getElementById('game-version-display').textContent = 'ver ' + GAME_VERSION;
 
         const POSES = {
@@ -4381,6 +4384,10 @@
                 if (!gamePaused) {
                     for (let d of this.dummies) d.update(enemyDt, this);
                     this.character.update(charDt);
+                    // 비활성 캐릭터도 스킬 쿨다운 감소
+                    for (const c of [this.characterFS, this.characterEF, this.characterWM]) {
+                        if (c !== this.character && c.skillCooldown > 0) c.skillCooldown -= charDt;
+                    }
                 }
 
                 this.cameraRig.update(dt); // 카운트다운 중에도 카메라 업데이트 실행
