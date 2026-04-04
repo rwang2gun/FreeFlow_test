@@ -730,6 +730,7 @@
             constructor(parent) { super(parent); this.name = 'skill'; }
             enter() {
                 this.timer = 0;
+                this.parent.input.isLocked = true;
                 this.parent.setupSkill(this);
             }
             update(dt) {
@@ -739,7 +740,11 @@
                     this.parent.stateMachine.changeState('idle');
                 }
             }
-            exit() { this.parent.velocity.set(0, 0, 0); }
+            exit() {
+                this.parent.input.isLocked = false;
+                this.parent.input.resetTriggers();
+                this.parent.velocity.set(0, 0, 0);
+            }
         }
 
     </script>
@@ -1487,6 +1492,9 @@
             // ─────────────────────────────────────────────────────────────────
 
             takeDamage(kbDir, kbSpeed = 15.0) {
+                // 스킬 시전 중 무적
+                if (this.stateMachine.currentState && this.stateMachine.currentState.name === 'skill') return;
+
                 let safeKbDir = kbDir;
                 if (!safeKbDir || safeKbDir.lengthSq() < 0.0001) {
                     safeKbDir = new THREE.Vector3(0, 0, 1).applyQuaternion(this.mesh.quaternion).multiplyScalar(-1);
