@@ -48,8 +48,27 @@
         #hp-badge { background: rgba(233, 30, 99, 0.9); }
         #score-badge { background: rgba(255, 193, 7, 0.9); color: black; }
         #skill-badge { background: rgba(103, 58, 183, 0.9); min-width: 110px; text-align: center; }
-        #version-badge { background: rgba(20, 20, 20, 0.7); font-size: 0.75em; padding: 4px 10px; position: fixed; bottom: 10px; right: 12px; border-radius: 6px; }
         #skill-badge.ready { background: rgba(156, 39, 176, 0.95); box-shadow: 0 0 8px rgba(200,100,255,0.6); }
+
+        /* ── 해상도 대응 (아이패드 / 모바일) ────────────────────────── */
+        @media (max-width: 900px) {
+            #ui-layer { top: 12px; left: 12px; gap: 7px; }
+            .status-badge { font-size: 0.82em; padding: 6px 11px; }
+            .menu-container { padding: 24px 16px; border-radius: 18px; }
+            .guide-section { padding: 14px 10px; }
+            .guide-section h3 { font-size: 1.1em; }
+            .guide-item { font-size: 0.92em; }
+            #game-menu-overlay h1 { font-size: 1.9em !important; }
+        }
+        @media (max-width: 600px) {
+            #ui-layer { top: 8px; left: 8px; gap: 5px; }
+            .status-badge { font-size: 0.72em; padding: 5px 8px; border-radius: 7px; }
+            .menu-container { padding: 16px 10px; width: 98%; }
+            .guide-sections { gap: 10px; margin: 14px 0; }
+            .guide-item { font-size: 0.82em; }
+            .key { font-size: 0.8em; padding: 2px 6px; }
+            #game-menu-overlay h1 { font-size: 1.4em !important; margin-bottom: 14px !important; }
+        }
 
         /* PoseEditor 패널 */
         #pe-toggle-btn {
@@ -252,8 +271,6 @@
             기술명: -</div>
     </div>
 
-    <div id="version-badge" class="status-badge">ver 0.001</div>
-
     <!-- PoseEditor 연동 패널 -->
     <button id="pe-toggle-btn" onclick="togglePEPanel()">🎨 포즈</button>
     <div id="pe-panel">
@@ -308,6 +325,9 @@
                     </div>
                 </div>
             </div>
+
+            <!-- 버전 표시 -->
+            <div style="margin-top: 8px; margin-bottom: 4px; font-size: 0.78em; color: rgba(255,255,255,0.35); letter-spacing: 1px;">ver 0.001</div>
 
             <!-- 시작 시 버튼 그룹 -->
             <div id="start-btn-group" class="btn-group">

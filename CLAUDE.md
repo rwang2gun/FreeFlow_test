@@ -10,7 +10,8 @@
 ### 버전 위치
 ```
 FreeFlow_Test_split.html
-  → <div id="version-badge" class="status-badge">ver X.XXX</div>
+  → 가이드 메뉴 내 버전 텍스트: <div style="...">ver X.XXX</div>
+  (게임 가이드 UI 하단, 버튼 그룹 바로 위)
 ```
 
 ### 예시
