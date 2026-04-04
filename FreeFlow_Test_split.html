@@ -327,7 +327,7 @@
             </div>
 
             <!-- 버전 표시 -->
-            <div style="margin-top: 8px; margin-bottom: 4px; font-size: 0.78em; color: rgba(255,255,255,0.35); letter-spacing: 1px;">ver 0.001</div>
+            <div id="game-version-display" style="margin-top: 8px; margin-bottom: 4px; font-size: 0.78em; color: rgba(255,255,255,0.35); letter-spacing: 1px;">ver 0.003</div>
 
             <!-- 시작 시 버튼 그룹 -->
             <div id="start-btn-group" class="btn-group">
@@ -381,18 +381,23 @@
                 this.attackTriggered = false; this.shiftTriggered = false; this.skillTriggered = false;
                 this.isLocked = false; // [추가] 입력 잠금 플래그
 
+                // e.code 기반으로 처리 — 한/영 IME, 캡스락 영향 없음
+                const codeToKey = {
+                    'KeyW': 'w', 'KeyA': 'a', 'KeyS': 's', 'KeyD': 'd',
+                    'ShiftLeft': 'shift', 'ShiftRight': 'shift'
+                };
                 window.addEventListener('keydown', (e) => {
-                    if (e.code === 'Tab') e.preventDefault(); // 브라우저 포커스 이동 방지
+                    if (e.code === 'Tab') e.preventDefault();
                     if (this.isLocked) return;
-                    const key = e.key.toLowerCase();
-                    if (key === 'shift') this.shiftTriggered = true;
-                    if (key === 'e') this.skillTriggered = true;
-                    if (key === 'escape') window.dispatchEvent(new CustomEvent('esc-pressed')); // ESC 이벤트 전파
-                    if (this.keys.hasOwnProperty(key)) this.keys[key] = true;
+                    if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') this.shiftTriggered = true;
+                    if (e.code === 'KeyE') this.skillTriggered = true;
+                    if (e.code === 'Escape') window.dispatchEvent(new CustomEvent('esc-pressed'));
+                    const key = codeToKey[e.code];
+                    if (key) this.keys[key] = true;
                 });
                 window.addEventListener('keyup', (e) => {
-                    const key = e.key.toLowerCase();
-                    if (this.keys.hasOwnProperty(key)) this.keys[key] = false;
+                    const key = codeToKey[e.code];
+                    if (key) this.keys[key] = false;
                 });
                 window.addEventListener('mousedown', (e) => {
                     if (this.isLocked) {
@@ -789,6 +794,9 @@
          *       lHip  : { rx,ry,rz=고관절, knee=무릎X }
          * ==========================================
          */
+        const GAME_VERSION = '0.003';
+        document.getElementById('game-version-display').textContent = 'ver ' + GAME_VERSION;
+
         const POSES = {
             // ─── 기본 ───────────────────────────────────
     idle: {
