@@ -266,6 +266,28 @@
             <label for="ai-toggle" style="cursor: pointer; font-size: 14px; user-select: none;">NPC AI 활성화</label>
         </div>
         <div id="skill-badge" class="status-badge">E 스킬: 준비됨</div>
+        <div id="mp-ui" class="status-badge" style="display:flex; flex-direction:column; gap:4px; min-width:140px; padding:6px 10px;">
+            <div style="font-size:11px; color:rgba(255,255,255,0.6); margin-bottom:2px; letter-spacing:1px;">MANA</div>
+            <div class="mp-row" id="mp-row-FS" style="display:flex; align-items:center; gap:6px;">
+                <span style="font-size:11px; width:22px; color:#f9a825;">FS</span>
+                <div style="flex:1; height:8px; background:rgba(255,255,255,0.15); border-radius:4px; overflow:hidden;">
+                    <div id="mp-fill-FS" style="height:100%; width:0%; background:#f9a825; border-radius:4px; transition:width 0.15s;"></div>
+                </div>
+            </div>
+            <div class="mp-row" id="mp-row-EF" style="display:flex; align-items:center; gap:6px;">
+                <span style="font-size:11px; width:22px; color:#ffd600;">EF</span>
+                <div style="flex:1; height:8px; background:rgba(255,255,255,0.15); border-radius:4px; overflow:hidden;">
+                    <div id="mp-fill-EF" style="height:100%; width:0%; background:#ffd600; border-radius:4px; transition:width 0.15s;"></div>
+                </div>
+            </div>
+            <div class="mp-row" id="mp-row-WM" style="display:flex; align-items:center; gap:6px;">
+                <span style="font-size:11px; width:22px; color:#ce93d8;">WM</span>
+                <div style="flex:1; height:8px; background:rgba(255,255,255,0.15); border-radius:4px; overflow:hidden;">
+                    <div id="mp-fill-WM" style="height:100%; width:0%; background:#ce93d8; border-radius:4px; transition:width 0.15s;"></div>
+                </div>
+            </div>
+            <div id="ult-ready-badge" style="display:none; font-size:11px; font-weight:bold; color:#fff; text-align:center; background:rgba(130,0,255,0.7); border-radius:4px; padding:2px 6px; margin-top:2px; letter-spacing:1px;">Q: 궁극기 준비!</div>
+        </div>
         <div id="attack-name-badge" class="status-badge"
             style="background: rgba(156, 39, 176, 0.8); display: none; font-weight: bold; border: 1px solid #ce93d8;">
             기술명: -</div>
@@ -379,6 +401,7 @@
                 this.isLeftMouseDown = false; this.isMiddleMouseDown = false; this.isRightMouseDown = false;
                 this.mouseMovement = { x: 0, y: 0 };
                 this.attackTriggered = false; this.shiftTriggered = false; this.skillTriggered = false;
+                this.ultimateTriggered = false;
                 this.isLocked = false; // [추가] 입력 잠금 플래그
 
                 // e.code 기반으로 처리 — 한/영 IME, 캡스락 영향 없음
@@ -391,6 +414,7 @@
                     if (this.isLocked) return;
                     if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') this.shiftTriggered = true;
                     if (e.code === 'KeyE') this.skillTriggered = true;
+                    if (e.code === 'KeyQ') this.ultimateTriggered = true;
                     if (e.code === 'Escape') window.dispatchEvent(new CustomEvent('esc-pressed'));
                     // ','키 = 좌클릭(공격), '.'키 = 우클릭(대시)
                     if (e.code === 'Comma' && !e.repeat) { this.isLeftMouseDown = true; this.attackTriggered = true; }
@@ -430,6 +454,7 @@
             }
             resetTriggers() {
                 this.attackTriggered = false; this.shiftTriggered = false; this.skillTriggered = false;
+                this.ultimateTriggered = false;
                 this.mouseMovement.x = 0; this.mouseMovement.y = 0;
             }
         }
@@ -592,6 +617,9 @@
         class IdleState extends State {
             constructor(parent) { super(parent); this.name = 'idle'; }
             update(dt) {
+                if (this.parent.input.ultimateTriggered && this.parent.mp >= this.parent.maxMp) {
+                    this.parent.stateMachine.changeState('ultimate'); return;
+                }
                 if (this.parent.input.shiftTriggered) { this.parent.stateMachine.changeState('dash'); return; }
                 if (this.parent.input.skillTriggered && this.parent.skillCooldown <= 0) {
                     this.parent.stateMachine.changeState('skill'); return;
@@ -635,6 +663,9 @@
         class WalkState extends State {
             constructor(parent) { super(parent); this.name = 'walk'; }
             update(dt) {
+                if (this.parent.input.ultimateTriggered && this.parent.mp >= this.parent.maxMp) {
+                    this.parent.stateMachine.changeState('ultimate'); return;
+                }
                 if (this.parent.input.shiftTriggered) { this.parent.stateMachine.changeState('dash'); return; }
                 if (this.parent.input.skillTriggered && this.parent.skillCooldown <= 0) {
                     this.parent.stateMachine.changeState('skill'); return;
@@ -734,6 +765,9 @@
                 this.parent.setupCombo(this, this.comboStep);
             }
             update(dt) {
+                if (this.parent.input.ultimateTriggered && this.parent.mp >= this.parent.maxMp) {
+                    this.parent.stateMachine.changeState('ultimate'); return;
+                }
                 if (this.parent.input.shiftTriggered) { this.parent.stateMachine.changeState('dash'); return; }
                 if (this.parent.input.skillTriggered && this.parent.skillCooldown <= 0) {
                     this.parent.stateMachine.changeState('skill'); return;
@@ -768,6 +802,12 @@
             enter() {
                 this.timer = 0;
                 this.parent.setupSkill(this);
+                // E 스킬 사용 시 MP 지급: 시전 캐릭터 +25, 대기 캐릭터 +10
+                const game = this.parent.game;
+                this.parent.mp = Math.min(this.parent.maxMp, this.parent.mp + 25);
+                for (const c of [game.characterFS, game.characterEF, game.characterWM]) {
+                    if (c && c !== this.parent) c.mp = Math.min(c.maxMp, c.mp + 10);
+                }
             }
             update(dt) {
                 this.timer += dt;
@@ -780,6 +820,30 @@
                 this.parent.input.resetTriggers();
                 this.parent.velocity.set(0, 0, 0);
                 if (typeof this.parent.cleanupSkill === 'function') this.parent.cleanupSkill();
+            }
+        }
+
+        class UltimateState extends State {
+            constructor(parent) { super(parent); this.name = 'ultimate'; }
+            enter() {
+                this.timer = 0;
+                this.parent.mp = 0; // MP 전량 소모
+                this.parent.setupUltimate(this);
+                // 궁극기 발동 시 MP 회복 없음 (소모만)
+                const badge = document.getElementById('attack-name-badge');
+                if (badge) { badge.style.display = 'block'; }
+            }
+            update(dt) {
+                this.timer += dt;
+                this.parent.executeUltimate(dt, this);
+                if (this.timer >= this.duration) {
+                    this.parent.stateMachine.changeState('idle');
+                }
+            }
+            exit() {
+                this.parent.input.resetTriggers();
+                this.parent.velocity.set(0, 0, 0);
+                if (typeof this.parent.cleanupUltimate === 'function') this.parent.cleanupUltimate();
             }
         }
 
@@ -803,7 +867,7 @@
          *       lHip  : { rx,ry,rz=고관절, knee=무릎X }
          * ==========================================
          */
-        const GAME_VERSION = '0.008';
+        const GAME_VERSION = '0.009';
         document.getElementById('game-version-display').textContent = 'ver ' + GAME_VERSION;
 
         const POSES = {
@@ -1302,6 +1366,7 @@
                 this.animTimer = 0; this.knockbackTimer = 0; this.knockbackVelocity = new THREE.Vector3();
                 this.comboCooldown = 0; // [추가] 콤보 종료 후 입력 지연 시간
                 this.skillCooldown = 0; this.maxSkillCooldown = 8;
+                this.mp = 0; this.maxMp = 50;
 
                 this.isCombatMode = false;
                 this.combatTimer = 0;
@@ -1318,6 +1383,7 @@
                 this.stateMachine.addState('dash', new DashState(this));
                 this.stateMachine.addState('hurt', new HurtState(this));
                 this.stateMachine.addState('skill', new SkillState(this));
+                this.stateMachine.addState('ultimate', new UltimateState(this));
 
                 this.buildGeometry();
                 this.scene.add(this.mesh);
@@ -1581,8 +1647,9 @@
             // ─────────────────────────────────────────────────────────────────
 
             takeDamage(kbDir, kbSpeed = 15.0) {
-                // 스킬 시전 중 무적
-                if (this.stateMachine.currentState && this.stateMachine.currentState.name === 'skill') return;
+                // 스킬·궁극기 시전 중 무적
+                const csName = this.stateMachine.currentState && this.stateMachine.currentState.name;
+                if (csName === 'skill' || csName === 'ultimate') return;
 
                 let safeKbDir = kbDir;
                 if (!safeKbDir || safeKbDir.lengthSq() < 0.0001) {
@@ -1690,6 +1757,65 @@
                         const randomDir = new THREE.Vector3(Math.random() - 0.5, 0, Math.random() - 0.5).normalize();
                         this.mesh.position.add(randomDir.multiplyScalar(0.01));
                     }
+                }
+            }
+
+            // ── 궁극기: 폭풍검무 (FS 전용) ─────────────────────────────
+            // 고속 회전하며 주변 모든 적을 연속으로 베고 마지막에 방사형으로 날려버림
+            setupUltimate(state) {
+                state.duration   = 2.0;
+                state.spinEnd    = 1.5;   // 회전 베기 구간
+                state.burstDone  = false;
+                state.nextHitAt  = 0.25;  // 첫 타격 시점
+                state.hitInterval = 0.25; // 타격 간격
+                state.hitEnemies = new Set();
+
+                const badge = document.getElementById('attack-name-badge');
+                if (badge) { badge.innerText = '폭풍검무'; badge.style.display = 'block'; }
+                clearTimeout(this._attackNameBadgeTimer);
+                this._attackNameBadgeTimer = setTimeout(() => { if (badge) badge.style.display = 'none'; }, 2500);
+            }
+
+            executeUltimate(dt, state) {
+                this.velocity.set(0, 0, 0);
+
+                if (state.timer < state.spinEnd) {
+                    // 회전 베기: 캐릭터를 빠르게 Y축 회전
+                    this.mesh.rotation.y += dt * 12.0;
+                    this.applyPose(POSES.combo2, 30, dt);
+                    this._updateNeckLook(dt, 20, -0.2);
+
+                    // 0.25s 간격으로 주변 3.5m 내 전방향 타격
+                    if (state.timer >= state.nextHitAt) {
+                        state.nextHitAt += state.hitInterval;
+                        this.game.spawnShockwaveRing(this.mesh.position, 3.5, 0xffe066);
+                        for (const d of this.game.dummies) {
+                            const toD = new THREE.Vector3().subVectors(d.mesh.position, this.mesh.position).setY(0);
+                            if (toD.length() < 3.5 + d.radius) {
+                                d.takeDamage(true, false, 0);
+                                this.game.addScore(10, "STORM!", d.mesh.position);
+                                this.game.triggerImpact(0.04, 0.15);
+                            }
+                        }
+                    }
+
+                } else {
+                    // 최종 방사 폭발
+                    if (!state.burstDone) {
+                        state.burstDone = true;
+                        this.game.spawnShockwaveRing(this.mesh.position, 5.0, 0xffffff);
+                        this.game.triggerImpact(0.1, 0.4);
+                        for (const d of this.game.dummies) {
+                            const toD = new THREE.Vector3().subVectors(d.mesh.position, this.mesh.position).setY(0);
+                            if (toD.length() < 5.0 + d.radius) {
+                                const outDir = toD.lengthSq() > 0.001 ? toD.clone().normalize() : new THREE.Vector3(Math.random()-0.5,0,Math.random()-0.5).normalize();
+                                d.takeDamage(true, true, 20.0, outDir.multiplyScalar(5));
+                                this.game.addScore(20, "FINISH!", d.mesh.position);
+                            }
+                        }
+                    }
+                    this.applyPose(POSES.combat_recover, 8, dt);
+                    this._updateNeckLook(dt, 10, -0.2);
                 }
             }
 
@@ -2209,6 +2335,64 @@
                 }
             }
 
+            // ── 궁극기: 천지파쇄 (EF 전용) ─────────────────────────────
+            // 공중에서 내리꽂으며 거대한 충격파로 주변 모든 적을 날려버림
+            setupUltimate(state) {
+                state.duration   = 2.2;
+                state.jumpEnd    = 0.55;  // 도약 구간
+                state.slamAt     = 0.80;  // 지면 강타 시점
+                state.burstDone  = false;
+                this.parts.root.position.y = 0.8;
+
+                const badge = document.getElementById('attack-name-badge');
+                if (badge) { badge.innerText = '천지파쇄'; badge.style.display = 'block'; }
+                clearTimeout(this._attackNameBadgeTimer);
+                this._attackNameBadgeTimer = setTimeout(() => { if (badge) badge.style.display = 'none'; }, 2800);
+            }
+
+            executeUltimate(dt, state) {
+                this.velocity.set(0, 0, 0);
+
+                if (state.timer < state.jumpEnd) {
+                    // 도약: 높이 솟구치는 연출
+                    const jumpT = state.timer / state.jumpEnd;
+                    this.parts.root.position.y = 0.8 + Math.sin(jumpT * Math.PI) * 2.5;
+                    this.applyPose(POSES.ef_skill_windup, 20, dt);
+                    this._updateNeckLook(dt, 15, -0.4);
+
+                } else if (state.timer < state.slamAt) {
+                    // 급하강: 팔을 아래로 모으며 내리꽂기 직전
+                    const downT = (state.timer - state.jumpEnd) / (state.slamAt - state.jumpEnd);
+                    this.parts.root.position.y = THREE.MathUtils.lerp(3.3, 0.8, downT);
+                    this.applyPose(POSES.ef_skill_slam, 35, dt);
+                    this._updateNeckLook(dt, 25, -0.5);
+
+                } else {
+                    // 착지 후 충격파
+                    this.parts.root.position.y = THREE.MathUtils.lerp(this.parts.root.position.y, 0.8, 10 * dt);
+
+                    if (!state.burstDone) {
+                        state.burstDone = true;
+                        // 대형 충격파 3겹
+                        for (let r = 0; r < 3; r++) {
+                            setTimeout(() => this.game.spawnShockwaveRing(this.mesh.position, 5.5 + r * 0.5, 0xff9900), r * 80);
+                        }
+                        this.game.triggerImpact(0.12, 0.5);
+
+                        for (const d of this.game.dummies) {
+                            const toD = new THREE.Vector3().subVectors(d.mesh.position, this.mesh.position).setY(0);
+                            if (toD.length() < 5.5 + d.radius) {
+                                const outDir = toD.lengthSq() > 0.001 ? toD.clone().normalize() : new THREE.Vector3(Math.random()-0.5,0,Math.random()-0.5).normalize();
+                                d.takeDamage(true, true, 28.0, outDir.multiplyScalar(6));
+                                this.game.addScore(25, "QUAKE!", d.mesh.position);
+                            }
+                        }
+                    }
+                    this.applyPose(POSES.ef_skill_slam, 6, dt);
+                    this._updateNeckLook(dt, 8, -0.2);
+                }
+            }
+
             // 격투가 전용 대기 애니메이션 — POSES.ef_idle 기반
             animateIdle(dt) {
                 this.animTimer += dt * 2.0;
@@ -2621,6 +2805,65 @@
                 const hairFront = new THREE.Mesh(new THREE.BoxGeometry(headW + 0.02, 0.09, 0.05), hairMat);
                 hairFront.position.set(0, headH / 2 - 0.04, headD / 2 + 0.02);
                 headMesh.add(hairFront);
+            }
+
+            // ── 궁극기: 성좌붕괴 (WM 전용) ─────────────────────────────
+            // 캐릭터 주위에 거대 마법진을 소환 후 폭발, 필드 전체 적을 날려버림
+            setupUltimate(state) {
+                state.duration   = 2.2;
+                state.burstAt    = 1.0;   // 폭발 시점
+                state.burstDone  = false;
+
+                const badge = document.getElementById('attack-name-badge');
+                if (badge) { badge.innerText = '성좌붕괴'; badge.style.display = 'block'; }
+                clearTimeout(this._attackNameBadgeTimer);
+                this._attackNameBadgeTimer = setTimeout(() => { if (badge) badge.style.display = 'none'; }, 2800);
+            }
+
+            executeUltimate(dt, state) {
+                this.velocity.set(0, 0, 0);
+
+                if (state.timer < state.burstAt) {
+                    // 차지: 양팔 올리며 마력 집중
+                    this.applyPose(POSES.wm_skill, 10, dt);
+                    this._updateNeckLook(dt, 12, -0.6);
+                    if (this.wandOrbMat) this.wandOrbMat.emissiveIntensity = 3.0 + Math.sin(state.timer * 20) * 1.5;
+
+                    // 차지 중 점점 커지는 링 펄스
+                    if (state.timer > 0.2 && !state._pulsed1) {
+                        state._pulsed1 = true;
+                        this.game.spawnShockwaveRing(this.mesh.position, 3.0, 0xcc44ff);
+                    }
+                    if (state.timer > 0.6 && !state._pulsed2) {
+                        state._pulsed2 = true;
+                        this.game.spawnShockwaveRing(this.mesh.position, 5.0, 0x9900ff);
+                    }
+
+                } else {
+                    // 폭발
+                    if (!state.burstDone) {
+                        state.burstDone = true;
+                        // 연속 충격파 4겹
+                        for (let r = 0; r < 4; r++) {
+                            setTimeout(() => this.game.spawnShockwaveRing(this.mesh.position, 4.0 + r, 0xee88ff), r * 60);
+                        }
+                        this.game.triggerImpact(0.15, 0.6);
+                        if (this.wandOrbMat) this.wandOrbMat.emissiveIntensity = 8.0;
+
+                        // 필드 전체 (12m) 적 날리기
+                        for (const d of this.game.dummies) {
+                            const toD = new THREE.Vector3().subVectors(d.mesh.position, this.mesh.position).setY(0);
+                            if (toD.length() < 12.0 + d.radius) {
+                                const outDir = toD.lengthSq() > 0.001 ? toD.clone().normalize() : new THREE.Vector3(Math.random()-0.5,0,Math.random()-0.5).normalize();
+                                d.takeDamage(true, true, 25.0, outDir.multiplyScalar(5));
+                                this.game.addScore(25, "NOVA!", d.mesh.position);
+                            }
+                        }
+                    }
+                    this.applyPose(POSES.wm_skill_vortex, 6, dt);
+                    this._updateNeckLook(dt, 8, -0.3);
+                    if (this.wandOrbMat) this.wandOrbMat.emissiveIntensity = THREE.MathUtils.lerp(this.wandOrbMat.emissiveIntensity, 0.3, 5 * dt);
+                }
             }
 
             // 검 로직 스킵, 완드는 항상 표시
@@ -4150,6 +4393,26 @@
                     }
                 }
 
+                // MP 바 업데이트
+                const charMap = { FS: this.characterFS, EF: this.characterEF, WM: this.characterWM };
+                for (const [key, c] of Object.entries(charMap)) {
+                    const fill = document.getElementById(`mp-fill-${key}`);
+                    const row  = document.getElementById(`mp-row-${key}`);
+                    if (!fill || !c) continue;
+                    fill.style.width = `${(c.mp / c.maxMp) * 100}%`;
+                    // 활성 캐릭터 강조
+                    row.style.opacity = (c === this.character) ? '1' : '0.55';
+                    row.style.filter  = (c === this.character) ? 'none' : 'saturate(0.5)';
+                }
+                const ultBadge = document.getElementById('ult-ready-badge');
+                if (ultBadge) {
+                    const ready = this.character.mp >= this.character.maxMp;
+                    ultBadge.style.display = ready ? 'block' : 'none';
+                    // MP 만충 시 MP UI 테두리 효과
+                    const mpUi = document.getElementById('mp-ui');
+                    if (mpUi) mpUi.style.boxShadow = ready ? '0 0 8px 2px rgba(150,0,255,0.8)' : 'none';
+                }
+
                 // [추가] AI 비활성화 시 공격 기술명 표시
                 const attackBadge = document.getElementById('attack-name-badge');
                 if (attackBadge) {
@@ -4197,6 +4460,7 @@
                     c.knockbackVelocity.set(0, 0, 0);
                     c.comboCooldown = 0;
                     c.skillCooldown = 0;
+                    c.mp = 0;
                     c.mesh.visible = false;
                 });
                 this.character.mesh.visible = true;
