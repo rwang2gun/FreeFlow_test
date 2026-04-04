@@ -392,10 +392,15 @@
                     if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') this.shiftTriggered = true;
                     if (e.code === 'KeyE') this.skillTriggered = true;
                     if (e.code === 'Escape') window.dispatchEvent(new CustomEvent('esc-pressed'));
+                    // ','키 = 좌클릭(공격), '.'키 = 우클릭(대시)
+                    if (e.code === 'Comma' && !e.repeat) { this.isLeftMouseDown = true; this.attackTriggered = true; }
+                    if (e.code === 'Period' && !e.repeat) { this.isRightMouseDown = true; this.shiftTriggered = true; }
                     const key = codeToKey[e.code];
                     if (key) this.keys[key] = true;
                 });
                 window.addEventListener('keyup', (e) => {
+                    if (e.code === 'Comma') this.isLeftMouseDown = false;
+                    if (e.code === 'Period') this.isRightMouseDown = false;
                     const key = codeToKey[e.code];
                     if (key) this.keys[key] = false;
                 });
@@ -797,7 +802,7 @@
          *       lHip  : { rx,ry,rz=고관절, knee=무릎X }
          * ==========================================
          */
-        const GAME_VERSION = '0.004';
+        const GAME_VERSION = '0.005';
         document.getElementById('game-version-display').textContent = 'ver ' + GAME_VERSION;
 
         const POSES = {
