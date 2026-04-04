@@ -779,6 +779,7 @@
             exit() {
                 this.parent.input.resetTriggers();
                 this.parent.velocity.set(0, 0, 0);
+                if (typeof this.parent.cleanupSkill === 'function') this.parent.cleanupSkill();
             }
         }
 
@@ -802,7 +803,7 @@
          *       lHip  : { rx,ry,rz=고관절, knee=무릎X }
          * ==========================================
          */
-        const GAME_VERSION = '0.006';
+        const GAME_VERSION = '0.007';
         document.getElementById('game-version-display').textContent = 'ver ' + GAME_VERSION;
 
         const POSES = {
@@ -1248,6 +1249,16 @@
         lArm:  { sx:2.8, sy:0.3, sz:0.2, ex:-0.1 },
         rHip:  { rx:-0.35, ry:0, rz:-0.18, knee:0.55 },
         lHip:  { rx:-0.35, ry:0, rz:0.18, knee:0.55 },
+    },
+    // WM 소용돌이 시전: 양팔 앞으로 뻗어 마력을 전방에 집중
+    wm_skill_vortex: {
+        root:  { y:0.74, rx:0.10, ry:0 },
+        waist: { rx:0.18, ry:0 },
+        chest: { rx:0.12, ry:0 },
+        rArm:  { sx:0.62, sy:-0.22, sz:-0.12, ex:-1.15, wx:0.3, wy:0 },
+        lArm:  { sx:0.62, sy: 0.22, sz: 0.12, ex:-1.15 },
+        rHip:  { rx:-0.30, ry:0, rz:-0.15, knee:0.50 },
+        lHip:  { rx:-0.30, ry:0, rz:0.15, knee:0.50 },
     },
     };
 
@@ -2630,56 +2641,56 @@
                 }
             }
 
-            // ── 스킬: 별자리 폭발 (WM 전용) ──────────────────────────
+            // ── 스킬: 마력 소용돌이 (WM 전용, 전방 인력장) ──────────
             setupSkill(state) {
-                state.duration  = 0.75;
-                state.burstTime = 0.3;   // 폭발 발동 시점
-                state.hasBurst  = false;
+                state.duration = 2.5;
                 this.skillCooldown = this.maxSkillCooldown;
 
+                // 전방 3.5m에 소용돌이 중심 설정
+                const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(this.mesh.quaternion);
+                state.vortexPos = this.mesh.position.clone().add(forward.multiplyScalar(3.5));
+                state.vortexPos.y = 0;
+
+                this.game.spawnVortex(state.vortexPos);
+
                 const badge = document.getElementById('attack-name-badge');
-                if (badge) { badge.innerText = '별자리 폭발'; badge.style.display = 'block'; }
+                if (badge) { badge.innerText = '마력 소용돌이'; badge.style.display = 'block'; }
                 clearTimeout(this._attackNameBadgeTimer);
-                this._attackNameBadgeTimer = setTimeout(() => { if (badge) badge.style.display = 'none'; }, 1200);
+                this._attackNameBadgeTimer = setTimeout(() => { if (badge) badge.style.display = 'none'; }, 2800);
             }
 
             executeSkill(dt, state) {
-                this.applyPose(POSES.wm_skill, state.timer < state.burstTime ? 22 : 6, dt);
+                this.applyPose(POSES.wm_skill_vortex, 12, dt);
                 this.velocity.set(0, 0, 0);
-                this._updateNeckLook(dt, 18, -0.5);
+                this._updateNeckLook(dt, 15, -0.4);
 
-                // 완드 발광 강조
-                if (this.wandOrbMat) this.wandOrbMat.emissiveIntensity = 2.0;
+                // 완드 발광 강조 (파동 효과)
+                if (this.wandOrbMat) this.wandOrbMat.emissiveIntensity = 2.0 + Math.sin(state.timer * 14) * 0.8;
 
-                if (!state.hasBurst && state.timer >= state.burstTime) {
-                    state.hasBurst = true;
+                const PULL_RANGE = 7.0;  // 인력 범위
+                const BASE_SPEED = 1.8;  // 기본 당기기 속도 (m/s)
+                const vp = state.vortexPos;
 
-                    // 6방향 볼트 발사
-                    const wristWorld = new THREE.Vector3();
-                    this.parts.rightArm.wrist.getWorldPosition(wristWorld);
-                    for (let i = 0; i < 6; i++) {
-                        const angle = (Math.PI * 2 / 6) * i;
-                        const dir = new THREE.Vector3(Math.sin(angle), 0, Math.cos(angle));
-                        this.game.magicBolts.push(new MagicBolt(
-                            this.game.scene, wristWorld.clone(), dir, this.game,
-                            { speed: 15, lifeTimer: 1.0, damageStrong: false, onHitScore: 5 }
-                        ));
-                    }
+                for (const d of this.game.dummies) {
+                    const toVortex = new THREE.Vector3().subVectors(vp, d.mesh.position).setY(0);
+                    const dist = toVortex.length();
+                    if (dist > PULL_RANGE || dist < 0.25) continue;
 
-                    // AoE 판정: 2.8m 이내 모든 적
-                    const myPos = this.mesh.position;
-                    for (const d of this.game.dummies) {
-                        const toD = new THREE.Vector3().subVectors(d.mesh.position, myPos);
-                        if (toD.length() < 2.8 + d.radius) {
-                            const outward = toD.lengthSq() > 0.001
-                                ? toD.clone().setY(0).normalize()
-                                : new THREE.Vector3(Math.random() - 0.5, 0, Math.random() - 0.5).normalize();
-                            d.takeDamage(true, true, 22.0, outward.multiplyScalar(5));
-                            this.game.addScore(15, "BURST!", d.mesh.position);
-                            this.game.triggerImpact(0.08, 0.25);
-                        }
-                    }
+                    // 공격 행동 중단 (매 프레임 덮어써서 억제)
+                    d.isAttacking = false;
+                    d.attackTimer = 0;
+                    if (d.isFussing !== undefined) d.isFussing = false;
+
+                    // 거리 역비례 가속: 멀수록 느리게, 가까울수록 빠르게
+                    const pullSpeed = BASE_SPEED + (1 - dist / PULL_RANGE) * 4.5;
+                    const pull = toVortex.normalize().multiplyScalar(pullSpeed * dt);
+                    d.mesh.position.add(pull);
+                    d.logicalPos.add(pull);
                 }
+            }
+
+            cleanupSkill() {
+                this.game.removeVortex();
             }
 
             animateIdle(dt) {
@@ -3840,6 +3851,7 @@
                 this.spears = [];
                 this.magicBolts = [];
                 this.vfxRings = [];
+                this.vfxVortex = null;
                 this.score = 0;
                 this.totalPlayerHits = 0;
                 this.maxPlayerHits = 10;
@@ -3939,6 +3951,12 @@
                 if (type === 'FS' && this.character === this.characterFS) return;
                 if (type === 'EF' && this.character === this.characterEF) return;
                 if (type === 'WM' && this.character === this.characterWM) return;
+
+                // 교체 전 이전 캐릭터 스킬 클린업 (소용돌이 등 지속 효과 제거)
+                const prevState = this.character.stateMachine.currentState;
+                if (prevState && prevState.name === 'skill' && typeof this.character.cleanupSkill === 'function') {
+                    this.character.cleanupSkill();
+                }
 
                 const oldPos = this.character.mesh.position.clone();
                 const oldQuat = this.character.mesh.quaternion.clone();
@@ -4183,6 +4201,7 @@
                 this.magicBolts = [];
                 this.vfxRings.forEach(r => this.scene.remove(r.mesh));
                 this.vfxRings = [];
+                this.removeVortex();
 
                 // 적 위치 초기화 및 상태 리셋
                 this.dummies.forEach((d, i) => {
@@ -4247,6 +4266,36 @@
                     overlay.style.opacity = '1';
                 } else {
                     overlay.style.opacity = '0';
+                }
+            }
+
+            spawnVortex(pos) {
+                this.removeVortex();
+                const group = new THREE.Group();
+                group.position.set(pos.x, 0.6, pos.z);
+                const colors = [0xaa66ff, 0x7733ff, 0xdd99ff];
+                const rings = [];
+                for (let i = 0; i < 3; i++) {
+                    const geo = new THREE.TorusGeometry(0.7 + i * 0.35, 0.055, 8, 40);
+                    const mat = new THREE.MeshBasicMaterial({ color: colors[i], transparent: true, opacity: 0.75 - i * 0.08, depthWrite: false });
+                    const mesh = new THREE.Mesh(geo, mat);
+                    mesh.rotation.x = (Math.PI / 3) * i;
+                    mesh.rotation.y = (Math.PI * 2 / 3) * i;
+                    group.add(mesh);
+                    rings.push({ mesh, mat, baseOpacity: 0.75 - i * 0.08 });
+                }
+                // 중심 코어 구
+                const coreMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.9 });
+                const core = new THREE.Mesh(new THREE.SphereGeometry(0.13, 10, 10), coreMat);
+                group.add(core);
+                this.scene.add(group);
+                this.vfxVortex = { group, rings, coreMat, timer: 0 };
+            }
+
+            removeVortex() {
+                if (this.vfxVortex) {
+                    this.scene.remove(this.vfxVortex.group);
+                    this.vfxVortex = null;
                 }
             }
 
@@ -4408,6 +4457,18 @@
                         if (!this.indicators[i].update(dt)) {
                             this.indicators.splice(i, 1);
                         }
+                    }
+
+                    if (this.vfxVortex) {
+                        const v = this.vfxVortex;
+                        v.timer += dt;
+                        v.group.rotation.y = v.timer * 3.5;
+                        const pulse = 0.85 + Math.sin(v.timer * 12) * 0.15;
+                        for (let i = 0; i < v.rings.length; i++) {
+                            v.rings[i].mesh.rotation.z = v.timer * (2.2 + i * 0.6);
+                            v.rings[i].mat.opacity = v.rings[i].baseOpacity * pulse;
+                        }
+                        v.coreMat.opacity = 0.75 + Math.sin(v.timer * 15) * 0.25;
                     }
 
                     for (let i = this.vfxRings.length - 1; i >= 0; i--) {
