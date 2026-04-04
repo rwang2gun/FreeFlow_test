@@ -1615,8 +1615,8 @@
                 // 스킬 이름 표시
                 const badge = document.getElementById('attack-name-badge');
                 if (badge) { badge.innerText = '잔광참'; badge.style.display = 'block'; }
-                clearTimeout(this._skillBadgeTimer);
-                this._skillBadgeTimer = setTimeout(() => { if (badge) badge.style.display = 'none'; }, 1200);
+                clearTimeout(this._attackNameBadgeTimer);
+                this._attackNameBadgeTimer = setTimeout(() => { if (badge) badge.style.display = 'none'; }, 1200);
             }
 
             executeSkill(dt, state) {
@@ -2039,8 +2039,8 @@
 
                 const badge = document.getElementById('attack-name-badge');
                 if (badge) { badge.innerText = '폭풍연격'; badge.style.display = 'block'; }
-                clearTimeout(this._skillBadgeTimer);
-                this._skillBadgeTimer = setTimeout(() => { if (badge) badge.style.display = 'none'; }, 1200);
+                clearTimeout(this._attackNameBadgeTimer);
+                this._attackNameBadgeTimer = setTimeout(() => { if (badge) badge.style.display = 'none'; }, 1200);
             }
 
             executeSkill(dt, state) {
@@ -2387,6 +2387,7 @@
                 this.roleName = "WM";
                 this.maxCombo = 4;
                 this.attackRange = 2.5;
+                this.maxSkillCooldown = 10;
 
                 // 검 숨기기
                 if (this.parts.sword) {
@@ -2488,8 +2489,11 @@
             update(dt) {
                 const sword = this.parts.sword;
                 this.parts.sword = null;
-                super.update(dt);
-                this.parts.sword = sword;
+                try {
+                    super.update(dt);
+                } finally {
+                    this.parts.sword = sword;
+                }
 
                 // 전투 모드에서 보석 발광 강도 펄스
                 if (this.wandOrbMat) {
@@ -2504,12 +2508,12 @@
                 state.duration  = 0.75;
                 state.burstTime = 0.3;   // 폭발 발동 시점
                 state.hasBurst  = false;
-                this.skillCooldown = 10; // WM은 쿨다운 10초
+                this.skillCooldown = this.maxSkillCooldown;
 
                 const badge = document.getElementById('attack-name-badge');
                 if (badge) { badge.innerText = '별자리 폭발'; badge.style.display = 'block'; }
-                clearTimeout(this._skillBadgeTimer);
-                this._skillBadgeTimer = setTimeout(() => { if (badge) badge.style.display = 'none'; }, 1200);
+                clearTimeout(this._attackNameBadgeTimer);
+                this._attackNameBadgeTimer = setTimeout(() => { if (badge) badge.style.display = 'none'; }, 1200);
             }
 
             executeSkill(dt, state) {
