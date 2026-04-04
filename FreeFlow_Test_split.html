@@ -573,6 +573,7 @@
                 let lookDir = new THREE.Vector3();
                 let shouldAlign = false;
 
+                // 이 아래는 isMoving = false 가 보장된 상태 (이동 입력 없을 때만 자동 회전)
                 if (this.parent.isCombatMode && this.parent.nearestDummy) {
                     lookDir.subVectors(this.parent.nearestDummy.mesh.position, this.parent.mesh.position).setY(0);
                     shouldAlign = true;
@@ -1372,8 +1373,8 @@
                 if (inputDir.lengthSq() > 0.0001) {
                     inputDir.normalize();
                     const targetAngle = Math.atan2(inputDir.x, inputDir.z);
-                    const alpha = Math.min(0.99, this.turnSpeed * dt);
-                    this.mesh.quaternion.slerp(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), targetAngle), alpha);
+                    // 이동 입력 최우선: 어떤 상황에서도 즉시 이동 방향으로 회전
+                    this.mesh.quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), targetAngle);
                 }
                 return inputDir;
             }
