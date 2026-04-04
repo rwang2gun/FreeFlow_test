@@ -730,7 +730,6 @@
             constructor(parent) { super(parent); this.name = 'skill'; }
             enter() {
                 this.timer = 0;
-                this.parent.input.isLocked = true;
                 this.parent.setupSkill(this);
             }
             update(dt) {
@@ -741,7 +740,6 @@
                 }
             }
             exit() {
-                this.parent.input.isLocked = false;
                 this.parent.input.resetTriggers();
                 this.parent.velocity.set(0, 0, 0);
             }
