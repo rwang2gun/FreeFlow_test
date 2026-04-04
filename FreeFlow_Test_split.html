@@ -867,7 +867,7 @@
          *       lHip  : { rx,ry,rz=고관절, knee=무릎X }
          * ==========================================
          */
-        const GAME_VERSION = '0.010';
+        const GAME_VERSION = '0.011';
         document.getElementById('game-version-display').textContent = 'ver ' + GAME_VERSION;
 
         const POSES = {
@@ -1323,6 +1323,48 @@
         lArm:  { sx:0.62, sy: 0.22, sz: 0.12, ex:-1.15 },
         rHip:  { rx:-0.30, ry:0, rz:-0.15, knee:0.50 },
         lHip:  { rx:-0.30, ry:0, rz:0.15, knee:0.50 },
+    },
+
+    // ─── 궁극기 포즈 ────────────────────────────────────────
+    // FS 폭풍검무: 회전 베기 중 포즈
+    fs_ult_spin: {
+        root:  { y:0.56, rx:0, ry:0 },
+        waist: { rx:0.58, ry:-0.65 },
+        chest: { rx:-0.06, ry:-0.34 },
+        rArm:  { sx:-1.28, sy:0.62, sz:-1.06, ex:-0.14, wx:1.81, wy:-0.24 },
+        lArm:  { sx:0.05, sy:-0.51, sz:1.27, ex:-2 },
+        rHip:  { rx:0.84, ry:0.14, rz:-0.29, knee:0 },
+        lHip:  { rx:-1.31, ry:-0.01, rz:0.27, knee:1.44 },
+    },
+    // EF 천지파쇄: 도약 중 포즈 (양팔 위로)
+    ef_ult_jump: {
+        root:  { y:0.80, rx:-0.18, ry:0 },
+        waist: { rx:-0.28, ry:0 },
+        chest: { rx:-0.18, ry:0 },
+        rArm:  { sx:2.4, sy:-0.18, sz:-0.12, ex:-0.35, wx:0, wy:0 },
+        lArm:  { sx:2.4, sy: 0.18, sz: 0.12, ex:-0.35 },
+        rHip:  { rx:-0.12, ry:0.05, rz:-0.1, knee:0.18 },
+        lHip:  { rx:-0.12, ry:-0.05, rz:0.1, knee:0.18 },
+    },
+    // EF 천지파쇄: 강타 순간 포즈 (양팔 아래로)
+    ef_ult_slam: {
+        root:  { y:0.52, rx:0.38, ry:0 },
+        waist: { rx:0.48, ry:0 },
+        chest: { rx:0.28, ry:0 },
+        rArm:  { sx:-1.75, sy:-0.12, sz:0.18, ex:-0.25, wx:0, wy:0 },
+        lArm:  { sx:-1.75, sy: 0.12, sz:-0.18, ex:-0.25 },
+        rHip:  { rx:0.22, ry:0.08, rz:-0.14, knee:0.48 },
+        lHip:  { rx:0.22, ry:-0.08, rz:0.14, knee:0.48 },
+    },
+    // WM 성좌붕괴: 마력 차지 중 포즈
+    wm_ult_charge: {
+        root:  { y:0.78, rx:-0.15, ry:0 },
+        waist: { rx:-0.35, ry:0 },
+        chest: { rx:-0.45, ry:0 },
+        rArm:  { sx:2.8, sy:-0.3, sz:-0.2, ex:-0.1, wx:0.2, wy:0.1 },
+        lArm:  { sx:2.8, sy:0.3, sz:0.2, ex:-0.1 },
+        rHip:  { rx:-0.35, ry:0, rz:-0.18, knee:0.55 },
+        lHip:  { rx:-0.35, ry:0, rz:0.18, knee:0.55 },
     },
     };
 
@@ -1782,7 +1824,7 @@
                 if (state.timer < state.spinEnd) {
                     // 회전 베기: 캐릭터를 빠르게 Y축 회전
                     this.mesh.rotation.y += dt * 12.0;
-                    this.applyPose(POSES.combo2, 30, dt);
+                    this.applyPose(POSES.fs_ult_spin, 30, dt);
                     this._updateNeckLook(dt, 20, -0.2);
 
                     // 0.25s 간격으로 주변 3.5m 내 전방향 타격
@@ -2357,14 +2399,14 @@
                     // 도약: 높이 솟구치는 연출
                     const jumpT = state.timer / state.jumpEnd;
                     this.parts.root.position.y = 0.8 + Math.sin(jumpT * Math.PI) * 2.5;
-                    this.applyPose(POSES.ef_skill_windup, 20, dt);
+                    this.applyPose(POSES.ef_ult_jump, 20, dt);
                     this._updateNeckLook(dt, 15, -0.4);
 
                 } else if (state.timer < state.slamAt) {
                     // 급하강: 팔을 아래로 모으며 내리꽂기 직전
                     const downT = (state.timer - state.jumpEnd) / (state.slamAt - state.jumpEnd);
                     this.parts.root.position.y = THREE.MathUtils.lerp(3.3, 0.8, downT);
-                    this.applyPose(POSES.ef_skill_slam, 35, dt);
+                    this.applyPose(POSES.ef_ult_slam, 35, dt);
                     this._updateNeckLook(dt, 25, -0.5);
 
                 } else {
@@ -2825,7 +2867,7 @@
 
                 if (state.timer < state.burstAt) {
                     // 차지: 양팔 올리며 마력 집중
-                    this.applyPose(POSES.wm_skill, 10, dt);
+                    this.applyPose(POSES.wm_ult_charge, 10, dt);
                     this._updateNeckLook(dt, 12, -0.6);
                     if (this.wandOrbMat) this.wandOrbMat.emissiveIntensity = 3.0 + Math.sin(state.timer * 20) * 1.5;
 
