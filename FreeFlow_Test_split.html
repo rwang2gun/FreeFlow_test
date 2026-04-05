@@ -802,6 +802,7 @@
             enter() {
                 this.timer = 0;
                 this.parent.setupSkill(this);
+                if (typeof this.parent.setElementalMode === 'function') this.parent.setElementalMode(true);
                 // E 스킬 사용 시 MP 지급: 시전 캐릭터 +25, 대기 캐릭터 +10
                 const game = this.parent.game;
                 this.parent.mp = Math.min(this.parent.maxMp, this.parent.mp + 25);
@@ -819,6 +820,7 @@
             exit() {
                 this.parent.input.resetTriggers();
                 this.parent.velocity.set(0, 0, 0);
+                if (typeof this.parent.setElementalMode === 'function') this.parent.setElementalMode(false);
                 if (typeof this.parent.cleanupSkill === 'function') this.parent.cleanupSkill();
             }
         }
@@ -829,6 +831,7 @@
                 this.timer = 0;
                 this.parent.mp = 0; // MP 전량 소모
                 this.parent.setupUltimate(this);
+                if (typeof this.parent.setElementalMode === 'function') this.parent.setElementalMode(true);
                 // 궁극기 발동 시 MP 회복 없음 (소모만)
                 const badge = document.getElementById('attack-name-badge');
                 if (badge) { badge.style.display = 'block'; }
@@ -843,6 +846,7 @@
             exit() {
                 this.parent.input.resetTriggers();
                 this.parent.velocity.set(0, 0, 0);
+                if (typeof this.parent.setElementalMode === 'function') this.parent.setElementalMode(false);
                 if (typeof this.parent.cleanupUltimate === 'function') this.parent.cleanupUltimate();
             }
         }
@@ -867,7 +871,7 @@
          *       lHip  : { rx,ry,rz=고관절, knee=무릎X }
          * ==========================================
          */
-        const GAME_VERSION = '0.009';
+        const GAME_VERSION = '0.015';
         document.getElementById('game-version-display').textContent = 'ver ' + GAME_VERSION;
 
         const POSES = {
@@ -1324,6 +1328,48 @@
         rHip:  { rx:-0.30, ry:0, rz:-0.15, knee:0.50 },
         lHip:  { rx:-0.30, ry:0, rz:0.15, knee:0.50 },
     },
+
+    // ─── 궁극기 포즈 ────────────────────────────────────────
+    // FS 폭풍검무: 회전 베기 중 포즈
+    fs_ult_spin: {
+        root:  { y:0.56, rx:0, ry:0 },
+        waist: { rx:0.58, ry:-0.65 },
+        chest: { rx:-0.06, ry:-0.34 },
+        rArm:  { sx:-1.28, sy:0.62, sz:-1.06, ex:-0.14, wx:1.81, wy:-0.24 },
+        lArm:  { sx:0.05, sy:-0.51, sz:1.27, ex:-2 },
+        rHip:  { rx:0.84, ry:0.14, rz:-0.29, knee:0 },
+        lHip:  { rx:-1.31, ry:-0.01, rz:0.27, knee:1.44 },
+    },
+    // EF 천지파쇄: 도약 중 포즈 (양팔 위로)
+    ef_ult_jump: {
+        root:  { y:0.80, rx:-0.18, ry:0 },
+        waist: { rx:-0.28, ry:0 },
+        chest: { rx:-0.18, ry:0 },
+        rArm:  { sx:2.4, sy:-0.18, sz:-0.12, ex:-0.35, wx:0, wy:0 },
+        lArm:  { sx:2.4, sy: 0.18, sz: 0.12, ex:-0.35 },
+        rHip:  { rx:-0.12, ry:0.05, rz:-0.1, knee:0.18 },
+        lHip:  { rx:-0.12, ry:-0.05, rz:0.1, knee:0.18 },
+    },
+    // EF 천지파쇄: 강타 순간 포즈 (양팔 아래로)
+    ef_ult_slam: {
+        root:  { y:0.52, rx:0.38, ry:0 },
+        waist: { rx:0.48, ry:0 },
+        chest: { rx:0.28, ry:0 },
+        rArm:  { sx:-1.75, sy:-0.12, sz:0.18, ex:-0.25, wx:0, wy:0 },
+        lArm:  { sx:-1.75, sy: 0.12, sz:-0.18, ex:-0.25 },
+        rHip:  { rx:0.22, ry:0.08, rz:-0.14, knee:0.48 },
+        lHip:  { rx:0.22, ry:-0.08, rz:0.14, knee:0.48 },
+    },
+    // WM 성좌붕괴: 마력 차지 중 포즈
+    wm_ult_charge: {
+        root:  { y:0.78, rx:-0.15, ry:0 },
+        waist: { rx:-0.35, ry:0 },
+        chest: { rx:-0.45, ry:0 },
+        rArm:  { sx:2.8, sy:-0.3, sz:-0.2, ex:-0.1, wx:0.2, wy:0.1 },
+        lArm:  { sx:2.8, sy:0.3, sz:0.2, ex:-0.1 },
+        rHip:  { rx:-0.35, ry:0, rz:-0.18, knee:0.55 },
+        lHip:  { rx:-0.35, ry:0, rz:0.18, knee:0.55 },
+    },
     };
 
         // ── PoseEditor 연동: localStorage에서 커스텀 포즈 자동 로드 ──
@@ -1429,7 +1475,7 @@
                 nose.position.set(0, -0.02, headD / 2 + 0.02); headMesh.add(nose); this.parts.nose = nose;
                 nose.visible = false;
 
-                const matHair = new THREE.MeshLambertMaterial({ color: 0x2c3e50 });
+                const matHair = new THREE.MeshLambertMaterial({ color: 0xff3300 }); // 화속성 붉은색
                 const hairTop = new THREE.Mesh(new THREE.BoxGeometry(headW + 0.04, 0.06, headD + 0.04), matHair);
                 hairTop.position.y = headH / 2 + 0.01; headMesh.add(hairTop);
 
@@ -1445,6 +1491,7 @@
 
                 const hairSideL = new THREE.Mesh(new THREE.BoxGeometry(hairSideW, 0.2, 0.1), matHair);
                 hairSideL.position.set(-headW / 2 - 0.02, 0.03, -0.04); headMesh.add(hairSideL);
+                this.hairMat = matHair;
 
                 this.baseMats = { body: matBody, skin: matSkin }; this.debugMats = { R: matR, L: matL };
 
@@ -1461,12 +1508,13 @@
                 };
                 this.parts.rightArm = createArm(true); this.parts.leftArm = createArm(false);
 
-                const sword = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.04, 1.2), new THREE.MeshLambertMaterial({ color: 0x00e5ff, emissive: 0x005577 }));
+                const sword = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.04, 1.2), new THREE.MeshLambertMaterial({ color: 0xcccccc, emissive: 0x222222 }));
                 sword.position.set(0, -handS / 2, 0.6);
                 sword.scale.set(0.001, 0.001, 0.001);
                 sword.visible = false;
                 this.parts.rightArm.wrist.add(sword);
                 this.parts.sword = sword;
+                this.swordMat = sword.material;
 
                 const thighW = 0.16, calfW = 0.11;
                 const createLeg = (isRight) => {
@@ -1490,6 +1538,14 @@
                 this.parts.rightLeg.thighMesh.material = rightMat; this.parts.rightLeg.calfMesh.material = rightSkinMat;
                 this.parts.leftLeg.thighMesh.material = leftMat; this.parts.leftLeg.calfMesh.material = leftSkinMat;
                 if (this.parts.nose) this.parts.nose.visible = isEnabled;
+            }
+
+            // 속성 모드 전환: 스킬/궁극기 사용 시 무기 색상 변경
+            setElementalMode(on) {
+                if (this.swordMat) {
+                    this.swordMat.color.setHex(on ? 0xff4400 : 0xcccccc);
+                    this.swordMat.emissive.setHex(on ? 0x441100 : 0x111111);
+                }
             }
 
             calculateMovement(dt) {
@@ -1681,6 +1737,7 @@
                 let nearestAttacker = null;
 
                 for (let d of this.game.dummies) {
+                    if (d.isDead) continue;
                     let dist = this.mesh.position.distanceTo(d.mesh.position);
 
                     // [수정] 단순히 isAttacking 뿐만 아니라 role이 'attacker'인 모든 적을 추적 (호들갑 상태 포함)
@@ -1782,17 +1839,17 @@
                 if (state.timer < state.spinEnd) {
                     // 회전 베기: 캐릭터를 빠르게 Y축 회전
                     this.mesh.rotation.y += dt * 12.0;
-                    this.applyPose(POSES.combo2, 30, dt);
+                    this.applyPose(POSES.fs_ult_spin, 30, dt);
                     this._updateNeckLook(dt, 20, -0.2);
 
                     // 0.25s 간격으로 주변 3.5m 내 전방향 타격
                     if (state.timer >= state.nextHitAt) {
                         state.nextHitAt += state.hitInterval;
-                        this.game.spawnShockwaveRing(this.mesh.position, 3.5, 0xffe066);
+                        this.game.spawnShockwaveRing(this.mesh.position, 3.5, 0xff4400);
                         for (const d of this.game.dummies) {
                             const toD = new THREE.Vector3().subVectors(d.mesh.position, this.mesh.position).setY(0);
                             if (toD.length() < 3.5 + d.radius) {
-                                d.takeDamage(true, false, 0);
+                                d.takeDamage(true, false, 0, null, 18);
                                 this.game.addScore(10, "STORM!", d.mesh.position);
                                 this.game.triggerImpact(0.04, 0.15);
                             }
@@ -1803,13 +1860,13 @@
                     // 최종 방사 폭발
                     if (!state.burstDone) {
                         state.burstDone = true;
-                        this.game.spawnShockwaveRing(this.mesh.position, 5.0, 0xffffff);
+                        this.game.spawnShockwaveRing(this.mesh.position, 5.0, 0xff8800);
                         this.game.triggerImpact(0.1, 0.4);
                         for (const d of this.game.dummies) {
                             const toD = new THREE.Vector3().subVectors(d.mesh.position, this.mesh.position).setY(0);
                             if (toD.length() < 5.0 + d.radius) {
                                 const outDir = toD.lengthSq() > 0.001 ? toD.clone().normalize() : new THREE.Vector3(Math.random()-0.5,0,Math.random()-0.5).normalize();
-                                d.takeDamage(true, true, 20.0, outDir.multiplyScalar(5));
+                                d.takeDamage(true, true, 20.0, outDir.multiplyScalar(5), 40);
                                 this.game.addScore(20, "FINISH!", d.mesh.position);
                             }
                         }
@@ -1870,7 +1927,7 @@
                                     this.game.triggerSlowMo(0.12, 1.2);
                                     state.slowDone = true;
                                 }
-                                d.takeDamage(true, false, 15.0, forward.clone().multiplyScalar(4));
+                                d.takeDamage(true, false, 15.0, forward.clone().multiplyScalar(4), 20);
                                 this.game.addScore(12, "PIERCE!", d.mesh.position);
                                 this.game.triggerImpact(0.06, 0.22);
                                 state.hitEnemies.add(d);
@@ -1901,7 +1958,7 @@
                         if (dist < 2.2 + d.radius && dist > 0.001) {
                             const angle = Math.acos(Math.min(1, revForward.dot(toD.clone().normalize())));
                             if (angle < Math.PI * 0.6) {
-                                d.takeDamage(true, true, 18.0, revForward.clone().multiplyScalar(5));
+                                d.takeDamage(true, true, 18.0, revForward.clone().multiplyScalar(5), 35);
                                 this.game.addScore(15, "FINISH!", d.mesh.position);
                                 this.game.triggerImpact(0.08, 0.28);
                                 state.hitEnemies2.add(d);
@@ -2097,7 +2154,7 @@
                                     const toD = new THREE.Vector3().subVectors(d.mesh.position, this.mesh.position).setY(0);
                                     if (toD.length() < this.attackRange + d.radius && toD.lengthSq() > 0.001) {
                                         if (Math.acos(Math.min(1, forward.dot(toD.normalize()))) < this.attackAngle + 0.2) {
-                                            d.takeDamage(false, false);
+                                            d.takeDamage(false, false, 0, null, 12);
                                             this.game.addScore(5, "HIT", d.mesh.position);
                                             state.hasHit = true;
                                             this.game.triggerImpact(0.06, 0.15);
@@ -2141,7 +2198,7 @@
                                     const toD = new THREE.Vector3().subVectors(d.mesh.position, this.mesh.position).setY(0);
                                     if (toD.length() < 2.5 + d.radius && toD.lengthSq() > 0.001) {
                                         if (Math.acos(Math.min(1, forward.dot(toD.normalize()))) < this.attackAngle + 0.2) {
-                                            d.takeDamage(true, false);
+                                            d.takeDamage(true, false, 0, null, 20);
                                             d.logicalPos.add(forward.clone().multiplyScalar(1.0));
                                             this.game.addScore(5, "HIT", d.mesh.position);
                                             state.hasHit = true;
@@ -2215,7 +2272,11 @@
                                     if (Math.acos(Math.min(1, forward.dot(toD.normalize()))) < this.attackAngle + 0.2) {
                                         const shouldFlinch = (state.comboStep === 'shoulder_bash');
                                         const forceKnockdown = (state.comboStep === 'shoulder_bash');
-                                        d.takeDamage(shouldFlinch, forceKnockdown);
+                                        const fsDmg = state.comboStep === 'shoulder_bash' ? 25
+                                                    : state.comboStep === 'step_strike'   ? 15
+                                                    : state.comboStep === 3 ? (state.hasSecondHit ? 20 : 10)
+                                                    : state.comboStep === 2 ? 15 : 10;
+                                        d.takeDamage(shouldFlinch, forceKnockdown, 0, null, fsDmg);
                                         this.game.addScore(5, "HIT", d.mesh.position);
                                         state.hasHit = true;
 
@@ -2268,11 +2329,12 @@
                 this.parts.waistMesh.material = yellowMat;
                 this.parts.pelvisMesh.material = yellowMat;
 
-                // 팔과 종아리는 살구색(피부색), 허벅지는 의상색(노란색)
-                this.parts.rightArm.upperArmMesh.material = skinMat;
-                this.parts.rightArm.forearmMesh.material = skinMat;
-                this.parts.leftArm.upperArmMesh.material = skinMat;
-                this.parts.leftArm.forearmMesh.material = skinMat;
+                // 팔과 종아리는 독립 fistMat(피부색), 허벅지는 의상색(노란색)
+                this.fistMat = new THREE.MeshLambertMaterial({ color: 0xffdbac }); // 기본 피부색
+                this.parts.rightArm.upperArmMesh.material = this.fistMat;
+                this.parts.rightArm.forearmMesh.material = this.fistMat;
+                this.parts.leftArm.upperArmMesh.material = this.fistMat;
+                this.parts.leftArm.forearmMesh.material = this.fistMat;
                 this.parts.rightLeg.thighMesh.material = yellowMat;
                 this.parts.rightLeg.calfMesh.material = skinMat;
                 this.parts.leftLeg.thighMesh.material = yellowMat;
@@ -2285,6 +2347,16 @@
 
                 // EF 스킬 쿨다운 오버라이드
                 this.maxSkillCooldown = 8;
+            }
+
+            // 속성 모드 전환: 얼음 속성 (스킬/궁극기 시 주먹 색상 변경)
+            setElementalMode(on) {
+                if (this.fistMat) {
+                    this.fistMat.color.setHex(on ? 0x88ccff : 0xffdbac);
+                    this.fistMat.emissive = this.fistMat.emissive || new THREE.Color();
+                    this.fistMat.emissive.setHex(on ? 0x2266aa : 0x000000);
+                    this.fistMat.emissiveIntensity = on ? 0.6 : 0;
+                }
             }
 
             // ── 스킬: 지진파 (EF 전용, 지면 3연타 AOE) ──────────────
@@ -2320,14 +2392,14 @@
                     if (state.timer < state.hitTimes[i]) break;
 
                     // 지면 충격 링 이펙트
-                    this.game.spawnShockwaveRing(this.mesh.position, SKILL_RANGE);
+                    this.game.spawnShockwaveRing(this.mesh.position, SKILL_RANGE, 0x88ccff);
                     this.game.triggerImpact(0.07, 0.28);
 
                     // 범위 내 전 방향 AOE 경직
                     for (const d of this.game.dummies) {
                         const toD = new THREE.Vector3().subVectors(d.mesh.position, this.mesh.position).setY(0);
                         if (toD.length() < SKILL_RANGE + d.radius) {
-                            d.takeDamage(true, false, 0);
+                            d.takeDamage(true, false, 0, null, 22);
                             this.game.addScore(8, "SEISMIC!", d.mesh.position);
                         }
                     }
@@ -2357,14 +2429,14 @@
                     // 도약: 높이 솟구치는 연출
                     const jumpT = state.timer / state.jumpEnd;
                     this.parts.root.position.y = 0.8 + Math.sin(jumpT * Math.PI) * 2.5;
-                    this.applyPose(POSES.ef_skill_windup, 20, dt);
+                    this.applyPose(POSES.ef_ult_jump, 20, dt);
                     this._updateNeckLook(dt, 15, -0.4);
 
                 } else if (state.timer < state.slamAt) {
                     // 급하강: 팔을 아래로 모으며 내리꽂기 직전
                     const downT = (state.timer - state.jumpEnd) / (state.slamAt - state.jumpEnd);
                     this.parts.root.position.y = THREE.MathUtils.lerp(3.3, 0.8, downT);
-                    this.applyPose(POSES.ef_skill_slam, 35, dt);
+                    this.applyPose(POSES.ef_ult_slam, 35, dt);
                     this._updateNeckLook(dt, 25, -0.5);
 
                 } else {
@@ -2375,7 +2447,7 @@
                         state.burstDone = true;
                         // 대형 충격파 3겹
                         for (let r = 0; r < 3; r++) {
-                            setTimeout(() => this.game.spawnShockwaveRing(this.mesh.position, 5.5 + r * 0.5, 0xff9900), r * 80);
+                            setTimeout(() => this.game.spawnShockwaveRing(this.mesh.position, 5.5 + r * 0.5, 0xaaddff), r * 80);
                         }
                         this.game.triggerImpact(0.12, 0.5);
 
@@ -2383,7 +2455,7 @@
                             const toD = new THREE.Vector3().subVectors(d.mesh.position, this.mesh.position).setY(0);
                             if (toD.length() < 5.5 + d.radius) {
                                 const outDir = toD.lengthSq() > 0.001 ? toD.clone().normalize() : new THREE.Vector3(Math.random()-0.5,0,Math.random()-0.5).normalize();
-                                d.takeDamage(true, true, 28.0, outDir.multiplyScalar(6));
+                                d.takeDamage(true, true, 28.0, outDir.multiplyScalar(6), 45);
                                 this.game.addScore(25, "QUAKE!", d.mesh.position);
                             }
                         }
@@ -2478,7 +2550,8 @@
                 });
                 toRemove.forEach(child => headMesh.remove(child));
 
-                const hairMat = new THREE.MeshLambertMaterial({ color: 0xff8c00 }); // 주황색
+                const hairMat = new THREE.MeshLambertMaterial({ color: 0x88ccff }); // 얼음 속성 하늘색
+                this.hairMat = hairMat;
 
                 // 1. 머리 윗부분 베이스 (이전 스케일로 복구)
                 const hairTop = new THREE.Mesh(new THREE.BoxGeometry(0.23, 0.06, 0.25), hairMat);
@@ -2574,7 +2647,7 @@
                                 const toD = new THREE.Vector3().subVectors(d.mesh.position, this.mesh.position).setY(0);
                                 if (toD.length() < 2.2 + d.radius && toD.lengthSq() > 0.001 &&
                                     Math.acos(Math.min(1, forward.dot(toD.clone().normalize()))) < Math.PI / 1.5) {
-                                    d.takeDamage(true, false);
+                                    d.takeDamage(true, false, 0, null, 18);
                                     d.logicalPos.add(forward.clone().multiplyScalar(1.0));
                                     this.game.addScore(5, "HIT", d.mesh.position);
                                     state.hasHit = true;
@@ -2669,12 +2742,15 @@
 
                         if (toD.length() < range + d.radius && Math.acos(Math.min(1, forward.dot(toD.normalize()))) < angle) {
                             // 강타(어퍼컷)만 flinch+knockdown, 일반 콤보는 flinch 없음 (적 공격 취소 방지)
+                            const efDmg = state.comboStep === 'uppercut' ? 25
+                                        : (state.comboStep === 3 || state.comboStep === 4) ? 15
+                                        : state.comboStep === 2 ? 12 : 10;
                             if (state.comboStep === 'uppercut') {
-                                d.takeDamage(true, true, 22.0, forward.clone().multiplyScalar(5.0));
+                                d.takeDamage(true, true, 22.0, forward.clone().multiplyScalar(5.0), efDmg);
                             } else if (state.comboStep === 3 || state.comboStep === 4) {
-                                d.takeDamage(false, false, 5.0); // 3~4타: 넉백만, flinch 없음
+                                d.takeDamage(false, false, 5.0, null, efDmg);
                             } else {
-                                d.takeDamage(false, false); // 1~2타, elbow, dash: flinch 없음
+                                d.takeDamage(false, false, 0, null, efDmg);
                             }
                             this.game.addScore(state.comboStep === 'uppercut' ? 15 : 5, "HIT", d.mesh.position);
                             state.hasHit = true;
@@ -2747,8 +2823,8 @@
                 const wandGroup  = new THREE.Group();
                 const handleMat  = new THREE.MeshLambertMaterial({ color: 0xffd700 });
                 const orbMat     = new THREE.MeshLambertMaterial({
-                    color: 0xff69b4, emissive: 0xff1493, emissiveIntensity: 0.6
-                });
+                    color: 0xaaaacc, emissive: 0x000000, emissiveIntensity: 0.0
+                }); // 기본 물리 색상 (스킬/궁극기 시 물 속성 색으로 변경됨)
 
                 // 손잡이 — Z 방향으로 뻗음
                 const handle = new THREE.Mesh(
@@ -2779,7 +2855,8 @@
                 });
                 toRemove.forEach(c => headMesh.remove(c));
 
-                const hairMat = new THREE.MeshLambertMaterial({ color: 0xffb6c1 }); // 연분홍
+                const hairMat = new THREE.MeshLambertMaterial({ color: 0x44aaff }); // 물 속성 파란색
+                this.hairMat = hairMat;
                 const headW = 0.19, headD = 0.21, headH = 0.23;
 
                 // 윗머리
@@ -2807,6 +2884,16 @@
                 headMesh.add(hairFront);
             }
 
+            // 속성 모드 전환: 물 속성 (스킬/궁극기 시 마법봉 오브 색상 변경)
+            setElementalMode(on) {
+                this.isElementalMode = on;
+                if (this.wandOrbMat) {
+                    this.wandOrbMat.color.setHex(on ? 0x44aaff : 0xaaaacc);
+                    this.wandOrbMat.emissive.setHex(on ? 0x0055cc : 0x000000);
+                    if (!on) this.wandOrbMat.emissiveIntensity = 0;
+                }
+            }
+
             // ── 궁극기: 성좌붕괴 (WM 전용) ─────────────────────────────
             // 캐릭터 주위에 거대 마법진을 소환 후 폭발, 필드 전체 적을 날려버림
             setupUltimate(state) {
@@ -2825,18 +2912,18 @@
 
                 if (state.timer < state.burstAt) {
                     // 차지: 양팔 올리며 마력 집중
-                    this.applyPose(POSES.wm_skill, 10, dt);
+                    this.applyPose(POSES.wm_ult_charge, 10, dt);
                     this._updateNeckLook(dt, 12, -0.6);
                     if (this.wandOrbMat) this.wandOrbMat.emissiveIntensity = 3.0 + Math.sin(state.timer * 20) * 1.5;
 
                     // 차지 중 점점 커지는 링 펄스
                     if (state.timer > 0.2 && !state._pulsed1) {
                         state._pulsed1 = true;
-                        this.game.spawnShockwaveRing(this.mesh.position, 3.0, 0xcc44ff);
+                        this.game.spawnShockwaveRing(this.mesh.position, 3.0, 0x0088ff);
                     }
                     if (state.timer > 0.6 && !state._pulsed2) {
                         state._pulsed2 = true;
-                        this.game.spawnShockwaveRing(this.mesh.position, 5.0, 0x9900ff);
+                        this.game.spawnShockwaveRing(this.mesh.position, 5.0, 0x0066cc);
                     }
 
                 } else {
@@ -2845,7 +2932,7 @@
                         state.burstDone = true;
                         // 연속 충격파 4겹
                         for (let r = 0; r < 4; r++) {
-                            setTimeout(() => this.game.spawnShockwaveRing(this.mesh.position, 4.0 + r, 0xee88ff), r * 60);
+                            setTimeout(() => this.game.spawnShockwaveRing(this.mesh.position, 4.0 + r, 0x44aaff), r * 60);
                         }
                         this.game.triggerImpact(0.15, 0.6);
                         if (this.wandOrbMat) this.wandOrbMat.emissiveIntensity = 8.0;
@@ -2855,7 +2942,7 @@
                             const toD = new THREE.Vector3().subVectors(d.mesh.position, this.mesh.position).setY(0);
                             if (toD.length() < 12.0 + d.radius) {
                                 const outDir = toD.lengthSq() > 0.001 ? toD.clone().normalize() : new THREE.Vector3(Math.random()-0.5,0,Math.random()-0.5).normalize();
-                                d.takeDamage(true, true, 25.0, outDir.multiplyScalar(5));
+                                d.takeDamage(true, true, 25.0, outDir.multiplyScalar(5), 50);
                                 this.game.addScore(25, "NOVA!", d.mesh.position);
                             }
                         }
@@ -2876,11 +2963,9 @@
                     this.parts.sword = sword;
                 }
 
-                // 전투 모드에서 보석 발광 강도 펄스
-                if (this.wandOrbMat) {
-                    this.wandOrbMat.emissiveIntensity = this.isCombatMode
-                        ? 0.5 + Math.sin(this.animTimer * 4) * 0.3
-                        : 0.3;
+                // 전투 모드에서 보석 발광 강도 펄스 (속성 모드 중에는 스킵)
+                if (this.wandOrbMat && !this.isElementalMode) {
+                    this.wandOrbMat.emissiveIntensity = 0; // 기본 물리 상태: 발광 없음
                 }
             }
 
@@ -2915,6 +3000,7 @@
                 const vp = state.vortexPos;
 
                 for (const d of this.game.dummies) {
+                    if (d.isDead) continue;
                     const toVortex = new THREE.Vector3().subVectors(vp, d.mesh.position).setY(0);
                     const dist = toVortex.length();
                     if (dist > PULL_RANGE || dist < 0.25) continue;
@@ -3057,7 +3143,7 @@
                                 const toD = new THREE.Vector3().subVectors(d.mesh.position, this.mesh.position).setY(0);
                                 if (toD.length() < this.attackRange + d.radius && toD.lengthSq() > 0.001 &&
                                     Math.acos(Math.min(1, forward.dot(toD.normalize()))) < this.attackAngle + 0.2) {
-                                    d.takeDamage(false, false);
+                                    d.takeDamage(false, false, 0, null, 10);
                                     this.game.addScore(5, "HIT", d.mesh.position);
                                     state.hasHit = true;
                                     this.game.triggerImpact(0.05, 0.15);
@@ -3090,7 +3176,7 @@
                                 const toD = new THREE.Vector3().subVectors(d.mesh.position, this.mesh.position).setY(0);
                                 if (toD.length() < 2.5 + d.radius && toD.lengthSq() > 0.001 &&
                                     Math.acos(Math.min(1, forward.dot(toD.clone().normalize()))) < Math.PI / 1.5) {
-                                    d.takeDamage(true, false);
+                                    d.takeDamage(true, false, 0, null, 18);
                                     d.logicalPos.add(forward.clone().multiplyScalar(1.0));
                                     this.game.addScore(5, "HIT", d.mesh.position);
                                     state.hasHit = true;
@@ -3149,7 +3235,7 @@
                         for (const d of this.game.dummies) {
                             const toD = new THREE.Vector3().subVectors(d.mesh.position, this.mesh.position).setY(0);
                             if (toD.length() < 2.2 + d.radius) {
-                                d.takeDamage(true, true, 18.0, forward.clone().multiplyScalar(4.0));
+                                d.takeDamage(true, true, 18.0, forward.clone().multiplyScalar(4.0), 20);
                                 this.game.addScore(12, "HIT", d.mesh.position);
                                 state.hasHit = true;
                                 this.game.triggerImpact(0.05, 0.18);
@@ -3162,7 +3248,7 @@
                             if (toD.lengthSq() < 0.001) continue;
                             if (toD.length() < 3.0 + d.radius &&
                                 Math.acos(Math.min(1, forward.dot(toD.normalize()))) < Math.PI / 1.5) {
-                                d.takeDamage(false, false);
+                                d.takeDamage(false, false, 0, null, 12);
                                 this.game.addScore(5, "HIT", d.mesh.position);
                                 state.hasHit = true;
                                 this.game.triggerImpact(0.025, 0.08);
@@ -3180,7 +3266,12 @@
                             boltDir = new THREE.Vector3().subVectors(targetCenter, firePos).normalize();
                         }
 
-                        this.game.magicBolts.push(new MagicBolt(this.game.scene, firePos, boltDir, this.game));
+                        const wmBoltDmg = state.comboStep === 1 ? 10 : state.comboStep === 2 ? 12 : state.comboStep === 3 ? 15 : 18;
+                        this.game.magicBolts.push(new MagicBolt(this.game.scene, firePos, boltDir, this.game, {
+                            damage: wmBoltDmg,
+                            color: 0x44aaff, emissive: 0x0066dd,
+                            trailColor: 0x2288cc, trailEmissive: 0x005599,
+                        }));
                         state.hasHit = true;
                         this.game.triggerImpact(0.015, 0.04);
                     }
@@ -3347,9 +3438,17 @@
                 this.verticalVelocity = 0;
                 this.knockbackVelocity = new THREE.Vector3(); // [추가] 수평 넉백 속도
                 this.gravity = -20; // 중력 세기
+
+                // HP / 사망 / 리스폰
+                this.hp = 100;
+                this.maxHp = 100;
+                this.isDead = false;
+                this.respawnTimer = 0;
+                this.respawnDelay = 5.0;
             }
 
-            takeDamage(shouldFlinch = true, forceKnockdown = false, launchForce = 0, kbDir = null) {
+            takeDamage(shouldFlinch = true, forceKnockdown = false, launchForce = 0, kbDir = null, damage = 10) {
+                if (this.isDead) return;
                 if (launchForce > 0) {
                     this.isAirborne = true;
                     this.verticalVelocity = launchForce;
@@ -3384,9 +3483,62 @@
                 // 공통: 피격 시 색상 변경
                 this.matBody.color.setHex(0xff0000);
                 this.matHead.color.setHex(0xff0000);
+
+                // HP 감소 및 사망 처리
+                this.hp = Math.max(0, this.hp - damage);
+                if (this.hp <= 0) this.die();
+            }
+
+            die() {
+                this.isDead = true;
+                this.respawnTimer = this.respawnDelay;
+                this.mesh.visible = false;
+                this.isAttacking = false;
+                this.isKnockdown = false;
+                this.isAirborne = false;
+                this.hitTimer = 0;
+                this.knockbackVelocity.set(0, 0, 0);
+                if (this._game) this._game.addScore(50, "KILL!", this.mesh.position);
+            }
+
+            respawn() {
+                this.isDead = false;
+                this.hp = this.maxHp;
+                this.isAttacking = false;
+                this.isKnockdown = false;
+                this.knockdownTimer = 0;
+                this.isAirborne = false;
+                this.verticalVelocity = 0;
+                this.knockbackVelocity.set(0, 0, 0);
+                this.hitTimer = 0;
+                this.attackCooldown = 1.5;
+                this.attackInterrupted = false;
+                this.warningShowed = false;
+                this.isDodged = false;
+                this.role = 'watcher';
+                this.logicalPos.copy(this.originalPos);
+                this.mesh.position.copy(this.originalPos);
+                this.mesh.rotation.set(0, 0, 0);
+                this.mesh.visible = true;
+                this.matBody.color.setHex(this.colorBase);
+                this.matHead.color.setHex(this.colorBase);
+                // 투창병 전용 상태 초기화
+                if (this.isSpearThrown !== undefined) this.isSpearThrown = false;
+                if (this.isWarningTriggered !== undefined) this.isWarningTriggered = false;
+                if (this.isFussing !== undefined) { this.isFussing = false; this.fussTimer = 0; }
+                if (this.isPositioned !== undefined) this.isPositioned = false;
+                if (this.activeSpear !== undefined) this.activeSpear = null;
             }
 
             update(dt, game) {
+                this._game = game; // die()에서 addScore 접근용
+                // 사망 상태: 리스폰 타이머만 처리
+                if (this.isDead) {
+                    this.respawnTimer -= dt;
+                    if (this.respawnTimer <= 0) this.respawn();
+                    return;
+                }
+
                 const charPos = game.character.mesh.position;
                 const dist = this.logicalPos.distanceTo(charPos);
 
@@ -3799,6 +3951,7 @@
                 this._travelDist = 0;
                 this._spinY = 0;
                 this.damageStrong = opts.damageStrong ?? false;
+                this.damage       = opts.damage       ?? 10;
                 this.onHitScore   = opts.onHitScore   ?? 5;
 
                 const orbMat = new THREE.MeshLambertMaterial({
@@ -3843,7 +3996,7 @@
                     const toD = new THREE.Vector3().subVectors(d.mesh.position, this.mesh.position);
                     toD.y *= 0.5; // 수직 거리 완화
                     if (toD.length() < 0.5 + d.radius) {
-                        d.takeDamage(this.damageStrong, false);
+                        d.takeDamage(this.damageStrong, false, 0, null, this.damage);
                         this.game.addScore(this.onHitScore, "HIT", d.mesh.position);
                         this.game.triggerImpact(0.025, 0.08);
                         this.isHit = true;
@@ -3906,6 +4059,12 @@
 
             update(dt, game) {
                 if (game.isGameOver) return;
+                this._game = game;
+                if (this.isDead) {
+                    this.respawnTimer -= dt;
+                    if (this.respawnTimer <= 0) this.respawn();
+                    return;
+                }
 
                 const char = game.character;
                 const toChar = new THREE.Vector3().subVectors(char.mesh.position, this.logicalPos);
@@ -4544,7 +4703,7 @@
                 this.removeVortex();
                 const group = new THREE.Group();
                 group.position.set(pos.x, 0.6, pos.z);
-                const colors = [0xaa66ff, 0x7733ff, 0xdd99ff];
+                const colors = [0x0099ff, 0x0066dd, 0x44ccff];
                 const rings = [];
                 for (let i = 0; i < 3; i++) {
                     const geo = new THREE.TorusGeometry(0.7 + i * 0.35, 0.055, 8, 40);
@@ -4556,7 +4715,7 @@
                     rings.push({ mesh, mat, baseOpacity: 0.75 - i * 0.08 });
                 }
                 // 중심 코어 구
-                const coreMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.9 });
+                const coreMat = new THREE.MeshBasicMaterial({ color: 0x88ddff, transparent: true, opacity: 0.9 });
                 const core = new THREE.Mesh(new THREE.SphereGeometry(0.13, 10, 10), coreMat);
                 group.add(core);
                 this.scene.add(group);
