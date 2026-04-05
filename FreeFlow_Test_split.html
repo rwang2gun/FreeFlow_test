@@ -867,7 +867,7 @@
          *       lHip  : { rx,ry,rz=고관절, knee=무릎X }
          * ==========================================
          */
-        const GAME_VERSION = '0.012';
+        const GAME_VERSION = '0.013';
         document.getElementById('game-version-display').textContent = 'ver ' + GAME_VERSION;
 
         const POSES = {
@@ -1835,7 +1835,7 @@
                         for (const d of this.game.dummies) {
                             const toD = new THREE.Vector3().subVectors(d.mesh.position, this.mesh.position).setY(0);
                             if (toD.length() < 3.5 + d.radius) {
-                                d.takeDamage(true, false, 0);
+                                d.takeDamage(true, false, 0, null, 18);
                                 this.game.addScore(10, "STORM!", d.mesh.position);
                                 this.game.triggerImpact(0.04, 0.15);
                             }
@@ -1852,7 +1852,7 @@
                             const toD = new THREE.Vector3().subVectors(d.mesh.position, this.mesh.position).setY(0);
                             if (toD.length() < 5.0 + d.radius) {
                                 const outDir = toD.lengthSq() > 0.001 ? toD.clone().normalize() : new THREE.Vector3(Math.random()-0.5,0,Math.random()-0.5).normalize();
-                                d.takeDamage(true, true, 20.0, outDir.multiplyScalar(5));
+                                d.takeDamage(true, true, 20.0, outDir.multiplyScalar(5), 40);
                                 this.game.addScore(20, "FINISH!", d.mesh.position);
                             }
                         }
@@ -1913,7 +1913,7 @@
                                     this.game.triggerSlowMo(0.12, 1.2);
                                     state.slowDone = true;
                                 }
-                                d.takeDamage(true, false, 15.0, forward.clone().multiplyScalar(4));
+                                d.takeDamage(true, false, 15.0, forward.clone().multiplyScalar(4), 20);
                                 this.game.addScore(12, "PIERCE!", d.mesh.position);
                                 this.game.triggerImpact(0.06, 0.22);
                                 state.hitEnemies.add(d);
@@ -1944,7 +1944,7 @@
                         if (dist < 2.2 + d.radius && dist > 0.001) {
                             const angle = Math.acos(Math.min(1, revForward.dot(toD.clone().normalize())));
                             if (angle < Math.PI * 0.6) {
-                                d.takeDamage(true, true, 18.0, revForward.clone().multiplyScalar(5));
+                                d.takeDamage(true, true, 18.0, revForward.clone().multiplyScalar(5), 35);
                                 this.game.addScore(15, "FINISH!", d.mesh.position);
                                 this.game.triggerImpact(0.08, 0.28);
                                 state.hitEnemies2.add(d);
@@ -2140,7 +2140,7 @@
                                     const toD = new THREE.Vector3().subVectors(d.mesh.position, this.mesh.position).setY(0);
                                     if (toD.length() < this.attackRange + d.radius && toD.lengthSq() > 0.001) {
                                         if (Math.acos(Math.min(1, forward.dot(toD.normalize()))) < this.attackAngle + 0.2) {
-                                            d.takeDamage(false, false);
+                                            d.takeDamage(false, false, 0, null, 12);
                                             this.game.addScore(5, "HIT", d.mesh.position);
                                             state.hasHit = true;
                                             this.game.triggerImpact(0.06, 0.15);
@@ -2184,7 +2184,7 @@
                                     const toD = new THREE.Vector3().subVectors(d.mesh.position, this.mesh.position).setY(0);
                                     if (toD.length() < 2.5 + d.radius && toD.lengthSq() > 0.001) {
                                         if (Math.acos(Math.min(1, forward.dot(toD.normalize()))) < this.attackAngle + 0.2) {
-                                            d.takeDamage(true, false);
+                                            d.takeDamage(true, false, 0, null, 20);
                                             d.logicalPos.add(forward.clone().multiplyScalar(1.0));
                                             this.game.addScore(5, "HIT", d.mesh.position);
                                             state.hasHit = true;
@@ -2258,7 +2258,11 @@
                                     if (Math.acos(Math.min(1, forward.dot(toD.normalize()))) < this.attackAngle + 0.2) {
                                         const shouldFlinch = (state.comboStep === 'shoulder_bash');
                                         const forceKnockdown = (state.comboStep === 'shoulder_bash');
-                                        d.takeDamage(shouldFlinch, forceKnockdown);
+                                        const fsDmg = state.comboStep === 'shoulder_bash' ? 25
+                                                    : state.comboStep === 'step_strike'   ? 15
+                                                    : state.comboStep === 3 ? (state.hasSecondHit ? 20 : 10)
+                                                    : state.comboStep === 2 ? 15 : 10;
+                                        d.takeDamage(shouldFlinch, forceKnockdown, 0, null, fsDmg);
                                         this.game.addScore(5, "HIT", d.mesh.position);
                                         state.hasHit = true;
 
@@ -2370,7 +2374,7 @@
                     for (const d of this.game.dummies) {
                         const toD = new THREE.Vector3().subVectors(d.mesh.position, this.mesh.position).setY(0);
                         if (toD.length() < SKILL_RANGE + d.radius) {
-                            d.takeDamage(true, false, 0);
+                            d.takeDamage(true, false, 0, null, 22);
                             this.game.addScore(8, "SEISMIC!", d.mesh.position);
                         }
                     }
@@ -2426,7 +2430,7 @@
                             const toD = new THREE.Vector3().subVectors(d.mesh.position, this.mesh.position).setY(0);
                             if (toD.length() < 5.5 + d.radius) {
                                 const outDir = toD.lengthSq() > 0.001 ? toD.clone().normalize() : new THREE.Vector3(Math.random()-0.5,0,Math.random()-0.5).normalize();
-                                d.takeDamage(true, true, 28.0, outDir.multiplyScalar(6));
+                                d.takeDamage(true, true, 28.0, outDir.multiplyScalar(6), 45);
                                 this.game.addScore(25, "QUAKE!", d.mesh.position);
                             }
                         }
@@ -2617,7 +2621,7 @@
                                 const toD = new THREE.Vector3().subVectors(d.mesh.position, this.mesh.position).setY(0);
                                 if (toD.length() < 2.2 + d.radius && toD.lengthSq() > 0.001 &&
                                     Math.acos(Math.min(1, forward.dot(toD.clone().normalize()))) < Math.PI / 1.5) {
-                                    d.takeDamage(true, false);
+                                    d.takeDamage(true, false, 0, null, 18);
                                     d.logicalPos.add(forward.clone().multiplyScalar(1.0));
                                     this.game.addScore(5, "HIT", d.mesh.position);
                                     state.hasHit = true;
@@ -2712,12 +2716,15 @@
 
                         if (toD.length() < range + d.radius && Math.acos(Math.min(1, forward.dot(toD.normalize()))) < angle) {
                             // 강타(어퍼컷)만 flinch+knockdown, 일반 콤보는 flinch 없음 (적 공격 취소 방지)
+                            const efDmg = state.comboStep === 'uppercut' ? 25
+                                        : (state.comboStep === 3 || state.comboStep === 4) ? 15
+                                        : state.comboStep === 2 ? 12 : 10;
                             if (state.comboStep === 'uppercut') {
-                                d.takeDamage(true, true, 22.0, forward.clone().multiplyScalar(5.0));
+                                d.takeDamage(true, true, 22.0, forward.clone().multiplyScalar(5.0), efDmg);
                             } else if (state.comboStep === 3 || state.comboStep === 4) {
-                                d.takeDamage(false, false, 5.0); // 3~4타: 넉백만, flinch 없음
+                                d.takeDamage(false, false, 5.0, null, efDmg);
                             } else {
-                                d.takeDamage(false, false); // 1~2타, elbow, dash: flinch 없음
+                                d.takeDamage(false, false, 0, null, efDmg);
                             }
                             this.game.addScore(state.comboStep === 'uppercut' ? 15 : 5, "HIT", d.mesh.position);
                             state.hasHit = true;
@@ -2898,7 +2905,7 @@
                             const toD = new THREE.Vector3().subVectors(d.mesh.position, this.mesh.position).setY(0);
                             if (toD.length() < 12.0 + d.radius) {
                                 const outDir = toD.lengthSq() > 0.001 ? toD.clone().normalize() : new THREE.Vector3(Math.random()-0.5,0,Math.random()-0.5).normalize();
-                                d.takeDamage(true, true, 25.0, outDir.multiplyScalar(5));
+                                d.takeDamage(true, true, 25.0, outDir.multiplyScalar(5), 50);
                                 this.game.addScore(25, "NOVA!", d.mesh.position);
                             }
                         }
@@ -3101,7 +3108,7 @@
                                 const toD = new THREE.Vector3().subVectors(d.mesh.position, this.mesh.position).setY(0);
                                 if (toD.length() < this.attackRange + d.radius && toD.lengthSq() > 0.001 &&
                                     Math.acos(Math.min(1, forward.dot(toD.normalize()))) < this.attackAngle + 0.2) {
-                                    d.takeDamage(false, false);
+                                    d.takeDamage(false, false, 0, null, 10);
                                     this.game.addScore(5, "HIT", d.mesh.position);
                                     state.hasHit = true;
                                     this.game.triggerImpact(0.05, 0.15);
@@ -3134,7 +3141,7 @@
                                 const toD = new THREE.Vector3().subVectors(d.mesh.position, this.mesh.position).setY(0);
                                 if (toD.length() < 2.5 + d.radius && toD.lengthSq() > 0.001 &&
                                     Math.acos(Math.min(1, forward.dot(toD.clone().normalize()))) < Math.PI / 1.5) {
-                                    d.takeDamage(true, false);
+                                    d.takeDamage(true, false, 0, null, 18);
                                     d.logicalPos.add(forward.clone().multiplyScalar(1.0));
                                     this.game.addScore(5, "HIT", d.mesh.position);
                                     state.hasHit = true;
@@ -3193,7 +3200,7 @@
                         for (const d of this.game.dummies) {
                             const toD = new THREE.Vector3().subVectors(d.mesh.position, this.mesh.position).setY(0);
                             if (toD.length() < 2.2 + d.radius) {
-                                d.takeDamage(true, true, 18.0, forward.clone().multiplyScalar(4.0));
+                                d.takeDamage(true, true, 18.0, forward.clone().multiplyScalar(4.0), 20);
                                 this.game.addScore(12, "HIT", d.mesh.position);
                                 state.hasHit = true;
                                 this.game.triggerImpact(0.05, 0.18);
@@ -3206,7 +3213,7 @@
                             if (toD.lengthSq() < 0.001) continue;
                             if (toD.length() < 3.0 + d.radius &&
                                 Math.acos(Math.min(1, forward.dot(toD.normalize()))) < Math.PI / 1.5) {
-                                d.takeDamage(false, false);
+                                d.takeDamage(false, false, 0, null, 12);
                                 this.game.addScore(5, "HIT", d.mesh.position);
                                 state.hasHit = true;
                                 this.game.triggerImpact(0.025, 0.08);
@@ -3224,7 +3231,8 @@
                             boltDir = new THREE.Vector3().subVectors(targetCenter, firePos).normalize();
                         }
 
-                        this.game.magicBolts.push(new MagicBolt(this.game.scene, firePos, boltDir, this.game));
+                        const wmBoltDmg = state.comboStep === 1 ? 10 : state.comboStep === 2 ? 12 : state.comboStep === 3 ? 15 : 18;
+                        this.game.magicBolts.push(new MagicBolt(this.game.scene, firePos, boltDir, this.game, { damage: wmBoltDmg }));
                         state.hasHit = true;
                         this.game.triggerImpact(0.015, 0.04);
                     }
@@ -3904,6 +3912,7 @@
                 this._travelDist = 0;
                 this._spinY = 0;
                 this.damageStrong = opts.damageStrong ?? false;
+                this.damage       = opts.damage       ?? 10;
                 this.onHitScore   = opts.onHitScore   ?? 5;
 
                 const orbMat = new THREE.MeshLambertMaterial({
@@ -3948,7 +3957,7 @@
                     const toD = new THREE.Vector3().subVectors(d.mesh.position, this.mesh.position);
                     toD.y *= 0.5; // 수직 거리 완화
                     if (toD.length() < 0.5 + d.radius) {
-                        d.takeDamage(this.damageStrong, false);
+                        d.takeDamage(this.damageStrong, false, 0, null, this.damage);
                         this.game.addScore(this.onHitScore, "HIT", d.mesh.position);
                         this.game.triggerImpact(0.025, 0.08);
                         this.isHit = true;
