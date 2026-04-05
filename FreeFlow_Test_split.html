@@ -867,7 +867,7 @@
          *       lHip  : { rx,ry,rz=고관절, knee=무릎X }
          * ==========================================
          */
-        const GAME_VERSION = '0.013';
+        const GAME_VERSION = '0.014';
         document.getElementById('game-version-display').textContent = 'ver ' + GAME_VERSION;
 
         const POSES = {
@@ -1503,7 +1503,7 @@
                 };
                 this.parts.rightArm = createArm(true); this.parts.leftArm = createArm(false);
 
-                const sword = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.04, 1.2), new THREE.MeshLambertMaterial({ color: 0x00e5ff, emissive: 0x005577 }));
+                const sword = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.04, 1.2), new THREE.MeshLambertMaterial({ color: 0xff4400, emissive: 0x441100 }));
                 sword.position.set(0, -handS / 2, 0.6);
                 sword.scale.set(0.001, 0.001, 0.001);
                 sword.visible = false;
@@ -1831,7 +1831,7 @@
                     // 0.25s 간격으로 주변 3.5m 내 전방향 타격
                     if (state.timer >= state.nextHitAt) {
                         state.nextHitAt += state.hitInterval;
-                        this.game.spawnShockwaveRing(this.mesh.position, 3.5, 0xffe066);
+                        this.game.spawnShockwaveRing(this.mesh.position, 3.5, 0xff4400);
                         for (const d of this.game.dummies) {
                             const toD = new THREE.Vector3().subVectors(d.mesh.position, this.mesh.position).setY(0);
                             if (toD.length() < 3.5 + d.radius) {
@@ -1846,7 +1846,7 @@
                     // 최종 방사 폭발
                     if (!state.burstDone) {
                         state.burstDone = true;
-                        this.game.spawnShockwaveRing(this.mesh.position, 5.0, 0xffffff);
+                        this.game.spawnShockwaveRing(this.mesh.position, 5.0, 0xff8800);
                         this.game.triggerImpact(0.1, 0.4);
                         for (const d of this.game.dummies) {
                             const toD = new THREE.Vector3().subVectors(d.mesh.position, this.mesh.position).setY(0);
@@ -2367,7 +2367,7 @@
                     if (state.timer < state.hitTimes[i]) break;
 
                     // 지면 충격 링 이펙트
-                    this.game.spawnShockwaveRing(this.mesh.position, SKILL_RANGE);
+                    this.game.spawnShockwaveRing(this.mesh.position, SKILL_RANGE, 0x88ccff);
                     this.game.triggerImpact(0.07, 0.28);
 
                     // 범위 내 전 방향 AOE 경직
@@ -2422,7 +2422,7 @@
                         state.burstDone = true;
                         // 대형 충격파 3겹
                         for (let r = 0; r < 3; r++) {
-                            setTimeout(() => this.game.spawnShockwaveRing(this.mesh.position, 5.5 + r * 0.5, 0xff9900), r * 80);
+                            setTimeout(() => this.game.spawnShockwaveRing(this.mesh.position, 5.5 + r * 0.5, 0xaaddff), r * 80);
                         }
                         this.game.triggerImpact(0.12, 0.5);
 
@@ -2797,7 +2797,7 @@
                 const wandGroup  = new THREE.Group();
                 const handleMat  = new THREE.MeshLambertMaterial({ color: 0xffd700 });
                 const orbMat     = new THREE.MeshLambertMaterial({
-                    color: 0xff69b4, emissive: 0xff1493, emissiveIntensity: 0.6
+                    color: 0x44aaff, emissive: 0x0055cc, emissiveIntensity: 0.6
                 });
 
                 // 손잡이 — Z 방향으로 뻗음
@@ -2882,11 +2882,11 @@
                     // 차지 중 점점 커지는 링 펄스
                     if (state.timer > 0.2 && !state._pulsed1) {
                         state._pulsed1 = true;
-                        this.game.spawnShockwaveRing(this.mesh.position, 3.0, 0xcc44ff);
+                        this.game.spawnShockwaveRing(this.mesh.position, 3.0, 0x0088ff);
                     }
                     if (state.timer > 0.6 && !state._pulsed2) {
                         state._pulsed2 = true;
-                        this.game.spawnShockwaveRing(this.mesh.position, 5.0, 0x9900ff);
+                        this.game.spawnShockwaveRing(this.mesh.position, 5.0, 0x0066cc);
                     }
 
                 } else {
@@ -2895,7 +2895,7 @@
                         state.burstDone = true;
                         // 연속 충격파 4겹
                         for (let r = 0; r < 4; r++) {
-                            setTimeout(() => this.game.spawnShockwaveRing(this.mesh.position, 4.0 + r, 0xee88ff), r * 60);
+                            setTimeout(() => this.game.spawnShockwaveRing(this.mesh.position, 4.0 + r, 0x44aaff), r * 60);
                         }
                         this.game.triggerImpact(0.15, 0.6);
                         if (this.wandOrbMat) this.wandOrbMat.emissiveIntensity = 8.0;
@@ -3232,7 +3232,11 @@
                         }
 
                         const wmBoltDmg = state.comboStep === 1 ? 10 : state.comboStep === 2 ? 12 : state.comboStep === 3 ? 15 : 18;
-                        this.game.magicBolts.push(new MagicBolt(this.game.scene, firePos, boltDir, this.game, { damage: wmBoltDmg }));
+                        this.game.magicBolts.push(new MagicBolt(this.game.scene, firePos, boltDir, this.game, {
+                            damage: wmBoltDmg,
+                            color: 0x44aaff, emissive: 0x0066dd,
+                            trailColor: 0x2288cc, trailEmissive: 0x005599,
+                        }));
                         state.hasHit = true;
                         this.game.triggerImpact(0.015, 0.04);
                     }
@@ -4664,7 +4668,7 @@
                 this.removeVortex();
                 const group = new THREE.Group();
                 group.position.set(pos.x, 0.6, pos.z);
-                const colors = [0xaa66ff, 0x7733ff, 0xdd99ff];
+                const colors = [0x0099ff, 0x0066dd, 0x44ccff];
                 const rings = [];
                 for (let i = 0; i < 3; i++) {
                     const geo = new THREE.TorusGeometry(0.7 + i * 0.35, 0.055, 8, 40);
@@ -4676,7 +4680,7 @@
                     rings.push({ mesh, mat, baseOpacity: 0.75 - i * 0.08 });
                 }
                 // 중심 코어 구
-                const coreMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.9 });
+                const coreMat = new THREE.MeshBasicMaterial({ color: 0x88ddff, transparent: true, opacity: 0.9 });
                 const core = new THREE.Mesh(new THREE.SphereGeometry(0.13, 10, 10), coreMat);
                 group.add(core);
                 this.scene.add(group);
