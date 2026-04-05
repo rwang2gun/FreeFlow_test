@@ -802,6 +802,7 @@
             enter() {
                 this.timer = 0;
                 this.parent.setupSkill(this);
+                if (typeof this.parent.setElementalMode === 'function') this.parent.setElementalMode(true);
                 // E 스킬 사용 시 MP 지급: 시전 캐릭터 +25, 대기 캐릭터 +10
                 const game = this.parent.game;
                 this.parent.mp = Math.min(this.parent.maxMp, this.parent.mp + 25);
@@ -819,6 +820,7 @@
             exit() {
                 this.parent.input.resetTriggers();
                 this.parent.velocity.set(0, 0, 0);
+                if (typeof this.parent.setElementalMode === 'function') this.parent.setElementalMode(false);
                 if (typeof this.parent.cleanupSkill === 'function') this.parent.cleanupSkill();
             }
         }
@@ -829,6 +831,7 @@
                 this.timer = 0;
                 this.parent.mp = 0; // MP 전량 소모
                 this.parent.setupUltimate(this);
+                if (typeof this.parent.setElementalMode === 'function') this.parent.setElementalMode(true);
                 // 궁극기 발동 시 MP 회복 없음 (소모만)
                 const badge = document.getElementById('attack-name-badge');
                 if (badge) { badge.style.display = 'block'; }
@@ -843,6 +846,7 @@
             exit() {
                 this.parent.input.resetTriggers();
                 this.parent.velocity.set(0, 0, 0);
+                if (typeof this.parent.setElementalMode === 'function') this.parent.setElementalMode(false);
                 if (typeof this.parent.cleanupUltimate === 'function') this.parent.cleanupUltimate();
             }
         }
@@ -867,7 +871,7 @@
          *       lHip  : { rx,ry,rz=고관절, knee=무릎X }
          * ==========================================
          */
-        const GAME_VERSION = '0.014';
+        const GAME_VERSION = '0.015';
         document.getElementById('game-version-display').textContent = 'ver ' + GAME_VERSION;
 
         const POSES = {
@@ -1471,7 +1475,7 @@
                 nose.position.set(0, -0.02, headD / 2 + 0.02); headMesh.add(nose); this.parts.nose = nose;
                 nose.visible = false;
 
-                const matHair = new THREE.MeshLambertMaterial({ color: 0x2c3e50 });
+                const matHair = new THREE.MeshLambertMaterial({ color: 0xff3300 }); // 화속성 붉은색
                 const hairTop = new THREE.Mesh(new THREE.BoxGeometry(headW + 0.04, 0.06, headD + 0.04), matHair);
                 hairTop.position.y = headH / 2 + 0.01; headMesh.add(hairTop);
 
@@ -1487,6 +1491,7 @@
 
                 const hairSideL = new THREE.Mesh(new THREE.BoxGeometry(hairSideW, 0.2, 0.1), matHair);
                 hairSideL.position.set(-headW / 2 - 0.02, 0.03, -0.04); headMesh.add(hairSideL);
+                this.hairMat = matHair;
 
                 this.baseMats = { body: matBody, skin: matSkin }; this.debugMats = { R: matR, L: matL };
 
@@ -1503,12 +1508,13 @@
                 };
                 this.parts.rightArm = createArm(true); this.parts.leftArm = createArm(false);
 
-                const sword = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.04, 1.2), new THREE.MeshLambertMaterial({ color: 0xff4400, emissive: 0x441100 }));
+                const sword = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.04, 1.2), new THREE.MeshLambertMaterial({ color: 0xcccccc, emissive: 0x222222 }));
                 sword.position.set(0, -handS / 2, 0.6);
                 sword.scale.set(0.001, 0.001, 0.001);
                 sword.visible = false;
                 this.parts.rightArm.wrist.add(sword);
                 this.parts.sword = sword;
+                this.swordMat = sword.material;
 
                 const thighW = 0.16, calfW = 0.11;
                 const createLeg = (isRight) => {
@@ -1532,6 +1538,14 @@
                 this.parts.rightLeg.thighMesh.material = rightMat; this.parts.rightLeg.calfMesh.material = rightSkinMat;
                 this.parts.leftLeg.thighMesh.material = leftMat; this.parts.leftLeg.calfMesh.material = leftSkinMat;
                 if (this.parts.nose) this.parts.nose.visible = isEnabled;
+            }
+
+            // 속성 모드 전환: 스킬/궁극기 사용 시 무기 색상 변경
+            setElementalMode(on) {
+                if (this.swordMat) {
+                    this.swordMat.color.setHex(on ? 0xff4400 : 0xcccccc);
+                    this.swordMat.emissive.setHex(on ? 0x441100 : 0x111111);
+                }
             }
 
             calculateMovement(dt) {
@@ -2315,11 +2329,12 @@
                 this.parts.waistMesh.material = yellowMat;
                 this.parts.pelvisMesh.material = yellowMat;
 
-                // 팔과 종아리는 살구색(피부색), 허벅지는 의상색(노란색)
-                this.parts.rightArm.upperArmMesh.material = skinMat;
-                this.parts.rightArm.forearmMesh.material = skinMat;
-                this.parts.leftArm.upperArmMesh.material = skinMat;
-                this.parts.leftArm.forearmMesh.material = skinMat;
+                // 팔과 종아리는 독립 fistMat(피부색), 허벅지는 의상색(노란색)
+                this.fistMat = new THREE.MeshLambertMaterial({ color: 0xffdbac }); // 기본 피부색
+                this.parts.rightArm.upperArmMesh.material = this.fistMat;
+                this.parts.rightArm.forearmMesh.material = this.fistMat;
+                this.parts.leftArm.upperArmMesh.material = this.fistMat;
+                this.parts.leftArm.forearmMesh.material = this.fistMat;
                 this.parts.rightLeg.thighMesh.material = yellowMat;
                 this.parts.rightLeg.calfMesh.material = skinMat;
                 this.parts.leftLeg.thighMesh.material = yellowMat;
@@ -2332,6 +2347,16 @@
 
                 // EF 스킬 쿨다운 오버라이드
                 this.maxSkillCooldown = 8;
+            }
+
+            // 속성 모드 전환: 얼음 속성 (스킬/궁극기 시 주먹 색상 변경)
+            setElementalMode(on) {
+                if (this.fistMat) {
+                    this.fistMat.color.setHex(on ? 0x88ccff : 0xffdbac);
+                    this.fistMat.emissive = this.fistMat.emissive || new THREE.Color();
+                    this.fistMat.emissive.setHex(on ? 0x2266aa : 0x000000);
+                    this.fistMat.emissiveIntensity = on ? 0.6 : 0;
+                }
             }
 
             // ── 스킬: 지진파 (EF 전용, 지면 3연타 AOE) ──────────────
@@ -2525,7 +2550,8 @@
                 });
                 toRemove.forEach(child => headMesh.remove(child));
 
-                const hairMat = new THREE.MeshLambertMaterial({ color: 0xff8c00 }); // 주황색
+                const hairMat = new THREE.MeshLambertMaterial({ color: 0x88ccff }); // 얼음 속성 하늘색
+                this.hairMat = hairMat;
 
                 // 1. 머리 윗부분 베이스 (이전 스케일로 복구)
                 const hairTop = new THREE.Mesh(new THREE.BoxGeometry(0.23, 0.06, 0.25), hairMat);
@@ -2797,8 +2823,8 @@
                 const wandGroup  = new THREE.Group();
                 const handleMat  = new THREE.MeshLambertMaterial({ color: 0xffd700 });
                 const orbMat     = new THREE.MeshLambertMaterial({
-                    color: 0x44aaff, emissive: 0x0055cc, emissiveIntensity: 0.6
-                });
+                    color: 0xaaaacc, emissive: 0x000000, emissiveIntensity: 0.0
+                }); // 기본 물리 색상 (스킬/궁극기 시 물 속성 색으로 변경됨)
 
                 // 손잡이 — Z 방향으로 뻗음
                 const handle = new THREE.Mesh(
@@ -2829,7 +2855,8 @@
                 });
                 toRemove.forEach(c => headMesh.remove(c));
 
-                const hairMat = new THREE.MeshLambertMaterial({ color: 0xffb6c1 }); // 연분홍
+                const hairMat = new THREE.MeshLambertMaterial({ color: 0x44aaff }); // 물 속성 파란색
+                this.hairMat = hairMat;
                 const headW = 0.19, headD = 0.21, headH = 0.23;
 
                 // 윗머리
@@ -2855,6 +2882,16 @@
                 const hairFront = new THREE.Mesh(new THREE.BoxGeometry(headW + 0.02, 0.09, 0.05), hairMat);
                 hairFront.position.set(0, headH / 2 - 0.04, headD / 2 + 0.02);
                 headMesh.add(hairFront);
+            }
+
+            // 속성 모드 전환: 물 속성 (스킬/궁극기 시 마법봉 오브 색상 변경)
+            setElementalMode(on) {
+                this.isElementalMode = on;
+                if (this.wandOrbMat) {
+                    this.wandOrbMat.color.setHex(on ? 0x44aaff : 0xaaaacc);
+                    this.wandOrbMat.emissive.setHex(on ? 0x0055cc : 0x000000);
+                    if (!on) this.wandOrbMat.emissiveIntensity = 0;
+                }
             }
 
             // ── 궁극기: 성좌붕괴 (WM 전용) ─────────────────────────────
@@ -2926,11 +2963,9 @@
                     this.parts.sword = sword;
                 }
 
-                // 전투 모드에서 보석 발광 강도 펄스
-                if (this.wandOrbMat) {
-                    this.wandOrbMat.emissiveIntensity = this.isCombatMode
-                        ? 0.5 + Math.sin(this.animTimer * 4) * 0.3
-                        : 0.3;
+                // 전투 모드에서 보석 발광 강도 펄스 (속성 모드 중에는 스킵)
+                if (this.wandOrbMat && !this.isElementalMode) {
+                    this.wandOrbMat.emissiveIntensity = 0; // 기본 물리 상태: 발광 없음
                 }
             }
 
