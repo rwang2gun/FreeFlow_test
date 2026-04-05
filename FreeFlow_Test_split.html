@@ -867,7 +867,7 @@
          *       lHip  : { rx,ry,rz=고관절, knee=무릎X }
          * ==========================================
          */
-        const GAME_VERSION = '0.011';
+        const GAME_VERSION = '0.012';
         document.getElementById('game-version-display').textContent = 'ver ' + GAME_VERSION;
 
         const POSES = {
@@ -1723,6 +1723,7 @@
                 let nearestAttacker = null;
 
                 for (let d of this.game.dummies) {
+                    if (d.isDead) continue;
                     let dist = this.mesh.position.distanceTo(d.mesh.position);
 
                     // [수정] 단순히 isAttacking 뿐만 아니라 role이 'attacker'인 모든 적을 추적 (호들갑 상태 포함)
@@ -2957,6 +2958,7 @@
                 const vp = state.vortexPos;
 
                 for (const d of this.game.dummies) {
+                    if (d.isDead) continue;
                     const toVortex = new THREE.Vector3().subVectors(vp, d.mesh.position).setY(0);
                     const dist = toVortex.length();
                     if (dist > PULL_RANGE || dist < 0.25) continue;
@@ -3389,9 +3391,17 @@
                 this.verticalVelocity = 0;
                 this.knockbackVelocity = new THREE.Vector3(); // [추가] 수평 넉백 속도
                 this.gravity = -20; // 중력 세기
+
+                // HP / 사망 / 리스폰
+                this.hp = 100;
+                this.maxHp = 100;
+                this.isDead = false;
+                this.respawnTimer = 0;
+                this.respawnDelay = 5.0;
             }
 
-            takeDamage(shouldFlinch = true, forceKnockdown = false, launchForce = 0, kbDir = null) {
+            takeDamage(shouldFlinch = true, forceKnockdown = false, launchForce = 0, kbDir = null, damage = 10) {
+                if (this.isDead) return;
                 if (launchForce > 0) {
                     this.isAirborne = true;
                     this.verticalVelocity = launchForce;
@@ -3426,9 +3436,62 @@
                 // 공통: 피격 시 색상 변경
                 this.matBody.color.setHex(0xff0000);
                 this.matHead.color.setHex(0xff0000);
+
+                // HP 감소 및 사망 처리
+                this.hp = Math.max(0, this.hp - damage);
+                if (this.hp <= 0) this.die();
+            }
+
+            die() {
+                this.isDead = true;
+                this.respawnTimer = this.respawnDelay;
+                this.mesh.visible = false;
+                this.isAttacking = false;
+                this.isKnockdown = false;
+                this.isAirborne = false;
+                this.hitTimer = 0;
+                this.knockbackVelocity.set(0, 0, 0);
+                if (this._game) this._game.addScore(50, "KILL!", this.mesh.position);
+            }
+
+            respawn() {
+                this.isDead = false;
+                this.hp = this.maxHp;
+                this.isAttacking = false;
+                this.isKnockdown = false;
+                this.knockdownTimer = 0;
+                this.isAirborne = false;
+                this.verticalVelocity = 0;
+                this.knockbackVelocity.set(0, 0, 0);
+                this.hitTimer = 0;
+                this.attackCooldown = 1.5;
+                this.attackInterrupted = false;
+                this.warningShowed = false;
+                this.isDodged = false;
+                this.role = 'watcher';
+                this.logicalPos.copy(this.originalPos);
+                this.mesh.position.copy(this.originalPos);
+                this.mesh.rotation.set(0, 0, 0);
+                this.mesh.visible = true;
+                this.matBody.color.setHex(this.colorBase);
+                this.matHead.color.setHex(this.colorBase);
+                // 투창병 전용 상태 초기화
+                if (this.isSpearThrown !== undefined) this.isSpearThrown = false;
+                if (this.isWarningTriggered !== undefined) this.isWarningTriggered = false;
+                if (this.isFussing !== undefined) { this.isFussing = false; this.fussTimer = 0; }
+                if (this.isPositioned !== undefined) this.isPositioned = false;
+                if (this.activeSpear !== undefined) this.activeSpear = null;
             }
 
             update(dt, game) {
+                this._game = game; // die()에서 addScore 접근용
+                // 사망 상태: 리스폰 타이머만 처리
+                if (this.isDead) {
+                    this.respawnTimer -= dt;
+                    if (this.respawnTimer <= 0) this.respawn();
+                    return;
+                }
+
                 const charPos = game.character.mesh.position;
                 const dist = this.logicalPos.distanceTo(charPos);
 
@@ -3948,6 +4011,12 @@
 
             update(dt, game) {
                 if (game.isGameOver) return;
+                this._game = game;
+                if (this.isDead) {
+                    this.respawnTimer -= dt;
+                    if (this.respawnTimer <= 0) this.respawn();
+                    return;
+                }
 
                 const char = game.character;
                 const toChar = new THREE.Vector3().subVectors(char.mesh.position, this.logicalPos);
