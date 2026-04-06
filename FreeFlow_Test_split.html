@@ -786,6 +786,10 @@
 
                 this.inputBuffered = false; this.timer = 0; this.hasHit = false;
                 this.parent.setupCombo(this, this.comboStep);
+                // 화염비검 발동 중이면 공격마다 비검 2자루 발사
+                if (this.parent.game._fireBladeTimer > 0) {
+                    this.parent.game.launchFireBlades(this.parent);
+                }
             }
             update(dt) {
                 if (this.parent.input.ultimateTriggered && this.parent.mp >= this.parent.maxMp) {
@@ -806,6 +810,10 @@
                 const chainWindow = this.activeEnd ?? this.duration;
 
                 if (canChain && this.timer >= chainWindow) {
+                    // 화염비검 체인 발사
+                    if (this.parent.game._fireBladeTimer > 0) {
+                        this.parent.game.launchFireBlades(this.parent);
+                    }
                     // 입력 버퍼 있음: activeEnd 이후 즉시 다음 콤보 (recovery 스킵)
                     let nextStep = (typeof this.comboStep === 'number') ? this.comboStep + 1 : 2;
                     this.timer = 0; this.hasHit = false; this.inputBuffered = false;
@@ -1000,7 +1008,7 @@
          *       lHip  : { rx,ry,rz=고관절, knee=무릎X }
          * ==========================================
          */
-        const GAME_VERSION = '0.029';
+        const GAME_VERSION = '0.030';
         document.getElementById('game-version-display').textContent = 'ver ' + GAME_VERSION;
 
         const POSES = {
@@ -2013,60 +2021,56 @@
             // ── 궁극기: 폭풍검무 (FS 전용) ─────────────────────────────
             // 고속 회전하며 주변 모든 적을 연속으로 베고 마지막에 방사형으로 날려버림
             setupUltimate(state) {
-                state.duration   = 2.0;
-                state.spinEnd    = 1.5;   // 회전 베기 구간
-                state.burstDone  = false;
-                state.nextHitAt  = 0.25;  // 첫 타격 시점
-                state.hitInterval = 0.25; // 타격 간격
-                state.hitEnemies = new Set();
+                state.duration  = 1.5;   // 발동 모션 시간
+                state.burstDone = false;
+                this.mp = 0;
+
+                // 기존 비검 제거 후 3자루 새로 스폰
+                for (const o of this.game._fireBladeOrbiters) this.game.scene.remove(o);
+                this.game._fireBladeOrbiters = [];
+                for (let i = 0; i < 3; i++) {
+                    const geo = new THREE.BoxGeometry(0.05, 0.05, 0.85);
+                    const mat = new THREE.MeshLambertMaterial({
+                        color: 0xff4400, emissive: 0xff2200, emissiveIntensity: 1.4,
+                        transparent: true, opacity: 0.95,
+                    });
+                    const sword = new THREE.Mesh(geo, mat);
+                    this.game.scene.add(sword);
+                    this.game._fireBladeOrbiters.push(sword);
+                }
+                this.game._fireBladeTimer = 10.0;
+                this.game._fireBladeAngle = 0;
 
                 const badge = document.getElementById('attack-name-badge');
-                if (badge) { badge.innerText = '폭풍검무'; badge.style.display = 'block'; }
+                if (badge) { badge.innerText = '화염비검'; badge.style.display = 'block'; }
                 clearTimeout(this._attackNameBadgeTimer);
-                this._attackNameBadgeTimer = setTimeout(() => { if (badge) badge.style.display = 'none'; }, 2500);
+                this._attackNameBadgeTimer = setTimeout(() => { if (badge) badge.style.display = 'none'; }, 2000);
             }
 
             executeUltimate(dt, state) {
                 this.velocity.set(0, 0, 0);
 
-                if (state.timer < state.spinEnd) {
-                    // 회전 베기: 캐릭터를 빠르게 Y축 회전
-                    this.mesh.rotation.y += dt * 12.0;
-                    this.applyPose(POSES.fs_ult_spin, 30, dt);
-                    this._updateNeckLook(dt, 20, -0.2);
+                if (state.timer < 0.6) {
+                    // ① 검 들어올리기 (빠른 windup)
+                    this.applyPose(POSES.fs_ult_spin, 28, dt);
+                    this.mesh.rotation.y += dt * 4.0;
 
-                    // 0.25s 간격으로 주변 3.5m 내 전방향 타격
-                    if (state.timer >= state.nextHitAt) {
-                        state.nextHitAt += state.hitInterval;
+                } else if (state.timer < 1.2) {
+                    // ② 검기 방출 — 발동 폭발 연출
+                    this.applyPose(POSES.fs_ult_spin, 18, dt);
+                    if (!state.burstDone) {
+                        state.burstDone = true;
                         this.game.spawnShockwaveRing(this.mesh.position, 3.5, 0xff4400);
-                        for (const d of this.game.dummies) {
-                            const toD = new THREE.Vector3().subVectors(d.mesh.position, this.mesh.position).setY(0);
-                            if (toD.length() < 3.5 + d.radius) {
-                                d.takeDamage(true, false, 0, null, 18);
-                                this.game.addScore(10, "STORM!", d.mesh.position);
-                                this.game.triggerImpact(0.04, 0.15);
-                            }
-                        }
+                        setTimeout(() => this.game.spawnShockwaveRing(this.mesh.position.clone(), 5.5, 0xff8800), 120);
+                        this.game.triggerSlowMo(0.08, 0.5);
+                        this.game.triggerImpact(0.06, 0.25);
                     }
 
                 } else {
-                    // 최종 방사 폭발
-                    if (!state.burstDone) {
-                        state.burstDone = true;
-                        this.game.spawnShockwaveRing(this.mesh.position, 5.0, 0xff8800);
-                        this.game.triggerImpact(0.1, 0.4);
-                        for (const d of this.game.dummies) {
-                            const toD = new THREE.Vector3().subVectors(d.mesh.position, this.mesh.position).setY(0);
-                            if (toD.length() < 5.0 + d.radius) {
-                                const outDir = toD.lengthSq() > 0.001 ? toD.clone().normalize() : new THREE.Vector3(Math.random()-0.5,0,Math.random()-0.5).normalize();
-                                d.takeDamage(true, true, 20.0, outDir.multiplyScalar(5), 40);
-                                this.game.addScore(20, "FINISH!", d.mesh.position);
-                            }
-                        }
-                    }
-                    this.applyPose(POSES.combat_recover, 8, dt);
-                    this._updateNeckLook(dt, 10, -0.2);
+                    // ③ 자세 안정 → battle_idle 복귀
+                    this.applyPose(POSES.battle_idle, 8, dt);
                 }
+                this._updateNeckLook(dt, 18, -0.2);
             }
 
             // ── 스킬: 질풍참 (FS 전용) ────────────────────────────────
@@ -4341,6 +4345,52 @@
             }
         }
 
+        // 화염비검 투사체: 공전하던 비검이 날아가 적에게 화속성 피해
+        class FireBladeProjectile {
+            constructor(scene, startPos, dir, game) {
+                this.scene = scene; this.game = game;
+                this.timer = 0; this.duration = 0.55;
+                this.speed = 22; this.hasHit = false;
+                this.dir = dir.clone().normalize();
+
+                const geo = new THREE.BoxGeometry(0.05, 0.05, 0.80);
+                const mat = new THREE.MeshLambertMaterial({
+                    color: 0xff4400, emissive: 0xff2200, emissiveIntensity: 1.5,
+                    transparent: true, opacity: 0.95,
+                });
+                this.mesh = new THREE.Mesh(geo, mat);
+                this.mesh.position.copy(startPos);
+                // 진행 방향으로 정렬
+                if (this.dir.lengthSq() > 0.001) {
+                    this.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), this.dir);
+                }
+                scene.add(this.mesh);
+            }
+            update(dt) {
+                this.timer += dt;
+                this.mesh.position.addScaledVector(this.dir, this.speed * dt);
+                this.mesh.rotation.z += dt * 15; // 회전 스핀 효과
+
+                if (!this.hasHit) {
+                    for (const d of this.game.dummies) {
+                        if (d.mesh.position.distanceTo(this.mesh.position) < 1.0 + d.radius) {
+                            this.hasHit = true;
+                            d.takeDamage(false, false, 0, null, 18);
+                            this.game.addScore(8, "FIRE!", d.mesh.position);
+                            this.game.spawnShockwaveRing(this.mesh.position.clone(), 1.2, 0xff4400);
+                            break;
+                        }
+                    }
+                }
+
+                if (this.timer >= this.duration || this.hasHit) {
+                    this.scene.remove(this.mesh);
+                    return false;
+                }
+                return true;
+            }
+        }
+
         /**
          * [추가] 투창 투사체 클래스 (+Z 정면 기준)
          */
@@ -4728,6 +4778,9 @@
                 this.spears = [];
                 this.magicBolts = [];
                 this.vfxRings = [];
+                this._fireBladeTimer = 0;
+                this._fireBladeAngle = 0;
+                this._fireBladeOrbiters = [];
                 this.vfxVortex = null;
                 this.score = 0;
                 this.totalPlayerHits = 0;
@@ -5266,6 +5319,26 @@
                 this.shakeIntensity = shakeIntens;
             }
 
+            // 화염비검 2자루 발사 (indicators에 추가, 자동 업데이트/제거)
+            launchFireBlades(character) {
+                if (this._fireBladeTimer <= 0 || this._fireBladeOrbiters.length === 0) return;
+                const charPos = character.mesh.position;
+                const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(character.mesh.quaternion);
+                // 가장 가까운 적 방향
+                let dir = forward.clone();
+                let minDist = Infinity;
+                for (const d of this.dummies) {
+                    const dist = d.mesh.position.distanceTo(charPos);
+                    if (dist < minDist) { minDist = dist; dir = new THREE.Vector3().subVectors(d.mesh.position, charPos).setY(0).normalize(); }
+                }
+                // 공전 중인 비검 위치에서 2발 발사
+                const N = this._fireBladeOrbiters.length;
+                for (let i = 0; i < 2; i++) {
+                    const startPos = this._fireBladeOrbiters[i % N].position.clone();
+                    this.indicators.push(new FireBladeProjectile(this.scene, startPos, dir.clone(), this));
+                }
+            }
+
             // [추가] 점수 획득 및 연출 메서드
             addScore(amount, type, position) {
                 this.score += amount;
@@ -5432,6 +5505,35 @@
                             this.vfxRings.splice(i, 1);
                         }
                     }
+
+                    // ── 화염비검 공전 + 타이머 ──────────────────────────────
+                    if (this._fireBladeTimer > 0) {
+                        this._fireBladeTimer -= charDt;
+                        this._fireBladeAngle  += charDt * 2.2; // 공전 속도
+                        const charPos = this.character.mesh.position;
+                        const N = this._fireBladeOrbiters.length;
+                        for (let i = 0; i < N; i++) {
+                            const angle = this._fireBladeAngle + (i / N) * Math.PI * 2;
+                            const o = this._fireBladeOrbiters[i];
+                            o.position.set(
+                                charPos.x + Math.sin(angle) * 1.2,
+                                charPos.y + 0.9 + Math.sin(this._fireBladeAngle * 2 + i) * 0.1,
+                                charPos.z + Math.cos(angle) * 1.2
+                            );
+                            o.rotation.y  = angle + Math.PI / 2; // 접선 방향
+                            o.rotation.z += charDt * 4;           // 자전 스핀
+                            // 남은 시간 짧으면 깜빡임
+                            if (this._fireBladeTimer < 2.0) {
+                                o.visible = Math.floor(this._fireBladeTimer * 6) % 2 === 0;
+                            }
+                        }
+                        if (this._fireBladeTimer <= 0) {
+                            for (const o of this._fireBladeOrbiters) this.scene.remove(o);
+                            this._fireBladeOrbiters = [];
+                            this._fireBladeTimer = 0;
+                        }
+                    }
+
                 }
 
                 if (this.hitStopTimer > 0 && !this.isCountingDown) { // 카운트다운 중엔 히트스탑 무시
