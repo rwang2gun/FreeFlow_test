@@ -840,7 +840,15 @@
                 this.timer += dt;
                 this.parent.executeSkill(dt, this);
                 if (this.timer >= this.duration) {
-                    this.parent.stateMachine.changeState('idle');
+                    // 스킬 완료 후 대기 중인 교체가 있으면 퇴장 시작
+                    const game = this.parent.game;
+                    if (game._pendingSwapType) {
+                        const type = game._pendingSwapType;
+                        game._pendingSwapType = null;
+                        game._beginSwapOut(type);
+                    } else {
+                        this.parent.stateMachine.changeState('idle');
+                    }
                 }
             }
             exit() {
@@ -866,7 +874,14 @@
                 this.timer += dt;
                 this.parent.executeUltimate(dt, this);
                 if (this.timer >= this.duration) {
-                    this.parent.stateMachine.changeState('idle');
+                    const game = this.parent.game;
+                    if (game._pendingSwapType) {
+                        const type = game._pendingSwapType;
+                        game._pendingSwapType = null;
+                        game._beginSwapOut(type);
+                    } else {
+                        this.parent.stateMachine.changeState('idle');
+                    }
                 }
             }
             exit() {
@@ -898,6 +913,65 @@
             }
         }
 
+        // ── 교체 퇴장 (백대시) ──────────────────────────────────────
+        class SwapOutState extends State {
+            constructor(parent) { super(parent); this.name = 'swapOut'; }
+            enter() {
+                this.timer = 0;
+                this.duration = 0.25;
+                this.dashDir = new THREE.Vector3(0, 0, 1).applyQuaternion(this.parent.mesh.quaternion).multiplyScalar(-1);
+                this.dashSpeed = 10.0;
+            }
+            update(dt) {
+                this.timer += dt;
+                if (this.timer < this.duration) {
+                    this.parent.velocity.copy(this.dashDir).multiplyScalar(this.dashSpeed);
+                    const L = Math.min(1, 25 * dt);
+                    this.parent.parts.root.rotation.x  = THREE.MathUtils.lerp(this.parent.parts.root.rotation.x,  -0.6, L);
+                    this.parent.parts.root.rotation.y  = THREE.MathUtils.lerp(this.parent.parts.root.rotation.y,  -0.6, L);
+                    this.parent.parts.waist.rotation.x = THREE.MathUtils.lerp(this.parent.parts.waist.rotation.x,  0.6, L);
+                    this.parent.parts.chest.rotation.x = THREE.MathUtils.lerp(this.parent.parts.chest.rotation.x,  0.3, L);
+                    this.parent.parts.root.position.y  = THREE.MathUtils.lerp(this.parent.parts.root.position.y,   0.85, L);
+                    this.parent.lerpJoint(this.parent.parts.leftLeg.hip,  new THREE.Vector3(-1.0, 0, -0.1), L);
+                    this.parent.lerpJoint(this.parent.parts.rightLeg.hip, new THREE.Vector3(-1.4, 0,  0.2), L);
+                    this.parent.parts.rightLeg.knee.rotation.x = THREE.MathUtils.lerp(this.parent.parts.rightLeg.knee.rotation.x, 1.5, L);
+                    this.parent.lerpJoint(this.parent.parts.leftArm.shoulder,  new THREE.Vector3(-1.2, 0.2, 0.4), L);
+                    this.parent.lerpJoint(this.parent.parts.rightArm.shoulder, new THREE.Vector3( 0.5, 0,  -0.6), L);
+                } else {
+                    this.parent.game._completeSwap();
+                }
+            }
+            exit() { this.parent.velocity.set(0, 0, 0); }
+        }
+
+        // ── 교체 진입 (전방 대시) ───────────────────────────────────
+        class SwapInState extends State {
+            constructor(parent) { super(parent); this.name = 'swapIn'; }
+            enter() {
+                this.timer = 0;
+                this.duration = 0.25;
+                this.dashDir = new THREE.Vector3(0, 0, 1).applyQuaternion(this.parent.mesh.quaternion);
+                this.dashSpeed = 14.0;
+            }
+            update(dt) {
+                // 입장 중에도 공격/대시 입력으로 캔슬 가능
+                if (this.parent.input.attackTriggered && this.parent.comboCooldown <= 0) {
+                    this.parent.stateMachine.changeState('attack'); return;
+                }
+                if (this.parent.input.shiftTriggered) {
+                    this.parent.stateMachine.changeState('dash'); return;
+                }
+                this.timer += dt;
+                if (this.timer < this.duration) {
+                    this.parent.velocity.copy(this.dashDir).multiplyScalar(this.dashSpeed);
+                    this.parent.applyPose(POSES.dash, 25, dt);
+                } else {
+                    this.parent.stateMachine.changeState('idle');
+                }
+            }
+            exit() { this.parent.velocity.set(0, 0, 0); }
+        }
+
     </script>
 
     <script>
@@ -918,7 +992,7 @@
          *       lHip  : { rx,ry,rz=고관절, knee=무릎X }
          * ==========================================
          */
-        const GAME_VERSION = '0.018';
+        const GAME_VERSION = '0.019';
         document.getElementById('game-version-display').textContent = 'ver ' + GAME_VERSION;
 
         const POSES = {
@@ -1539,6 +1613,8 @@
                 this.stateMachine.addState('skill', new SkillState(this));
                 this.stateMachine.addState('ultimate', new UltimateState(this));
                 this.stateMachine.addState('chargeAttack', new ChargeAttackState(this));
+                this.stateMachine.addState('swapOut', new SwapOutState(this));
+                this.stateMachine.addState('swapIn', new SwapInState(this));
 
                 this.buildGeometry();
                 this.scene.add(this.mesh);
@@ -4669,66 +4745,91 @@
                 this.clock = new THREE.Clock(); this.animate();
             }
 
+            // ── 캐릭터 교체 시스템: 요청 → 퇴장 → 진입 ──────────────
             switchCharacter(type) {
                 if (this.isGameOver || this.isCountingDown) return;
+                if (this._isSwapping) return; // 교체 진행 중 중복 방지
 
-                // 이미 같은 캐릭터로 교체 시도 시 무시
                 if (type === 'FS' && this.character === this.characterFS) return;
                 if (type === 'EF' && this.character === this.characterEF) return;
                 if (type === 'WM' && this.character === this.characterWM) return;
 
-                // 교체 전 이전 캐릭터 스킬 클린업 (소용돌이 등 지속 효과 제거)
                 const prevState = this.character.stateMachine.currentState;
-                if (prevState && prevState.name === 'skill' && typeof this.character.cleanupSkill === 'function') {
-                    this.character.cleanupSkill();
-                }
 
-                const oldPos = this.character.mesh.position.clone();
-                const oldQuat = this.character.mesh.quaternion.clone();
-
-                this.character.mesh.visible = false;
-
-                if (type === 'FS') {
-                    this.character = this.characterFS;
-                } else if (type === 'EF') {
-                    this.character = this.characterEF;
-                } else {
-                    this.character = this.characterWM;
-                }
-
-                this.character.mesh.position.copy(oldPos);
-                this.character.mesh.quaternion.copy(oldQuat);
-                this.character.mesh.visible = true;
-
-                // 카메라 타겟 업데이트
-                this.cameraRig.target = this.character;
-
-                // 교체 이펙트
-                this.triggerImpact(0.05, 0.1);
-
-                // [추가] 퍼펙트 스왑 판점 (0.5초 ~ 0.75초 사이 교체)
+                // 퍼펙트 스왑 판정 (요청 시점에 즉시 판정)
+                const curPos = this.character.mesh.position.clone();
                 let isPerfectSwap = false;
-                for (let d of this.dummies) {
+                for (const d of this.dummies) {
                     if (d.isAttacking && d.attackTimer >= 0.5 && d.attackTimer <= 0.75 && !d.isDodged) {
                         d.isDodged = true;
-                        // 투창병의 경우 현재 날아가고 있는 창도 무효화
-                        if (d instanceof GoblinSpearman && d.activeSpear) {
-                            d.activeSpear.isDodged = true;
-                        }
+                        if (d instanceof GoblinSpearman && d.activeSpear) d.activeSpear.isDodged = true;
                         isPerfectSwap = true;
                     }
                 }
-
+                this._pendingSwapPerfect = isPerfectSwap;
                 if (isPerfectSwap) {
                     this.triggerSlowMo(0.2, 2.0);
-                    this.addScore(15, "PERFECT SWAP", oldPos.clone().add(new THREE.Vector3(0, 2.5, 0)));
-                    
-                    // [추가] 퍼펙트 스왑 성공 시 즉시 타겟 정보를 갱신하고 거리에 따른 최적의 반격 발동
-                    this.character.update(0); 
-                    this.character.stateMachine.changeState('attack');
+                    this.addScore(15, "PERFECT SWAP", curPos.clone().add(new THREE.Vector3(0, 2.5, 0)));
                 } else {
-                    this.addScore(0, `SWITCH: ${type}`, oldPos.clone().add(new THREE.Vector3(0, 2, 0)));
+                    this.addScore(0, `SWITCH: ${type}`, curPos.clone().add(new THREE.Vector3(0, 2, 0)));
                 }
+
+                // 스킬/궁극기 사용 중 → 완료 후 교체 예약
+                if (prevState && (prevState.name === 'skill' || prevState.name === 'ultimate')) {
+                    this._pendingSwapType = type;
+                    return;
+                }
+
+                this._beginSwapOut(type);
+            }
+
+            _beginSwapOut(type) {
+                this._isSwapping = true;
+                this._swapTarget = type;
+                // 현재 상태에서 스킬 이펙트 클린업
+                const st = this.character.stateMachine.currentState;
+                if (st && st.name === 'skill' && typeof this.character.cleanupSkill === 'function') {
+                    this.character.cleanupSkill();
+                }
+                this.character.stateMachine.changeState('swapOut');
+            }
+
+            _completeSwap() {
+                const type = this._swapTarget;
+                const oldChar = this.character;
+
+                const exitPos  = oldChar.mesh.position.clone();
+                const exitQuat = oldChar.mesh.quaternion.clone();
+                const forward  = new THREE.Vector3(0, 0, 1).applyQuaternion(exitQuat);
+
+                // 퇴장 캐릭터 숨기기 & idle 복귀
+                oldChar.mesh.visible = false;
+                oldChar.stateMachine.changeState('idle');
+
+                // 입장 캐릭터 결정
+                if (type === 'FS')      this.character = this.characterFS;
+                else if (type === 'EF') this.character = this.characterEF;
+                else                    this.character = this.characterWM;
+
+                // 진입 위치 = 퇴장 지점에서 뒤쪽 2.5m (대시로 전진해 올 거리)
+                this.character.mesh.position.copy(exitPos).sub(forward.clone().multiplyScalar(2.5));
+                this.character.mesh.quaternion.copy(exitQuat);
+                this.character.mesh.visible = true;
+
+                this.cameraRig.target = this.character;
+                this.triggerImpact(0.05, 0.12);
+
+                // 퍼펙트 스왑 시 즉시 공격, 일반 교체 시 대시 진입
+                if (this._pendingSwapPerfect) {
+                    this.character.update(0);
+                    this.character.stateMachine.changeState('attack');
+                    this._pendingSwapPerfect = false;
+                } else {
+                    this.character.stateMachine.changeState('swapIn');
+                }
+
+                this._isSwapping = false;
+                this._swapTarget = null;
             }
 
             startGame() {
