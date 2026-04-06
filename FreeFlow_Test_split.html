@@ -401,11 +401,14 @@
                 this.isLeftMouseDown = false; this.isMiddleMouseDown = false; this.isRightMouseDown = false;
                 this.mouseMovement = { x: 0, y: 0 };
                 this.attackTriggered = false; this.shiftTriggered = false; this.skillTriggered = false;
-                this.ultimateTriggered = false; this.chargeAttackTriggered = false;
-                this.isLocked = false; // [추가] 입력 잠금 플래그
-                this._attackHoldTimeout = null;
+                this.ultimateTriggered = false;
+                this.attackHoldTime = 0;       // 좌클릭 홀드 누적 시간
+                this.isChargingAttack = false; // 홀드 임계값 초과 시 true (차지 애니 시작)
+                this.chargeAttackReleased = false; // 차지 중 버튼 뗄 때 한 프레임 true
+                this.isLocked = false;
 
-                // e.code 기반으로 처리 — 한/영 IME, 캡스락 영향 없음
+                const CHARGE_THRESHOLD = 0.30; // 300ms 이상 홀드 → 차지 모드
+
                 const codeToKey = {
                     'KeyW': 'w', 'KeyA': 'a', 'KeyS': 's', 'KeyD': 'd',
                     'ShiftLeft': 'shift', 'ShiftRight': 'shift'
@@ -417,8 +420,7 @@
                     if (e.code === 'KeyE') this.skillTriggered = true;
                     if (e.code === 'KeyQ') this.ultimateTriggered = true;
                     if (e.code === 'Escape') window.dispatchEvent(new CustomEvent('esc-pressed'));
-                    // ','키 = 좌클릭(공격/강공격), '.'키 = 우클릭(대시)
-                    if (e.code === 'Comma' && !e.repeat) { this.isLeftMouseDown = true; this._commaHeldAt = Date.now(); }
+                    if (e.code === 'Comma' && !e.repeat) { this.isLeftMouseDown = true; this.attackHoldTime = 0; this.isChargingAttack = false; }
                     if (e.code === 'Period' && !e.repeat) { this.isRightMouseDown = true; this.shiftTriggered = true; }
                     const key = codeToKey[e.code];
                     if (key) this.keys[key] = true;
@@ -426,43 +428,29 @@
                 window.addEventListener('keyup', (e) => {
                     if (e.code === 'Comma') {
                         this.isLeftMouseDown = false;
-                        const held = Date.now() - (this._commaHeldAt || Date.now());
-                        this._commaHeldAt = null;
-                        if (this._attackHoldTimeout) { clearTimeout(this._attackHoldTimeout); this._attackHoldTimeout = null; }
-                        if (held >= 500) { this.chargeAttackTriggered = true; }
-                        else { this.attackTriggered = true; }
+                        if (this.isChargingAttack) { this.chargeAttackReleased = true; this.isChargingAttack = false; }
+                        else if (this.attackHoldTime < CHARGE_THRESHOLD) { this.attackTriggered = true; }
+                        this.attackHoldTime = 0;
                     }
                     if (e.code === 'Period') this.isRightMouseDown = false;
                     const key = codeToKey[e.code];
                     if (key) this.keys[key] = false;
                 });
                 window.addEventListener('mousedown', (e) => {
-                    if (this.isLocked) {
-                        // 잠금 상태에서도 우클릭 카메라 회전은 허용할지 검토 (현재는 차단)
-                        if (e.button !== 2) return;
-                    }
-                    // [수정] 오버레이 요소 클릭 시 공격 트리거 방지
+                    if (this.isLocked) { if (e.button !== 2) return; }
                     if (e.target.closest('#ui-layer') ||
                         e.target.closest('#game-menu-overlay') ||
                         e.target.closest('#gameover-overlay')) return;
-
-                    if (e.button === 0) {
-                        this.isLeftMouseDown = true;
-                        this._attackHoldTimeout = setTimeout(() => {
-                            if (this.isLeftMouseDown) this.chargeAttackTriggered = true;
-                        }, 500);
-                    }
+                    if (e.button === 0) { this.isLeftMouseDown = true; this.attackHoldTime = 0; this.isChargingAttack = false; }
                     if (e.button === 1) this.isMiddleMouseDown = true;
                     if (e.button === 2) { this.isRightMouseDown = true; this.shiftTriggered = true; }
                 });
                 window.addEventListener('mouseup', (e) => {
                     if (e.button === 0) {
                         this.isLeftMouseDown = false;
-                        if (this._attackHoldTimeout) {
-                            clearTimeout(this._attackHoldTimeout);
-                            this._attackHoldTimeout = null;
-                            if (!this.chargeAttackTriggered) this.attackTriggered = true;
-                        }
+                        if (this.isChargingAttack) { this.chargeAttackReleased = true; this.isChargingAttack = false; }
+                        else if (this.attackHoldTime < CHARGE_THRESHOLD) { this.attackTriggered = true; }
+                        this.attackHoldTime = 0;
                     }
                     if (e.button === 1) this.isMiddleMouseDown = false;
                     if (e.button === 2) this.isRightMouseDown = false;
@@ -472,9 +460,18 @@
                 });
                 window.addEventListener('contextmenu', e => e.preventDefault());
             }
+            // 매 프레임 게임 루프에서 호출 — 홀드 시간 누적 및 차지 진입 판정
+            update(dt) {
+                if (this.isLeftMouseDown && !this.isLocked) {
+                    this.attackHoldTime += dt;
+                    if (this.attackHoldTime >= 0.30 && !this.isChargingAttack) {
+                        this.isChargingAttack = true;
+                    }
+                }
+            }
             resetTriggers() {
                 this.attackTriggered = false; this.shiftTriggered = false; this.skillTriggered = false;
-                this.ultimateTriggered = false; this.chargeAttackTriggered = false;
+                this.ultimateTriggered = false; this.chargeAttackReleased = false;
                 this.mouseMovement.x = 0; this.mouseMovement.y = 0;
             }
         }
@@ -644,7 +641,7 @@
                 if (this.parent.input.skillTriggered && this.parent.skillCooldown <= 0) {
                     this.parent.stateMachine.changeState('skill'); return;
                 }
-                if (this.parent.input.chargeAttackTriggered && this.parent.comboCooldown <= 0) {
+                if (this.parent.input.isChargingAttack && this.parent.comboCooldown <= 0) {
                     this.parent.stateMachine.changeState('chargeAttack'); return;
                 }
                 if (this.parent.input.attackTriggered && this.parent.comboCooldown <= 0) { // [수정] 쿨다운 체크
@@ -693,7 +690,7 @@
                 if (this.parent.input.skillTriggered && this.parent.skillCooldown <= 0) {
                     this.parent.stateMachine.changeState('skill'); return;
                 }
-                if (this.parent.input.chargeAttackTriggered && this.parent.comboCooldown <= 0) {
+                if (this.parent.input.isChargingAttack && this.parent.comboCooldown <= 0) {
                     this.parent.stateMachine.changeState('chargeAttack'); return;
                 }
                 if (this.parent.input.attackTriggered) {
@@ -881,14 +878,33 @@
             constructor(parent) { super(parent); this.name = 'chargeAttack'; }
             enter() {
                 this.timer = 0;
+                this.phase = 'charging'; // 'charging' | 'attack'
                 this.parent.setupChargeAttack(this);
                 if (typeof this.parent.setElementalMode === 'function') this.parent.setElementalMode(true);
             }
             update(dt) {
                 this.timer += dt;
-                this.parent.executeChargeAttack(dt, this);
-                if (this.timer >= this.duration) {
-                    this.parent.stateMachine.changeState('idle');
+                if (this.phase === 'charging') {
+                    this.parent.updateChargeWindup(dt, this);
+                    // 대시/스킬로 차지 캔슬
+                    if (this.parent.input.shiftTriggered) {
+                        this.parent.stateMachine.changeState('dash'); return;
+                    }
+                    if (this.parent.input.skillTriggered && this.parent.skillCooldown <= 0) {
+                        this.parent.stateMachine.changeState('skill'); return;
+                    }
+                    // 버튼 릴리스 → 공격 페이즈 전환
+                    if (this.parent.input.chargeAttackReleased) {
+                        this.phase = 'attack';
+                        this.timer = 0;
+                        this.parent.onChargeRelease(this);
+                    }
+                } else {
+                    // 공격 페이즈
+                    this.parent.executeChargeAttack(dt, this);
+                    if (this.timer >= this.duration) {
+                        this.parent.stateMachine.changeState('idle');
+                    }
                 }
             }
             exit() {
@@ -983,7 +999,7 @@
          *       lHip  : { rx,ry,rz=고관절, knee=무릎X }
          * ==========================================
          */
-        const GAME_VERSION = '0.020';
+        const GAME_VERSION = '0.021';
         document.getElementById('game-version-display').textContent = 'ver ' + GAME_VERSION;
 
         const POSES = {
@@ -2478,13 +2494,29 @@
             }
 
             // ── 강공격: 폭발참 (FS 전용) ──────────────────────────────
-            // 홀드 0.5s → 칼 번쩍 들어 올리기 → 대지 찍기 → 반경 5m 화염 폭발
             setupChargeAttack(state) {
-                state.duration  = 1.4;
-                state.windupEnd = 0.5;
-                state.blastAt   = 0.65;
-                state.blastDone = false;
+                state.chargeTimer = 0;
+                this._lookAtNearest = (dt) => {
+                    if (!this.nearestDummy) return;
+                    const d = new THREE.Vector3().subVectors(this.nearestDummy.mesh.position, this.mesh.position).setY(0);
+                    if (d.lengthSq() > 0.001) this.mesh.quaternion.slerp(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0), Math.atan2(d.x, d.z)), Math.min(1, 10*dt));
+                };
+            }
 
+            updateChargeWindup(dt, state) {
+                state.chargeTimer += dt;
+                this.velocity.set(0, 0, 0);
+                this._lookAtNearest(dt);
+                this.applyPose(POSES.fs_charge_windup, 14, dt);
+                this._updateNeckLook(dt, 14, -0.5);
+                // 홀드 시간에 비례해 검 발광 (최대 3.0)
+                if (this.swordMat) this.swordMat.emissiveIntensity = Math.min(3.0, state.chargeTimer * 6.0);
+            }
+
+            onChargeRelease(state) {
+                state.duration = 0.7;
+                state.blastAt  = 0.12;
+                state.blastDone = false;
                 const badge = document.getElementById('attack-name-badge');
                 if (badge) { badge.innerText = '폭발참'; badge.style.display = 'block'; }
                 clearTimeout(this._attackNameBadgeTimer);
@@ -2493,30 +2525,10 @@
 
             executeChargeAttack(dt, state) {
                 this.velocity.set(0, 0, 0);
-                if (this.nearestDummy) {
-                    const lookDir = new THREE.Vector3().subVectors(this.nearestDummy.mesh.position, this.mesh.position).setY(0);
-                    if (lookDir.lengthSq() > 0.001) {
-                        const target = Math.atan2(lookDir.x, lookDir.z);
-                        this.mesh.quaternion.slerp(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0), target), Math.min(1, 10 * dt));
-                    }
-                }
+                this._lookAtNearest(dt);
+                this.applyPose(POSES.fs_charge_slam, 35, dt);
+                this._updateNeckLook(dt, 20, -0.15);
 
-                if (state.timer < state.windupEnd) {
-                    // 칼 들어 올리기
-                    this.applyPose(POSES.fs_charge_windup, 14, dt);
-                    this._updateNeckLook(dt, 14, -0.5);
-                    // 차징 중 칼 점점 빨갛게 발광
-                    if (this.swordMat) {
-                        const t = state.timer / state.windupEnd;
-                        this.swordMat.emissiveIntensity = t * 3.0;
-                    }
-                } else {
-                    // 내려찍기
-                    this.applyPose(POSES.fs_charge_slam, 35, dt);
-                    this._updateNeckLook(dt, 20, -0.15);
-                }
-
-                // 폭발 판정
                 if (state.timer >= state.blastAt && !state.blastDone) {
                     state.blastDone = true;
                     const pos = this.mesh.position;
@@ -2524,7 +2536,6 @@
                     setTimeout(() => this.game.spawnShockwaveRing(pos.clone(), 5.0, 0xff4400), 80);
                     this.game.triggerImpact(0.13, 0.55);
                     if (this.swordMat) this.swordMat.emissiveIntensity = 0;
-
                     for (const d of this.game.dummies) {
                         if (d.isDead) continue;
                         const toD = new THREE.Vector3().subVectors(d.mesh.position, pos).setY(0);
@@ -3011,13 +3022,28 @@
             }
 
             // ── 강공격: 빙결 강습 (EF 전용) ───────────────────────────
-            // 홀드 0.5s → 공중 도약 → 양 주먹 내려찍기 → 반경 4m 얼음 충격파
             setupChargeAttack(state) {
-                state.duration  = 1.2;
-                state.jumpEnd   = 0.3;
-                state.slamAt    = 0.42;
-                state.blastDone = false;
+                state.chargeTimer = 0;
+            }
 
+            updateChargeWindup(dt, state) {
+                state.chargeTimer += dt;
+                this.velocity.set(0, 0, 0);
+                if (this.nearestDummy) {
+                    const d = new THREE.Vector3().subVectors(this.nearestDummy.mesh.position, this.mesh.position).setY(0);
+                    if (d.lengthSq() > 0.001) this.mesh.quaternion.slerp(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0), Math.atan2(d.x, d.z)), Math.min(1, 10*dt));
+                }
+                // 홀드 중: 주먹 뒤로 당기는 자세 + 발광 강화
+                this.applyPose(POSES.ef_charge_jump, 14, dt);
+                this._updateNeckLook(dt, 14, -0.5);
+                if (this.fistMat) this.fistMat.emissiveIntensity = Math.min(1.5, state.chargeTimer * 5.0);
+            }
+
+            onChargeRelease(state) {
+                state.duration  = 0.65;
+                state.jumpEnd   = 0.18;
+                state.slamAt    = 0.28;
+                state.blastDone = false;
                 const badge = document.getElementById('attack-name-badge');
                 if (badge) { badge.innerText = '빙결 강습'; badge.style.display = 'block'; }
                 clearTimeout(this._attackNameBadgeTimer);
@@ -3026,29 +3052,15 @@
 
             executeChargeAttack(dt, state) {
                 this.velocity.set(0, 0, 0);
-                if (this.nearestDummy) {
-                    const lookDir = new THREE.Vector3().subVectors(this.nearestDummy.mesh.position, this.mesh.position).setY(0);
-                    if (lookDir.lengthSq() > 0.001) {
-                        const target = Math.atan2(lookDir.x, lookDir.z);
-                        this.mesh.quaternion.slerp(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0), target), Math.min(1, 10 * dt));
-                    }
-                }
-
                 if (state.timer < state.jumpEnd) {
-                    // 도약 상승
                     this.applyPose(POSES.ef_charge_jump, 18, dt);
                     this._updateNeckLook(dt, 15, -0.6);
-                    this.parts.root.position.y += dt * 3.5;
-                    // 주먹 발광 점점 강하게
-                    if (this.fistMat) this.fistMat.emissiveIntensity = (state.timer / state.jumpEnd) * 1.5;
+                    this.parts.root.position.y += dt * 4.0;
                 } else {
-                    // 내려찍기
                     this.applyPose(POSES.ef_charge_slam, 40, dt);
                     this._updateNeckLook(dt, 20, -0.1);
                     this.parts.root.position.y = THREE.MathUtils.lerp(this.parts.root.position.y, 0, 20 * dt);
                 }
-
-                // 충격 판정
                 if (state.timer >= state.slamAt && !state.blastDone) {
                     state.blastDone = true;
                     const pos = this.mesh.position;
@@ -3056,7 +3068,6 @@
                     setTimeout(() => this.game.spawnShockwaveRing(pos.clone(), 4.0, 0x88ccff), 80);
                     this.game.triggerImpact(0.12, 0.48);
                     if (this.fistMat) this.fistMat.emissiveIntensity = 0;
-
                     for (const d of this.game.dummies) {
                         if (d.isDead) continue;
                         const toD = new THREE.Vector3().subVectors(d.mesh.position, pos).setY(0);
@@ -3581,13 +3592,33 @@
             }
 
             // ── 강공격: 폭풍수류 (WM 전용) ────────────────────────────
-            // 홀드 0.5s → 마법봉 앞으로 겨눔(차징) → 거대 수류 발사 → 광역 폭발
             setupChargeAttack(state) {
-                state.duration   = 1.5;
-                state.chargeEnd  = 0.7;
-                state.fireAt     = 0.72;
-                state.fireDone   = false;
+                state.chargeTimer = 0;
+            }
 
+            updateChargeWindup(dt, state) {
+                state.chargeTimer += dt;
+                this.velocity.set(0, 0, 0);
+                if (this.nearestDummy) {
+                    const d = new THREE.Vector3().subVectors(this.nearestDummy.mesh.position, this.mesh.position).setY(0);
+                    if (d.lengthSq() > 0.001) this.mesh.quaternion.slerp(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0), Math.atan2(d.x, d.z)), Math.min(1, 12*dt));
+                }
+                this.applyPose(POSES.wm_charge_windup, 12, dt);
+                this._updateNeckLook(dt, 14, -0.5);
+                // 홀드 시간에 비례해 오브 발광 증가
+                if (this.wandOrbMat) this.wandOrbMat.emissiveIntensity = Math.min(7.0, 1.0 + state.chargeTimer * 10.0);
+                // 0.3s 마다 파동 링 1개씩
+                if (!state._nextPulse) state._nextPulse = 0.25;
+                if (state.chargeTimer >= state._nextPulse) {
+                    state._nextPulse += 0.3;
+                    this.game.spawnShockwaveRing(this.mesh.position, 1.0 + state.chargeTimer * 1.5, 0x0088ff);
+                }
+            }
+
+            onChargeRelease(state) {
+                state.duration = 0.55;
+                state.fireAt   = 0.05;
+                state.fireDone = false;
                 const badge = document.getElementById('attack-name-badge');
                 if (badge) { badge.innerText = '폭풍수류'; badge.style.display = 'block'; }
                 clearTimeout(this._attackNameBadgeTimer);
@@ -3596,37 +3627,9 @@
 
             executeChargeAttack(dt, state) {
                 this.velocity.set(0, 0, 0);
-                if (this.nearestDummy) {
-                    const lookDir = new THREE.Vector3().subVectors(this.nearestDummy.mesh.position, this.mesh.position).setY(0);
-                    if (lookDir.lengthSq() > 0.001) {
-                        const target = Math.atan2(lookDir.x, lookDir.z);
-                        this.mesh.quaternion.slerp(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0), target), Math.min(1, 12 * dt));
-                    }
-                }
-
-                if (state.timer < state.chargeEnd) {
-                    // 차징 포즈
-                    this.applyPose(POSES.wm_charge_windup, 12, dt);
-                    this._updateNeckLook(dt, 14, -0.5);
-                    // 마법봉 오브 강렬하게 발광 (물방울이 모이는 느낌)
-                    if (this.wandOrbMat) {
-                        const t = state.timer / state.chargeEnd;
-                        this.wandOrbMat.emissiveIntensity = 1.0 + t * 6.0;
-                    }
-                    // 차징 중 파동 링 (0.2 / 0.45s)
-                    if (state.timer > 0.2 && !state._pulse1) {
-                        state._pulse1 = true;
-                        this.game.spawnShockwaveRing(this.mesh.position, 1.5, 0x0088ff);
-                    }
-                    if (state.timer > 0.5 && !state._pulse2) {
-                        state._pulse2 = true;
-                        this.game.spawnShockwaveRing(this.mesh.position, 2.5, 0x44aaff);
-                    }
-                } else {
-                    this.applyPose(POSES.wm_charge_fire, 30, dt);
-                    this._updateNeckLook(dt, 20, -0.2);
-                    if (this.wandOrbMat) this.wandOrbMat.emissiveIntensity = THREE.MathUtils.lerp(this.wandOrbMat.emissiveIntensity, 1.0, 10 * dt);
-                }
+                this.applyPose(POSES.wm_charge_fire, 30, dt);
+                this._updateNeckLook(dt, 20, -0.2);
+                if (this.wandOrbMat) this.wandOrbMat.emissiveIntensity = THREE.MathUtils.lerp(this.wandOrbMat.emissiveIntensity, 1.0, 10 * dt);
 
                 // 발사 판정 — MagicBolt 보다 훨씬 크고 강한 수류
                 if (state.timer >= state.fireAt && !state.fireDone) {
@@ -5357,6 +5360,8 @@
                 }
 
                 if (this.shakeTimer > 0) this.shakeTimer -= dt;
+
+                this.input.update(dt); // 홀드 시간 누적 및 차지 진입 판정
 
                 if (!gamePaused) {
                     for (let d of this.dummies) d.update(enemyDt, this);
