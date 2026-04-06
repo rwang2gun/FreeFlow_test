@@ -800,21 +800,22 @@
                 if (this.parent.input.attackTriggered && this.timer > 0.05) this.inputBuffered = true;
 
                 this.parent.updateCombo(dt, this);
-                if (this.timer >= this.duration) {
-                    const isAdvancedFirstStrike = ['shoulder_bash', 'step_strike', 'dash', 'leap', 'uppercut', 'elbow'].includes(this.comboStep);
-                    if (this.inputBuffered && (isAdvancedFirstStrike || (typeof this.comboStep === 'number' && this.comboStep < this.parent.maxCombo))) {
-                        let nextStep = (typeof this.comboStep === 'number') ? this.comboStep + 1 : 2;
 
-                        this.timer = 0; this.hasHit = false; this.inputBuffered = false;
-                        this.comboStep = nextStep;
-                        this.parent.setupCombo(this, this.comboStep);
-                    } else { 
-                        // [추가] 정규 콤보 마지막 단계에서 종료 시 쿨다운 부여
-                        if (typeof this.comboStep === 'number' && this.comboStep === this.parent.maxCombo) {
-                            this.parent.comboCooldown = 0.3;
-                        }
-                        this.parent.stateMachine.changeState('idle'); 
+                const isAdvancedFirstStrike = ['shoulder_bash', 'step_strike', 'dash', 'leap', 'uppercut', 'elbow'].includes(this.comboStep);
+                const canChain = this.inputBuffered && (isAdvancedFirstStrike || (typeof this.comboStep === 'number' && this.comboStep < this.parent.maxCombo));
+                const chainWindow = this.activeEnd ?? this.duration;
+
+                if (canChain && this.timer >= chainWindow) {
+                    // 입력 버퍼 있음: activeEnd 이후 즉시 다음 콤보 (recovery 스킵)
+                    let nextStep = (typeof this.comboStep === 'number') ? this.comboStep + 1 : 2;
+                    this.timer = 0; this.hasHit = false; this.inputBuffered = false;
+                    this.comboStep = nextStep;
+                    this.parent.setupCombo(this, this.comboStep);
+                } else if (this.timer >= this.duration) {
+                    if (typeof this.comboStep === 'number' && this.comboStep === this.parent.maxCombo) {
+                        this.parent.comboCooldown = 0.3;
                     }
+                    this.parent.stateMachine.changeState('idle');
                 }
             }
             exit() { this.parent.velocity.set(0, 0, 0); }
@@ -999,7 +1000,7 @@
          *       lHip  : { rx,ry,rz=고관절, knee=무릎X }
          * ==========================================
          */
-        const GAME_VERSION = '0.022';
+        const GAME_VERSION = '0.023';
         document.getElementById('game-version-display').textContent = 'ver ' + GAME_VERSION;
 
         const POSES = {
