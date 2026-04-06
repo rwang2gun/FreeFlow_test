@@ -1008,7 +1008,7 @@
          *       lHip  : { rx,ry,rz=고관절, knee=무릎X }
          * ==========================================
          */
-        const GAME_VERSION = '0.030';
+        const GAME_VERSION = '0.031';
         document.getElementById('game-version-display').textContent = 'ver ' + GAME_VERSION;
 
         const POSES = {
@@ -3859,8 +3859,11 @@
 
                 this.role = 'watcher'; // 'attacker' or 'watcher'
                 this.walkTimer = 0;
-                this.orbitTimer = Math.random() * Math.PI * 2; // 궤도 타이머 (walkTimer와 독립)
-                this.orbitOffset = Math.random() * Math.PI * 2; // 각자 다른 위치로 분산하기 위한 오프셋
+
+                // 행동 주기 기반 waypoint 시스템
+                this.aiCycleTimer    = Math.random() * 1.0; // 첫 주기 랜덤 지연
+                this.aiWaypoint      = null;
+                this._orbitAngle     = Math.random() * Math.PI * 2; // 현재 공전 각도
                 this.clubMat = clubMat; // Reference to change color
 
                 // [추가] 넉다운 상태 관리 배수
@@ -3963,6 +3966,48 @@
                 if (this.isFussing !== undefined) { this.isFussing = false; this.fussTimer = 0; }
                 if (this.isPositioned !== undefined) this.isPositioned = false;
                 if (this.activeSpear !== undefined) this.activeSpear = null;
+            }
+
+            // 행동 주기마다 이동 목표 좌표를 결정
+            _pickWaypoint(charPos, game) {
+                const dist = this.logicalPos.distanceTo(charPos);
+
+                if (this.role === 'attacker') {
+                    if (dist > 2.0) {
+                        // 캐릭터 근처로 돌진 (약간 랜덤 오프셋으로 뭉침 방지)
+                        const off = new THREE.Vector3(
+                            (Math.random() - 0.5) * 0.6,
+                            0,
+                            (Math.random() - 0.5) * 0.6
+                        );
+                        this.aiWaypoint = charPos.clone().add(off);
+                    } else {
+                        this.aiWaypoint = null; // 사거리 내 → 공격이 처리
+                    }
+                } else {
+                    // watcher: 캐릭터 주변 궤도 위의 한 점을 선택
+                    // 너무 가까우면 더 멀리, 적당하면 5-7m 유지
+                    const orbitR = (dist < 3.5) ? 7.0 + Math.random() * 1.5 : 5.0 + Math.random() * 2.0;
+                    // 각도를 60°~150° 범위로 전진하여 자연스럽게 이동
+                    this._orbitAngle += Math.PI * (0.33 + Math.random() * 0.5) * (Math.random() < 0.5 ? 1 : -1);
+                    this.aiWaypoint = new THREE.Vector3(
+                        charPos.x + Math.sin(this._orbitAngle) * orbitR,
+                        0,
+                        charPos.z + Math.cos(this._orbitAngle) * orbitR
+                    );
+                    // 다른 goblin과 너무 가까운 waypoint면 각도 추가 보정
+                    for (const other of (game ? game.dummies : [])) {
+                        if (other === this) continue;
+                        if (this.aiWaypoint.distanceTo(other.logicalPos) < 1.8) {
+                            this._orbitAngle += Math.PI * 0.4;
+                            this.aiWaypoint.set(
+                                charPos.x + Math.sin(this._orbitAngle) * orbitR,
+                                0,
+                                charPos.z + Math.cos(this._orbitAngle) * orbitR
+                            );
+                        }
+                    }
+                }
             }
 
             update(dt, game) {
@@ -4092,57 +4137,30 @@
                 let moveTargetPos = null;
 
                 if (game.enableNPC_AI && !game.isAIStarting) {
-                    if (this.role === 'attacker') {
-                        // 캐릭터에게 2.0m 까지 접근 (기존 2.5m에서 축소)
-                        if (dist > 2.0) {
-                            moveTargetPos = charPos;
-                            isMoving = true;
-                        } else if (!this.isAttacking && this.attackCooldown <= 0) {
-                            // 거리 도달 시 공격 시작
-                            this.isAttacking = true;
-                            this.attackTimer = 0;
-                            this.hasHitThisCycle = false;
-                        }
-                    } else {
-                        // Watcher: 5m ~ 8m 유지
-                        if (dist < 5.0) {
-                            // 너무 가까우면 뒤로 물러남
-                            const awayDir = new THREE.Vector3().subVectors(this.logicalPos, charPos).setY(0).normalize();
-                            moveTargetPos = this.logicalPos.clone().add(awayDir.multiplyScalar(2.0));
-                            isMoving = true;
-                        } else if (dist > 8.0) {
-                            // 너무 멀면 접근
-                            moveTargetPos = charPos;
-                            isMoving = true;
-                        } else {
-                            // 5~8m 사이면 주변을 어슬렁거림 (orbitTimer: walkTimer와 독립, 0.5rad/s)
-                            this.orbitTimer += dt * 0.5;
-                            const orbitX = Math.cos(this.orbitTimer + this.orbitOffset) * 6.5;
-                            const orbitZ = Math.sin(this.orbitTimer + this.orbitOffset) * 6.5;
-                            const orbitTarget = charPos.clone().add(new THREE.Vector3(orbitX, 0, orbitZ));
-                            if (this.logicalPos.distanceTo(orbitTarget) > 1.0) {
-                                moveTargetPos = orbitTarget;
-                                isMoving = true;
-                            }
-                        }
+                    // ── 행동 주기 타이머 ──────────────────────────────────
+                    this.aiCycleTimer -= dt;
+                    if (this.aiCycleTimer <= 0 && !this.isAttacking) {
+                        const cycleDur = (this.role === 'attacker') ? 0.8 + Math.random() * 0.5
+                                                                     : 1.2 + Math.random() * 1.0;
+                        this.aiCycleTimer = cycleDur;
+                        this._pickWaypoint(charPos, game);
+                    }
 
-                        // [추가] 적끼리 너무 뭉치지 않게 분리(Separation) 힘 적용
-                        const separationForce = new THREE.Vector3(0, 0, 0);
-                        let neighbors = 0;
-                        for (let other of game.dummies) {
-                            if (other === this) continue;
-                            const dOther = this.logicalPos.distanceTo(other.logicalPos);
-                            if (dOther < 2.0 && dOther > 0.0001) { // 1.5m -> 2.0m 이내면 서로 밀어냄
-                                const push = new THREE.Vector3().subVectors(this.logicalPos, other.logicalPos).normalize();
-                                separationForce.add(push.multiplyScalar(2.0 - dOther));
-                                neighbors++;
-                            }
-                        }
-                        if (neighbors > 0) {
-                            if (!moveTargetPos) moveTargetPos = this.logicalPos.clone();
-                            moveTargetPos.add(separationForce.multiplyScalar(0.5));
+                    // ── waypoint 이동 ─────────────────────────────────────
+                    if (!this.isAttacking && this.aiWaypoint) {
+                        const dWp = this.logicalPos.distanceTo(this.aiWaypoint);
+                        if (dWp > 0.35) {
+                            moveTargetPos = this.aiWaypoint;
                             isMoving = true;
                         }
+                    }
+
+                    // ── attacker: 사거리 도달 시 공격 ───────────────────
+                    if (this.role === 'attacker' && dist <= 2.0 && !this.isAttacking && this.attackCooldown <= 0) {
+                        this.isAttacking = true;
+                        this.attackTimer = 0;
+                        this.hasHitThisCycle = false;
+                        this.aiWaypoint = null;
                     }
                 }
 
