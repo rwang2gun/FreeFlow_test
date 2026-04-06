@@ -803,7 +803,7 @@
 
                 const isAdvancedFirstStrike = ['shoulder_bash', 'step_strike', 'dash', 'leap', 'uppercut', 'elbow'].includes(this.comboStep);
                 const canChain = this.inputBuffered && (isAdvancedFirstStrike || (typeof this.comboStep === 'number' && this.comboStep < this.parent.maxCombo));
-                const chainWindow = Math.max(0, (this.activeEnd ?? this.duration) - 0.06);
+                const chainWindow = this.activeEnd ?? this.duration;
 
                 if (canChain && this.timer >= chainWindow) {
                     // 입력 버퍼 있음: activeEnd 이후 즉시 다음 콤보 (recovery 스킵)
@@ -1000,7 +1000,7 @@
          *       lHip  : { rx,ry,rz=고관절, knee=무릎X }
          * ==========================================
          */
-        const GAME_VERSION = '0.024';
+        const GAME_VERSION = '0.025';
         document.getElementById('game-version-display').textContent = 'ver ' + GAME_VERSION;
 
         const POSES = {
@@ -2300,6 +2300,7 @@
                     state.duration = 0.60; state.activeEnd = 0.15;
                 } else if (step === 'step_strike') {
                     state.duration = 0.40; state.activeEnd = 0.25;
+                    state.holdStart = 0.16;
                 } else if (step === 'leap') {
                     state.duration  = 0.80;   // 전체 동작 시간
                     state.dashEnd   = 0.40;   // 공중 → 착지 공격 전환 시점
@@ -2308,6 +2309,7 @@
                 } else {
                     state.duration = step === 3 ? 0.65 : (step === 1 ? 0.50 : 0.40);
                     state.activeEnd = step === 3 ? 0.45 : 0.25;
+                    state.holdStart = state.activeEnd * 0.62;
                 }
 
                 this._acquireTarget(state, step, ['dash', 'step_strike', 'leap'], 1.2);
@@ -2412,7 +2414,14 @@
                         else if (state.comboStep === 'shoulder_bash') dashSpeed = 4.0;
                         else if (state.comboStep === 3) dashSpeed = 3.33;
 
-                        this.velocity.copy(forward).multiplyScalar(dashSpeed);
+                        // hold phase: holdStart 이후 이동 정지 + 포즈 고정
+                        const inHold = state.holdStart != null && state.timer >= state.holdStart;
+                        if (inHold) {
+                            this.velocity.lerp(new THREE.Vector3(0, 0, 0), Math.min(1, 20 * dt));
+                        } else {
+                            this.velocity.copy(forward).multiplyScalar(dashSpeed);
+                        }
+                        const poseSpeed = inHold ? 3 : 20;
 
                         const rotAlpha = Math.min(1, 18 * dt);
                         // root.rotation.x/y는 applyPose가 처리하므로 여기서 따로 zeroing하지 않음
@@ -2429,14 +2438,14 @@
 
                         // ── 포즈 적용 ──
                         if (state.comboStep === 'shoulder_bash') {
-                            this.applyPose(POSES.shoulder_bash, 20, dt);
+                            this.applyPose(POSES.shoulder_bash, poseSpeed, dt);
                             this.parts.neck.rotation.x = THREE.MathUtils.lerp(this.parts.neck.rotation.x, -0.5, rotAlpha);
                             this.parts.neck.rotation.y = THREE.MathUtils.lerp(this.parts.neck.rotation.y, -0.8, rotAlpha);
                             this.parts.neck.rotation.z = THREE.MathUtils.lerp(this.parts.neck.rotation.z, 0, rotAlpha);
                         } else if (state.comboStep === 3) {
                             const halfTime = state.activeEnd / 2;
                             const pose3 = state.timer < halfTime ? POSES.combo3a : POSES.combo3b;
-                            this.applyPose(pose3, state.timer < halfTime ? 18 : 28, dt);
+                            this.applyPose(pose3, inHold ? 3 : (state.timer < halfTime ? 18 : 28), dt);
                             this._updateNeckLook(dt, 18, -0.2);
                         } else {
                             const poseMap = {
@@ -2445,7 +2454,7 @@
                                 uppercut: 'uppercut', elbow: 'elbow',
                             };
                             const poseKey = poseMap[state.comboStep];
-                            if (poseKey && POSES[poseKey]) this.applyPose(POSES[poseKey], 20, dt);
+                            if (poseKey && POSES[poseKey]) this.applyPose(POSES[poseKey], poseSpeed, dt);
                             this._updateNeckLook(dt, 18, -0.2);
                         }
 
@@ -2846,6 +2855,7 @@
                 } else if (step === 'step_strike') {
                     state.comboStep = 'elbow'; // [추가] 엘보우 스트라이크
                     state.duration = 0.45; state.activeEnd = 0.25;
+                    state.holdStart = 0.16;
                     state.attackDashDist = 3.5;
                 } else if (step === 'leap') {
                     state.comboStep = 'leap';
@@ -2856,11 +2866,11 @@
                     state.attackDashDist = 6.0;
                 } else {
                     // [보정] 1, 2타 입력 시간 확장 반영 / 3, 4타 발차기 타이밍 추가
-                    if (step === 1) { state.duration = 0.60; state.activeEnd = 0.25; }
-                    else if (step === 2) { state.duration = 0.55; state.activeEnd = 0.25; }
-                    else if (step === 3) { state.duration = 0.75; state.activeEnd = 0.40; state.attackDashDist = 2.5; }
-                    else if (step === 4) { state.duration = 0.85; state.activeEnd = 0.45; state.attackDashDist = 3.0; }
-                    else { state.duration = 0.40; state.activeEnd = 0.25; }
+                    if (step === 1) { state.duration = 0.60; state.activeEnd = 0.25; state.holdStart = 0.155; }
+                    else if (step === 2) { state.duration = 0.55; state.activeEnd = 0.25; state.holdStart = 0.155; }
+                    else if (step === 3) { state.duration = 0.75; state.activeEnd = 0.40; state.holdStart = 0.248; state.attackDashDist = 2.5; }
+                    else if (step === 4) { state.duration = 0.85; state.activeEnd = 0.45; state.holdStart = 0.279; state.attackDashDist = 3.0; }
+                    else { state.duration = 0.40; state.activeEnd = 0.25; state.holdStart = 0.155; }
                 }
 
                 this._acquireTarget(state, step, ['dash', 'step_strike', 'leap', 'uppercut'], 0.6);
@@ -2936,6 +2946,9 @@
                 // ── 공격 활성 구간 ──────────────────────────────────────────
                 const rotAlpha = Math.min(1, 25 * dt);
 
+                // hold phase: holdStart 이후 이동 정지 + 포즈 고정
+                const inHold = state.holdStart != null && state.timer >= state.holdStart;
+
                 // 이동 속도
                 let dashSpeed = 3.2;
                 if (['dash', 'elbow'].includes(state.comboStep)) {
@@ -2945,7 +2958,12 @@
                 } else if ([3, 4].includes(state.comboStep)) {
                     dashSpeed = (state.attackDashDist || 2.0) / state.activeEnd;
                 }
-                this.velocity.copy(forward).multiplyScalar(dashSpeed);
+                if (inHold && state.comboStep !== 'uppercut') {
+                    this.velocity.lerp(new THREE.Vector3(0, 0, 0), Math.min(1, 20 * dt));
+                } else {
+                    this.velocity.copy(forward).multiplyScalar(dashSpeed);
+                }
+                const poseSpeed = inHold ? 3 : 25;
                 this._updateNeckLook(dt, 18, -0.2);
 
                 // ── 포즈 적용 ───────────────────────────────────────────────
@@ -2960,23 +2978,23 @@
                         : Math.PI * 2;
 
                 } else if (state.comboStep === 1) {
-                    this.applyPose(POSES.ef_combo1, 25, dt);
+                    this.applyPose(POSES.ef_combo1, poseSpeed, dt);
                     this.parts.root.position.z = L(this.parts.root.position.z, -0.4, rotAlpha);
 
                 } else if (state.comboStep === 2) {
-                    this.applyPose(POSES.ef_combo2, 25, dt);
+                    this.applyPose(POSES.ef_combo2, poseSpeed, dt);
                     this.parts.root.position.z = L(this.parts.root.position.z, -0.4, rotAlpha);
 
                 } else if (state.comboStep === 3) {
-                    this.applyPose(POSES.ef_combo3, 25, dt);
+                    this.applyPose(POSES.ef_combo3, poseSpeed, dt);
                     this.parts.root.position.z = L(this.parts.root.position.z, -0.6, rotAlpha);
 
                 } else if (state.comboStep === 4) {
-                    this.applyPose(POSES.ef_combo4, 25, dt);
+                    this.applyPose(POSES.ef_combo4, poseSpeed, dt);
                     this.parts.root.position.z = L(this.parts.root.position.z, -0.6, rotAlpha);
 
                 } else if (state.comboStep === 'elbow' || state.comboStep === 'dash') {
-                    this.applyPose(POSES.ef_elbow, 22, dt);
+                    this.applyPose(POSES.ef_elbow, poseSpeed, dt);
                 }
 
                 // ── 타격 판정 ───────────────────────────────────────────────
@@ -3408,6 +3426,7 @@
                     state.duration  = 0.65; state.activeEnd = 0.40;
                 } else if (step === 'sweep') {
                     state.duration  = 0.52; state.activeEnd = 0.30;
+                    state.holdStart = 0.186;
                     state.attackDashDist = 2.8;
                 } else if (step === 'dash') {
                     state.duration  = 0.65; state.dashEnd   = 0.28;
@@ -3416,11 +3435,11 @@
                     state.duration  = 0.85; state.dashEnd   = 0.40;
                     state.activeEnd = 0.65; state.phase = 'leap';
                 } else {
-                    if      (step === 1) { state.duration = 0.55; state.activeEnd = 0.25; }
-                    else if (step === 2) { state.duration = 0.50; state.activeEnd = 0.25; }
-                    else if (step === 3) { state.duration = 0.65; state.activeEnd = 0.38; state.attackDashDist = 1.5; }
-                    else if (step === 4) { state.duration = 0.75; state.activeEnd = 0.45; state.attackDashDist = 2.0; }
-                    else                 { state.duration = 0.45; state.activeEnd = 0.25; }
+                    if      (step === 1) { state.duration = 0.55; state.activeEnd = 0.25; state.holdStart = 0.155; }
+                    else if (step === 2) { state.duration = 0.50; state.activeEnd = 0.25; state.holdStart = 0.155; }
+                    else if (step === 3) { state.duration = 0.65; state.activeEnd = 0.38; state.holdStart = 0.236; state.attackDashDist = 1.5; }
+                    else if (step === 4) { state.duration = 0.75; state.activeEnd = 0.45; state.holdStart = 0.279; state.attackDashDist = 2.0; }
+                    else                 { state.duration = 0.45; state.activeEnd = 0.25; state.holdStart = 0.155; }
                 }
                 this._acquireTarget(state, step, ['dash', 'sweep', 'leap'], 1.0);
             }
@@ -3512,11 +3531,19 @@
                 }
 
                 // ── 공격 활성 구간 ────────────────────────────────────────────
+                // hold phase: holdStart 이후 이동 정지 + 포즈 고정 (twirl 제외)
+                const inHold = state.holdStart != null && state.timer >= state.holdStart
+                             && state.comboStep !== 'twirl';
+
                 let dashSpeed = 0;
                 if (state.comboStep === 'sweep') dashSpeed = (state.attackDashDist || 2.0) / state.activeEnd;
                 else if (state.comboStep === 'twirl') dashSpeed = 0;
-                // 콤보 1-4: 발사체이므로 제자리에서 시전 (소폭 후진으로 거리 유지)
-                this.velocity.copy(forward).multiplyScalar(dashSpeed);
+                if (inHold) {
+                    this.velocity.lerp(new THREE.Vector3(0, 0, 0), Math.min(1, 20 * dt));
+                } else {
+                    this.velocity.copy(forward).multiplyScalar(dashSpeed);
+                }
+                const poseSpeed = inHold ? 3 : 25;
                 this._updateNeckLook(dt, 18, -0.2);
 
                 // 포즈 적용
@@ -3525,15 +3552,15 @@
                     this.applyPose(POSES.wm_twirl, 20, dt);
                     this.parts.root.rotation.y = progress * Math.PI * 2;
                 } else if (state.comboStep === 1) {
-                    this.applyPose(POSES.wm_combo1, 25, dt);
+                    this.applyPose(POSES.wm_combo1, poseSpeed, dt);
                 } else if (state.comboStep === 2) {
-                    this.applyPose(POSES.wm_combo2, 25, dt);
+                    this.applyPose(POSES.wm_combo2, poseSpeed, dt);
                 } else if (state.comboStep === 3) {
-                    this.applyPose(POSES.wm_combo3, 25, dt);
+                    this.applyPose(POSES.wm_combo3, poseSpeed, dt);
                 } else if (state.comboStep === 4) {
-                    this.applyPose(POSES.wm_combo4, 25, dt);
+                    this.applyPose(POSES.wm_combo4, poseSpeed, dt);
                 } else if (state.comboStep === 'sweep') {
-                    this.applyPose(POSES.wm_sweep, 22, dt);
+                    this.applyPose(POSES.wm_sweep, poseSpeed, dt);
                 }
 
                 // 타격 판정
