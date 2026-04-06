@@ -1000,7 +1000,7 @@
          *       lHip  : { rx,ry,rz=고관절, knee=무릎X }
          * ==========================================
          */
-        const GAME_VERSION = '0.028';
+        const GAME_VERSION = '0.029';
         document.getElementById('game-version-display').textContent = 'ver ' + GAME_VERSION;
 
         const POSES = {
@@ -4341,7 +4341,10 @@
             }
         }
 
-
+        /**
+         * [추가] 투창 투사체 클래스 (+Z 정면 기준)
+         */
+        class Spear {
             constructor(scene, startPos, targetPos, game) {
                 this.scene = scene;
                 this.game = game;
