@@ -797,13 +797,13 @@
                 }
                 this.timer += dt;
 
-                if (this.parent.input.attackTriggered && this.timer > 0.05) this.inputBuffered = true;
+                if (this.parent.input.attackTriggered) this.inputBuffered = true;
 
                 this.parent.updateCombo(dt, this);
 
                 const isAdvancedFirstStrike = ['shoulder_bash', 'step_strike', 'dash', 'leap', 'uppercut', 'elbow'].includes(this.comboStep);
                 const canChain = this.inputBuffered && (isAdvancedFirstStrike || (typeof this.comboStep === 'number' && this.comboStep < this.parent.maxCombo));
-                const chainWindow = this.activeEnd ?? this.duration;
+                const chainWindow = Math.max(0, (this.activeEnd ?? this.duration) - 0.06);
 
                 if (canChain && this.timer >= chainWindow) {
                     // 입력 버퍼 있음: activeEnd 이후 즉시 다음 콤보 (recovery 스킵)
@@ -1000,7 +1000,7 @@
          *       lHip  : { rx,ry,rz=고관절, knee=무릎X }
          * ==========================================
          */
-        const GAME_VERSION = '0.023';
+        const GAME_VERSION = '0.024';
         document.getElementById('game-version-display').textContent = 'ver ' + GAME_VERSION;
 
         const POSES = {
