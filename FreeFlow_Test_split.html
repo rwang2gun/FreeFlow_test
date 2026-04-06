@@ -1008,7 +1008,7 @@
          *       lHip  : { rx,ry,rz=고관절, knee=무릎X }
          * ==========================================
          */
-        const GAME_VERSION = '0.031';
+        const GAME_VERSION = '0.032';
         document.getElementById('game-version-display').textContent = 'ver ' + GAME_VERSION;
 
         const POSES = {
@@ -5342,12 +5342,10 @@
                 if (this._fireBladeTimer <= 0 || this._fireBladeOrbiters.length === 0) return;
                 const charPos = character.mesh.position;
                 const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(character.mesh.quaternion);
-                // 가장 가까운 적 방향
+                // 캐릭터의 현재 타겟(nearestDummy)과 동일한 방향으로 발사
                 let dir = forward.clone();
-                let minDist = Infinity;
-                for (const d of this.dummies) {
-                    const dist = d.mesh.position.distanceTo(charPos);
-                    if (dist < minDist) { minDist = dist; dir = new THREE.Vector3().subVectors(d.mesh.position, charPos).setY(0).normalize(); }
+                if (character.nearestDummy) {
+                    dir = new THREE.Vector3().subVectors(character.nearestDummy.mesh.position, charPos).setY(0).normalize();
                 }
                 // 공전 중인 비검 위치에서 2발 발사
                 const N = this._fireBladeOrbiters.length;
