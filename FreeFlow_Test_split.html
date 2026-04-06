@@ -1000,7 +1000,7 @@
          *       lHip  : { rx,ry,rz=고관절, knee=무릎X }
          * ==========================================
          */
-        const GAME_VERSION = '0.025';
+        const GAME_VERSION = '0.026';
         document.getElementById('game-version-display').textContent = 'ver ' + GAME_VERSION;
 
         const POSES = {
@@ -2307,9 +2307,18 @@
                     state.activeEnd = 0.65;   // 타격 판정 종료 시점
                     state.phase     = 'leap'; // phase 초기화
                 } else {
-                    state.duration = step === 3 ? 0.65 : (step === 1 ? 0.50 : 0.40);
-                    state.activeEnd = step === 3 ? 0.45 : 0.25;
-                    state.holdStart = state.activeEnd * 0.62;
+                    if (step === 3) {
+                        // combo3a(0→0.20 진입, 0.20→0.30 hold) + combo3b(0.30→0.42 진입, 0.42→0.50 hold)
+                        state.duration  = 0.72;
+                        state.activeEnd = 0.50;
+                        state.a3Hold    = 0.20;  // combo3a hold 시작
+                        state.a3Switch  = 0.30;  // combo3b로 전환
+                        state.holdStart = 0.42;  // combo3b hold 시작
+                    } else {
+                        state.duration  = step === 1 ? 0.50 : 0.40;
+                        state.activeEnd = 0.25;
+                        state.holdStart = state.activeEnd * 0.62;
+                    }
                 }
 
                 this._acquireTarget(state, step, ['dash', 'step_strike', 'leap'], 1.2);
@@ -2414,8 +2423,11 @@
                         else if (state.comboStep === 'shoulder_bash') dashSpeed = 4.0;
                         else if (state.comboStep === 3) dashSpeed = 3.33;
 
-                        // hold phase: holdStart 이후 이동 정지 + 포즈 고정
-                        const inHold = state.holdStart != null && state.timer >= state.holdStart;
+                        // hold phase: combo3a hold 또는 holdStart 이후 포즈 고정
+                        const inHold3a = state.comboStep === 3 && state.a3Hold != null
+                                      && state.timer >= state.a3Hold && state.timer < state.a3Switch;
+                        const inHold   = inHold3a
+                                      || (state.holdStart != null && state.timer >= state.holdStart);
                         if (inHold) {
                             this.velocity.lerp(new THREE.Vector3(0, 0, 0), Math.min(1, 20 * dt));
                         } else {
@@ -2443,9 +2455,10 @@
                             this.parts.neck.rotation.y = THREE.MathUtils.lerp(this.parts.neck.rotation.y, -0.8, rotAlpha);
                             this.parts.neck.rotation.z = THREE.MathUtils.lerp(this.parts.neck.rotation.z, 0, rotAlpha);
                         } else if (state.comboStep === 3) {
-                            const halfTime = state.activeEnd / 2;
-                            const pose3 = state.timer < halfTime ? POSES.combo3a : POSES.combo3b;
-                            this.applyPose(pose3, inHold ? 3 : (state.timer < halfTime ? 18 : 28), dt);
+                            const switchT = state.a3Switch ?? state.activeEnd / 2;
+                            const pose3   = state.timer < switchT ? POSES.combo3a : POSES.combo3b;
+                            const speed3  = inHold ? 3 : (state.timer < switchT ? 18 : 28);
+                            this.applyPose(pose3, speed3, dt);
                             this._updateNeckLook(dt, 18, -0.2);
                         } else {
                             const poseMap = {
@@ -2497,8 +2510,8 @@
                     // ── 회복 페이즈: activeEnd 이후에만 실행 ─────────────
                         this.velocity.lerp(new THREE.Vector3(0, 0, 0), this.damping * dt);
                         if (this.velocity.lengthSq() < 0.01) this.velocity.set(0, 0, 0);
-                        this.applyPose(POSES.combat_recover, 10, dt);
-                        this._updateNeckLook(dt, 10, -0.2);
+                        this.applyPose(POSES.battle_idle, 6, dt);
+                        this._updateNeckLook(dt, 8, -0.2);
                     }
                 }
             }
