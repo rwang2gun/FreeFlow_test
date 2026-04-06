@@ -918,7 +918,7 @@
          *       lHip  : { rx,ry,rz=고관절, knee=무릎X }
          * ==========================================
          */
-        const GAME_VERSION = '0.016';
+        const GAME_VERSION = '0.017';
         document.getElementById('game-version-display').textContent = 'ver ' + GAME_VERSION;
 
         const POSES = {
@@ -1416,6 +1416,67 @@
         lArm:  { sx:2.8, sy:0.3, sz:0.2, ex:-0.1 },
         rHip:  { rx:-0.35, ry:0, rz:-0.18, knee:0.55 },
         lHip:  { rx:-0.35, ry:0, rz:0.18, knee:0.55 },
+    },
+    // ─── 강공격 포즈 ────────────────────────────────────────
+    // FS 폭발참: 칼 들어 올리기 차징
+    fs_charge_windup: {
+        root:  { y:0.60, rx:0.14, ry:0 },
+        waist: { rx:0.10, ry:-0.55 },
+        chest: { rx:0.06, ry:-0.42 },
+        rArm:  { sx:-0.30, sy:-1.08, sz:-0.90, ex:-0.38, wx:0.68, wy:-0.30 },
+        lArm:  { sx:0.52, sy:0.25, sz:0.40, ex:-0.72 },
+        rHip:  { rx:-0.45, ry:0, rz:-0.20, knee:0.68 },
+        lHip:  { rx:-0.88, ry:0, rz:0.18, knee:1.12 },
+    },
+    // FS 폭발참: 칼 내려찍기
+    fs_charge_slam: {
+        root:  { y:0.66, rx:0.08, ry:0 },
+        waist: { rx:0.38, ry:-0.42 },
+        chest: { rx:0.22, ry:-0.35 },
+        rArm:  { sx:1.65, sy:0.52, sz:0.78, ex:-0.22, wx:1.45, wy:-0.18 },
+        lArm:  { sx:-0.32, sy:-0.42, sz:0.35, ex:-1.05 },
+        rHip:  { rx:-0.95, ry:0.08, rz:-0.38, knee:1.42 },
+        lHip:  { rx:0.22, ry:-0.08, rz:0.42, knee:0.25 },
+    },
+    // EF 빙결 강습: 공중 도약
+    ef_charge_jump: {
+        root:  { y:0.80, rx:-0.18, ry:0 },
+        waist: { rx:-0.28, ry:0 },
+        chest: { rx:-0.18, ry:0 },
+        rArm:  { sx:2.4, sy:-0.18, sz:-0.12, ex:-0.35, wx:0, wy:0 },
+        lArm:  { sx:2.4, sy:0.18, sz:0.12, ex:-0.35 },
+        rHip:  { rx:-0.12, ry:0.05, rz:-0.1, knee:0.18 },
+        lHip:  { rx:-0.12, ry:-0.05, rz:0.1, knee:0.18 },
+    },
+    // EF 빙결 강습: 양 주먹 내려찍기
+    ef_charge_slam: {
+        root:  { y:0.52, rx:0.38, ry:0 },
+        waist: { rx:0.48, ry:0 },
+        chest: { rx:0.28, ry:0 },
+        rArm:  { sx:-1.75, sy:-0.12, sz:0.18, ex:-0.25, wx:0, wy:0 },
+        lArm:  { sx:-1.75, sy:0.12, sz:-0.18, ex:-0.25 },
+        rHip:  { rx:0.22, ry:0.08, rz:-0.14, knee:0.48 },
+        lHip:  { rx:0.22, ry:-0.08, rz:0.14, knee:0.48 },
+    },
+    // WM 폭풍수류: 마법봉 차징
+    wm_charge_windup: {
+        root:  { y:0.78, rx:-0.15, ry:0 },
+        waist: { rx:-0.35, ry:0 },
+        chest: { rx:-0.45, ry:0 },
+        rArm:  { sx:2.8, sy:-0.3, sz:-0.2, ex:-0.1, wx:0.2, wy:0.1 },
+        lArm:  { sx:2.8, sy:0.3, sz:0.2, ex:-0.1 },
+        rHip:  { rx:-0.35, ry:0, rz:-0.18, knee:0.55 },
+        lHip:  { rx:-0.35, ry:0, rz:0.18, knee:0.55 },
+    },
+    // WM 폭풍수류: 수류 발사
+    wm_charge_fire: {
+        root:  { y:0.74, rx:0.10, ry:0 },
+        waist: { rx:0.18, ry:0 },
+        chest: { rx:0.12, ry:0 },
+        rArm:  { sx:0.62, sy:-0.22, sz:-0.12, ex:-1.15, wx:0.3, wy:0 },
+        lArm:  { sx:0.62, sy:0.22, sz:0.12, ex:-1.15 },
+        rHip:  { rx:-0.30, ry:0, rz:-0.15, knee:0.50 },
+        lHip:  { rx:-0.30, ry:0, rz:0.15, knee:0.50 },
     },
     };
 
@@ -2375,8 +2436,8 @@
                 }
 
                 if (state.timer < state.windupEnd) {
-                    // 칼 들어 올리기 — fs_skill_draw 포즈 유지
-                    this.applyPose(POSES.fs_skill_draw, 14, dt);
+                    // 칼 들어 올리기
+                    this.applyPose(POSES.fs_charge_windup, 14, dt);
                     this._updateNeckLook(dt, 14, -0.5);
                     // 차징 중 칼 점점 빨갛게 발광
                     if (this.swordMat) {
@@ -2384,8 +2445,8 @@
                         this.swordMat.emissiveIntensity = t * 3.0;
                     }
                 } else {
-                    // 내려찍기 — fs_skill_reverse 포즈
-                    this.applyPose(POSES.fs_skill_reverse, 35, dt);
+                    // 내려찍기
+                    this.applyPose(POSES.fs_charge_slam, 35, dt);
                     this._updateNeckLook(dt, 20, -0.15);
                 }
 
@@ -2908,15 +2969,15 @@
                 }
 
                 if (state.timer < state.jumpEnd) {
-                    // 도약 상승 — windup 포즈 + 루트 살짝 위로
-                    this.applyPose(POSES.ef_ult_jump, 18, dt);
+                    // 도약 상승
+                    this.applyPose(POSES.ef_charge_jump, 18, dt);
                     this._updateNeckLook(dt, 15, -0.6);
                     this.parts.root.position.y += dt * 3.5;
                     // 주먹 발광 점점 강하게
                     if (this.fistMat) this.fistMat.emissiveIntensity = (state.timer / state.jumpEnd) * 1.5;
                 } else {
-                    // 내려찍기 — slam 포즈 + 루트 빠르게 원위치
-                    this.applyPose(POSES.ef_ult_slam, 40, dt);
+                    // 내려찍기
+                    this.applyPose(POSES.ef_charge_slam, 40, dt);
                     this._updateNeckLook(dt, 20, -0.1);
                     this.parts.root.position.y = THREE.MathUtils.lerp(this.parts.root.position.y, 0, 20 * dt);
                 }
@@ -3478,8 +3539,8 @@
                 }
 
                 if (state.timer < state.chargeEnd) {
-                    // 차징 포즈 — wm_ult_charge
-                    this.applyPose(POSES.wm_ult_charge, 12, dt);
+                    // 차징 포즈
+                    this.applyPose(POSES.wm_charge_windup, 12, dt);
                     this._updateNeckLook(dt, 14, -0.5);
                     // 마법봉 오브 강렬하게 발광 (물방울이 모이는 느낌)
                     if (this.wandOrbMat) {
@@ -3496,7 +3557,7 @@
                         this.game.spawnShockwaveRing(this.mesh.position, 2.5, 0x44aaff);
                     }
                 } else {
-                    this.applyPose(POSES.wm_skill_vortex, 30, dt);
+                    this.applyPose(POSES.wm_charge_fire, 30, dt);
                     this._updateNeckLook(dt, 20, -0.2);
                     if (this.wandOrbMat) this.wandOrbMat.emissiveIntensity = THREE.MathUtils.lerp(this.wandOrbMat.emissiveIntensity, 1.0, 10 * dt);
                 }
