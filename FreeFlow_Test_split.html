@@ -840,15 +840,7 @@
                 this.timer += dt;
                 this.parent.executeSkill(dt, this);
                 if (this.timer >= this.duration) {
-                    // 스킬 완료 후 대기 중인 교체가 있으면 퇴장 시작
-                    const game = this.parent.game;
-                    if (game._pendingSwapType) {
-                        const type = game._pendingSwapType;
-                        game._pendingSwapType = null;
-                        game._beginSwapOut(type);
-                    } else {
-                        this.parent.stateMachine.changeState('idle');
-                    }
+                    this.parent.stateMachine.changeState('idle');
                 }
             }
             exit() {
@@ -874,14 +866,7 @@
                 this.timer += dt;
                 this.parent.executeUltimate(dt, this);
                 if (this.timer >= this.duration) {
-                    const game = this.parent.game;
-                    if (game._pendingSwapType) {
-                        const type = game._pendingSwapType;
-                        game._pendingSwapType = null;
-                        game._beginSwapOut(type);
-                    } else {
-                        this.parent.stateMachine.changeState('idle');
-                    }
+                    this.parent.stateMachine.changeState('idle');
                 }
             }
             exit() {
@@ -938,7 +923,13 @@
                     this.parent.lerpJoint(this.parent.parts.leftArm.shoulder,  new THREE.Vector3(-1.2, 0.2, 0.4), L);
                     this.parent.lerpJoint(this.parent.parts.rightArm.shoulder, new THREE.Vector3( 0.5, 0,  -0.6), L);
                 } else {
-                    this.parent.game._completeSwap();
+                    // lingering 캐릭터(스킬 잔류)면 숨기기만, 아니면 교체 완료
+                    const lc = this.parent.game._lingeringChars;
+                    if (lc && lc.includes(this.parent)) {
+                        this.parent.mesh.visible = false;
+                    } else {
+                        this.parent.game._completeSwap();
+                    }
                 }
             }
             exit() { this.parent.velocity.set(0, 0, 0); }
@@ -992,7 +983,7 @@
          *       lHip  : { rx,ry,rz=고관절, knee=무릎X }
          * ==========================================
          */
-        const GAME_VERSION = '0.019';
+        const GAME_VERSION = '0.020';
         document.getElementById('game-version-display').textContent = 'ver ' + GAME_VERSION;
 
         const POSES = {
@@ -4774,12 +4765,35 @@
                     this.addScore(0, `SWITCH: ${type}`, curPos.clone().add(new THREE.Vector3(0, 2, 0)));
                 }
 
-                // 스킬/궁극기 사용 중 → 완료 후 교체 예약
+                // 스킬/궁극기 사용 중 → 구 캐릭터는 필드에 남아 스킬 계속, 신 캐릭터 즉시 진입
                 if (prevState && (prevState.name === 'skill' || prevState.name === 'ultimate')) {
-                    this._pendingSwapType = type;
+                    if (!this._lingeringChars) this._lingeringChars = [];
+                    this._lingeringChars.push(this.character);
+
+                    const oldPos  = this.character.mesh.position.clone();
+                    const oldQuat = this.character.mesh.quaternion.clone();
+
+                    if (type === 'FS')      this.character = this.characterFS;
+                    else if (type === 'EF') this.character = this.characterEF;
+                    else                    this.character = this.characterWM;
+
+                    this.character.mesh.position.copy(oldPos);
+                    this.character.mesh.quaternion.copy(oldQuat);
+                    this.character.mesh.visible = true;
+                    this.cameraRig.target = this.character;
+                    this.triggerImpact(0.05, 0.12);
+
+                    if (this._pendingSwapPerfect) {
+                        this.character.update(0);
+                        this.character.stateMachine.changeState('attack');
+                        this._pendingSwapPerfect = false;
+                    } else {
+                        this.character.stateMachine.changeState('swapIn');
+                    }
                     return;
                 }
 
+                // 일반 상태 → 백대시 퇴장 후 진입
                 this._beginSwapOut(type);
             }
 
@@ -5023,8 +5037,12 @@
             // [수정] 게임 재시작 메서드 (showStartMenu 옵션 추가)
             resetGame(showStartMenu = false) {
                 this.isGameOver = false;
-                this.score = 0; // [추가] 점수 초기화
-                this.totalPlayerHits = 0; // [수정] 통합 피격 횟수 초기화
+                this.score = 0;
+                this.totalPlayerHits = 0;
+                this._lingeringChars = [];
+                this._isSwapping = false;
+                this._pendingSwapType = null;
+                this._pendingSwapPerfect = false;
                 // 모든 캐릭터 초기화 (비활성 캐릭터 포함)
                 [this.characterFS, this.characterEF, this.characterWM].forEach(c => {
                     c.mesh.position.set(0, 0, 0);
@@ -5343,6 +5361,27 @@
                 if (!gamePaused) {
                     for (let d of this.dummies) d.update(enemyDt, this);
                     this.character.update(charDt);
+
+                    // ── lingering 캐릭터 업데이트 (스킬/궁극기 잔류) ──
+                    if (this._lingeringChars) {
+                        for (let i = this._lingeringChars.length - 1; i >= 0; i--) {
+                            const lc = this._lingeringChars[i];
+                            // 스킬/궁극기 실행 중 → 자율 업데이트
+                            lc.stateMachine.update(charDt);
+                            lc.mesh.position.add(lc.velocity.clone().multiplyScalar(charDt));
+                            // 스킬/궁극기 종료 → 백대시 퇴장
+                            const sn = lc.stateMachine.currentState.name;
+                            if (sn !== 'skill' && sn !== 'ultimate' && sn !== 'swapOut') {
+                                lc.stateMachine.changeState('swapOut');
+                            }
+                            // 퇴장 완료(mesh.visible=false) → 리스트에서 제거
+                            if (!lc.mesh.visible) {
+                                lc.stateMachine.changeState('idle');
+                                this._lingeringChars.splice(i, 1);
+                            }
+                        }
+                    }
+
                     // 비활성 캐릭터도 스킬 쿨다운 감소
                     for (const c of [this.characterFS, this.characterEF, this.characterWM]) {
                         if (c !== this.character && c.skillCooldown > 0) c.skillCooldown -= charDt;
