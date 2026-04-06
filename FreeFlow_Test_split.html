@@ -1008,7 +1008,7 @@
          *       lHip  : { rx,ry,rz=고관절, knee=무릎X }
          * ==========================================
          */
-        const GAME_VERSION = '0.032';
+        const GAME_VERSION = '0.033';
         document.getElementById('game-version-display').textContent = 'ver ' + GAME_VERSION;
 
         const POSES = {
@@ -2548,6 +2548,7 @@
                 state.duration = 0.7;
                 state.blastAt  = 0.12;
                 state.blastDone = false;
+                state.lockedTarget = this.nearestDummy; // 발동 시점 타겟 고정
                 const badge = document.getElementById('attack-name-badge');
                 if (badge) { badge.innerText = '폭발참'; badge.style.display = 'block'; }
                 clearTimeout(this._attackNameBadgeTimer);
@@ -2555,8 +2556,23 @@
             }
 
             executeChargeAttack(dt, state) {
-                this.velocity.set(0, 0, 0);
-                this._lookAtNearest(dt);
+                // 고정된 타겟 방향으로 빠르게 회전 + 짧은 전진
+                const target = state.lockedTarget;
+                if (target && !target.isDead) {
+                    const toT = new THREE.Vector3().subVectors(target.mesh.position, this.mesh.position).setY(0);
+                    if (toT.lengthSq() > 0.001) {
+                        const q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0), Math.atan2(toT.x, toT.z));
+                        this.mesh.quaternion.slerp(q, Math.min(1, 18 * dt));
+                        const dist = toT.length();
+                        if (dist > 1.5) {
+                            this.velocity.copy(toT.normalize()).multiplyScalar(6.0);
+                        } else {
+                            this.velocity.set(0, 0, 0);
+                        }
+                    }
+                } else {
+                    this.velocity.set(0, 0, 0);
+                }
                 this.applyPose(POSES.fs_charge_slam, 35, dt);
                 this._updateNeckLook(dt, 20, -0.15);
 
@@ -3084,6 +3100,7 @@
                 state.jumpEnd   = 0.18;
                 state.slamAt    = 0.28;
                 state.blastDone = false;
+                state.lockedTarget = this.nearestDummy;
                 const badge = document.getElementById('attack-name-badge');
                 if (badge) { badge.innerText = '빙결 강습'; badge.style.display = 'block'; }
                 clearTimeout(this._attackNameBadgeTimer);
@@ -3091,7 +3108,22 @@
             }
 
             executeChargeAttack(dt, state) {
-                this.velocity.set(0, 0, 0);
+                // 고정 타겟 추적: 회전 + 점프 전 전진
+                const target = state.lockedTarget;
+                if (target && !target.isDead) {
+                    const toT = new THREE.Vector3().subVectors(target.mesh.position, this.mesh.position).setY(0);
+                    if (toT.lengthSq() > 0.001) {
+                        const q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0), Math.atan2(toT.x, toT.z));
+                        this.mesh.quaternion.slerp(q, Math.min(1, 18 * dt));
+                        if (state.timer < state.jumpEnd && toT.length() > 1.2) {
+                            this.velocity.copy(toT.normalize()).multiplyScalar(7.0);
+                        } else {
+                            this.velocity.set(0, 0, 0);
+                        }
+                    }
+                } else {
+                    this.velocity.set(0, 0, 0);
+                }
                 if (state.timer < state.jumpEnd) {
                     this.applyPose(POSES.ef_charge_jump, 18, dt);
                     this._updateNeckLook(dt, 15, -0.6);
@@ -3668,6 +3700,7 @@
                 state.duration = 0.55;
                 state.fireAt   = 0.05;
                 state.fireDone = false;
+                state.lockedTarget = this.nearestDummy;
                 const badge = document.getElementById('attack-name-badge');
                 if (badge) { badge.innerText = '폭풍수류'; badge.style.display = 'block'; }
                 clearTimeout(this._attackNameBadgeTimer);
@@ -3676,6 +3709,15 @@
 
             executeChargeAttack(dt, state) {
                 this.velocity.set(0, 0, 0);
+                // 고정 타겟 방향으로 빠르게 회전 (발사체가 mesh 방향을 참조하므로 회전만으로 충분)
+                const target = state.lockedTarget;
+                if (target && !target.isDead) {
+                    const toT = new THREE.Vector3().subVectors(target.mesh.position, this.mesh.position).setY(0);
+                    if (toT.lengthSq() > 0.001) {
+                        const q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0), Math.atan2(toT.x, toT.z));
+                        this.mesh.quaternion.slerp(q, Math.min(1, 20 * dt));
+                    }
+                }
                 this.applyPose(POSES.wm_charge_fire, 30, dt);
                 this._updateNeckLook(dt, 20, -0.2);
                 if (this.wandOrbMat) this.wandOrbMat.emissiveIntensity = THREE.MathUtils.lerp(this.wandOrbMat.emissiveIntensity, 1.0, 10 * dt);
