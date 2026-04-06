@@ -999,7 +999,7 @@
          *       lHip  : { rx,ry,rz=고관절, knee=무릎X }
          * ==========================================
          */
-        const GAME_VERSION = '0.021';
+        const GAME_VERSION = '0.022';
         document.getElementById('game-version-display').textContent = 'ver ' + GAME_VERSION;
 
         const POSES = {
@@ -2414,8 +2414,8 @@
                         this.velocity.copy(forward).multiplyScalar(dashSpeed);
 
                         const rotAlpha = Math.min(1, 18 * dt);
-                        this.parts.root.rotation.x = THREE.MathUtils.lerp(this.parts.root.rotation.x, 0, rotAlpha);
-                        this.parts.root.rotation.y = THREE.MathUtils.lerp(this.parts.root.rotation.y, 0, rotAlpha);
+                        // root.rotation.x/y는 applyPose가 처리하므로 여기서 따로 zeroing하지 않음
+                        // (이중 lerp 시 pose.root.ry 목표값에 수렴하지 못하는 버그 방지)
                         this.parts.waist.rotation.y = THREE.MathUtils.lerp(this.parts.waist.rotation.y, 0, rotAlpha);
                         this.parts.rightLeg.hip.rotation.y = THREE.MathUtils.lerp(this.parts.rightLeg.hip.rotation.y, 0, rotAlpha);
                         this.parts.leftLeg.hip.rotation.y = THREE.MathUtils.lerp(this.parts.leftLeg.hip.rotation.y, 0, rotAlpha);
