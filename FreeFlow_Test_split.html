@@ -1000,7 +1000,7 @@
          *       lHip  : { rx,ry,rz=고관절, knee=무릎X }
          * ==========================================
          */
-        const GAME_VERSION = '0.026';
+        const GAME_VERSION = '0.027';
         document.getElementById('game-version-display').textContent = 'ver ' + GAME_VERSION;
 
         const POSES = {
@@ -2072,17 +2072,17 @@
             // ── 스킬: 질풍참 (FS 전용) ────────────────────────────────
             // 구조: 후퇴 선모션 → 고속 관통 돌진 → 180° 전환 → 역베기 → 여운
             setupSkill(state) {
-                state.duration    = 0.82;  // 총 지속시간
-                state.drawEnd     = 0.16;  // 후퇴 선모션 종료
-                state.dashEnd     = 0.44;  // 관통 돌진 종료
-                state.reverseEnd  = 0.66;  // 역베기 종료
-                state.hitEnemies  = new Set();   // 관통 히트 중복 방지
-                state.hitEnemies2 = new Set();   // 역베기 히트 중복 방지
-                state.pivoted     = false;       // 180° 전환 여부
-                state.slowDone    = false;       // 슬로우모 발동 여부
+                state.duration   = 1.15;  // 총 지속시간
+                state.drawEnd    = 0.18;  // ① 준비 종료
+                state.slashEnd   = 0.38;  // ② 1차 베기 종료
+                state.aoeAt      = 0.60;  // ③ 공중 AoE 발동 (최고점)
+                state.airEnd     = 0.82;  // ③ 백덤블링 종료
+                state.landEnd    = 1.00;  // ④ 착지 완료
+                state.hitEnemies = new Set();
+                state.aoeDone    = false;
+                state.slowDone   = false;
                 this.skillCooldown = this.maxSkillCooldown;
 
-                // 가장 가까운 적 방향으로 회전
                 if (this.nearestDummy) {
                     const dir = new THREE.Vector3().subVectors(this.nearestDummy.mesh.position, this.mesh.position).setY(0);
                     if (dir.lengthSq() > 0.001) {
@@ -2098,71 +2098,71 @@
 
             executeSkill(dt, state) {
                 const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(this.mesh.quaternion);
+                const L = THREE.MathUtils.lerp;
 
                 if (state.timer < state.drawEnd) {
-                    // ① 선모션: 검을 낮게 당기며 반보 후퇴
+                    // ① 준비: 검 낮게 당기며 반보 후퇴
                     this.applyPose(POSES.fs_skill_draw, 32, dt);
-                    this.velocity.copy(forward).multiplyScalar(-4.0);
+                    this.velocity.copy(forward).multiplyScalar(-3.0);
 
-                } else if (state.timer < state.dashEnd) {
-                    // ② 관통 돌진: 고속 전진 + 광범위 수평 베기
+                } else if (state.timer < state.slashEnd) {
+                    // ② 1차 베기: 고속 전진 + 수평 베기
                     this.applyPose(POSES.fs_skill, 36, dt);
-                    this.velocity.copy(forward).multiplyScalar(16.0);
+                    this.velocity.copy(forward).multiplyScalar(14.0);
 
                     for (const d of this.game.dummies) {
                         if (state.hitEnemies.has(d)) continue;
                         const toD = new THREE.Vector3().subVectors(d.mesh.position, this.mesh.position).setY(0);
                         const dist = toD.length();
                         if (dist < 2.4 + d.radius && dist > 0.001) {
-                            const angle = Math.acos(Math.min(1, forward.dot(toD.clone().normalize())));
-                            if (angle < Math.PI * 0.65) { // ~117° 전방
-                                if (!state.slowDone) {
-                                    this.game.triggerSlowMo(0.12, 1.2);
-                                    state.slowDone = true;
-                                }
-                                d.takeDamage(true, false, 15.0, forward.clone().multiplyScalar(4), 20);
-                                this.game.addScore(12, "PIERCE!", d.mesh.position);
-                                this.game.triggerImpact(0.06, 0.22);
+                            if (Math.acos(Math.min(1, forward.dot(toD.clone().normalize()))) < Math.PI * 0.65) {
+                                if (!state.slowDone) { this.game.triggerSlowMo(0.12, 1.0); state.slowDone = true; }
+                                d.takeDamage(true, false, 12.0, forward.clone().multiplyScalar(3), 20);
+                                this.game.addScore(12, "SLASH!", d.mesh.position);
+                                this.game.triggerImpact(0.05, 0.18);
                                 state.hitEnemies.add(d);
                             }
                         }
                     }
 
-                } else if (!state.pivoted) {
-                    // ③ 180° 피벗: 한 프레임에 방향 전환
-                    state.pivoted = true;
-                    this.mesh.quaternion.multiply(
-                        new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI)
-                    );
-                    this.velocity.set(0, 0, 0);
-                    // 역베기 포즈로 즉시 전환
-                    this.applyPose(POSES.fs_skill_reverse, 40, dt);
+                } else if (state.timer < state.airEnd) {
+                    // ③ 백덤블링: 후방 도약 + 공중 회전 + 주변 AoE
+                    const airP = (state.timer - state.slashEnd) / (state.airEnd - state.slashEnd);
+                    const jumpArc = Math.sin(airP * Math.PI) * 3.2;
+                    const backSpeed = Math.cos(airP * Math.PI * 0.5) * 7.0; // 이탈 후 감속
 
-                } else if (state.timer < state.reverseEnd) {
-                    // ④ 역베기: 전환 후 짧은 돌진 + 올려치기
-                    const revForward = new THREE.Vector3(0, 0, 1).applyQuaternion(this.mesh.quaternion);
-                    this.applyPose(POSES.fs_skill_reverse, 30, dt);
-                    this.velocity.copy(revForward).multiplyScalar(5.0);
+                    this.applyPose(POSES.fs_skill_reverse, 16, dt);
+                    this.velocity.copy(forward).multiplyScalar(-backSpeed);
+                    this.parts.root.position.y = 0.72 + jumpArc;
+                    this.parts.root.rotation.x = -airP * Math.PI * 2.0; // 1회전 백플립
 
-                    for (const d of this.game.dummies) {
-                        if (state.hitEnemies2.has(d)) continue;
-                        const toD = new THREE.Vector3().subVectors(d.mesh.position, this.mesh.position).setY(0);
-                        const dist = toD.length();
-                        if (dist < 2.2 + d.radius && dist > 0.001) {
-                            const angle = Math.acos(Math.min(1, revForward.dot(toD.clone().normalize())));
-                            if (angle < Math.PI * 0.6) {
-                                d.takeDamage(true, true, 18.0, revForward.clone().multiplyScalar(5), 35);
-                                this.game.addScore(15, "FINISH!", d.mesh.position);
-                                this.game.triggerImpact(0.08, 0.28);
-                                state.hitEnemies2.add(d);
+                    // 최고점 도달 시 주변 360° AoE
+                    if (state.timer >= state.aoeAt && !state.aoeDone) {
+                        state.aoeDone = true;
+                        for (const d of this.game.dummies) {
+                            const dist = d.mesh.position.distanceTo(this.mesh.position);
+                            if (dist < 4.5 + d.radius) {
+                                const burst = new THREE.Vector3().subVectors(d.mesh.position, this.mesh.position).setY(0).normalize();
+                                d.takeDamage(true, false, 10.0, burst.multiplyScalar(6), 28);
+                                this.game.addScore(15, "BURST!", d.mesh.position);
                             }
                         }
+                        this.game.triggerSlowMo(0.10, 0.6);
+                        this.game.triggerImpact(0.08, 0.32);
                     }
 
+                } else if (state.timer < state.landEnd) {
+                    // ④ 착지: 지면 착지 + skill_release 포즈
+                    const landP = (state.timer - state.airEnd) / (state.landEnd - state.airEnd);
+                    this.applyPose(POSES.fs_skill_release, 28, dt);
+                    this.parts.root.position.y = L(0.72, 0.63, landP);
+                    this.parts.root.rotation.x = L(this.parts.root.rotation.x, 0, Math.min(1, 18 * dt));
+                    this.velocity.lerp(new THREE.Vector3(), Math.min(1, 14 * dt));
+
                 } else {
-                    // ⑤ 여운: 급제동
-                    this.applyPose(POSES.fs_skill_reverse, 10, dt);
-                    this.velocity.lerp(new THREE.Vector3(), 18 * dt);
+                    // ⑤ 여운: battle_idle로 복귀
+                    this.applyPose(POSES.battle_idle, 6, dt);
+                    this.velocity.lerp(new THREE.Vector3(), Math.min(1, 18 * dt));
                 }
 
                 this._updateNeckLook(dt, 22, -0.3);
