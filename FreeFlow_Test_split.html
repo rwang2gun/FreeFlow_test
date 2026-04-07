@@ -1008,7 +1008,7 @@
          *       lHip  : { rx,ry,rz=고관절, knee=무릎X }
          * ==========================================
          */
-        const GAME_VERSION = '0.039';
+        const GAME_VERSION = '0.040';
         document.getElementById('game-version-display').textContent = 'ver ' + GAME_VERSION;
 
         const POSES = {
@@ -1122,24 +1122,6 @@
         lArm:  { sx:-1.72, sy:-1.62, sz:-0.08, ex:-0.6 },
         rHip:  { rx:-2, ry:0, rz:-0.61, knee:1.85 },
         lHip:  { rx:-2, ry:0, rz:0.73, knee:1.25 },
-    },
-    uppercut: {
-        root:  { y: 0.72, rx: 0,    ry: 0 },
-        waist: { rx: -0.3, ry: 0.6 },
-        chest: { rx: -0.4, ry: 0.5 },
-        rArm:  { sx: 2.0,  sy: 0,  sz: 0.5,  ex: 1.0,  wx: 0.5, wy: 0 },
-        lArm:  { sx: 0.3,  sy: 0,  sz: -0.3, ex: -0.3 },
-        rHip:  { rx: -0.3, ry: 0,  rz: 0,    knee: 0.5 },
-        lHip:  { rx: 0.3,  ry: 0,  rz: 0,    knee: 0.2 },
-    },
-    elbow: {
-        root:  { y:0.5, rx:0.55, ry:-1.39 },
-        waist: { rx:-0.05, ry:-0.43 },
-        chest: { rx:-0.04, ry:0.47 },
-        rArm:  { sx:-1.31, sy:1.44, sz:-0.97, ex:-1.73, wx:0.09, wy:-0.09 },
-        lArm:  { sx:-1.02, sy:-0.62, sz:1.08, ex:-2 },
-        rHip:  { rx:-0.12, ry:-0.22, rz:-0.37, knee:0.31 },
-        lHip:  { rx:-1.52, ry:-0.96, rz:1, knee:1.99 },
     },
             // ─── 전투 대기 (PoseEditor 연동) ──────────────
     battle_idle: {
