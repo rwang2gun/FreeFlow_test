@@ -1008,7 +1008,7 @@
          *       lHip  : { rx,ry,rz=고관절, knee=무릎X }
          * ==========================================
          */
-        const GAME_VERSION = '0.033';
+        const GAME_VERSION = '0.034';
         document.getElementById('game-version-display').textContent = 'ver ' + GAME_VERSION;
 
         const POSES = {
@@ -1437,6 +1437,15 @@
     },
     // EF 지진파: 지면 강타 순간 포즈
     ef_skill_slam: {
+        root:  { y:0.4, rx:0.06, ry:0.09 },
+        waist: { rx:0.98, ry:0.05 },
+        chest: { rx:0.9, ry:-0.09 },
+        rArm:  { sx:-1.54, sy:1.23, sz:-0.07, ex:-0.53, wx:-0.16, wy:0 },
+        lArm:  { sx:-1.85, sy:-1.14, sz:-0.22, ex:-0.49 },
+        rHip:  { rx:-2, ry:0.67, rz:-1, knee:1.81 },
+        lHip:  { rx:-2, ry:-0.64, rz:1, knee:1.6 },
+    },
+    ef_ult_land: {  // 궁극기 착지 포즈 (스킬 slam과 동일한 초기값, 독립 편집 가능)
         root:  { y:0.4, rx:0.06, ry:0.09 },
         waist: { rx:0.98, ry:0.05 },
         chest: { rx:0.9, ry:-0.09 },
@@ -2624,12 +2633,20 @@
                 this.parts.waistMesh.material = yellowMat;
                 this.parts.pelvisMesh.material = yellowMat;
 
-                // 팔과 종아리는 독립 fistMat(피부색), 허벅지는 의상색(노란색)
-                this.fistMat = new THREE.MeshLambertMaterial({ color: 0xffdbac }); // 기본 피부색
+                // 팔(상완·전완)은 피부색 fistMat, 손 메시는 속성 이펙트용 handMat으로 분리
+                this.fistMat = new THREE.MeshLambertMaterial({ color: 0xffdbac });
                 this.parts.rightArm.upperArmMesh.material = this.fistMat;
-                this.parts.rightArm.forearmMesh.material = this.fistMat;
-                this.parts.leftArm.upperArmMesh.material = this.fistMat;
-                this.parts.leftArm.forearmMesh.material = this.fistMat;
+                this.parts.rightArm.forearmMesh.material  = this.fistMat;
+                this.parts.leftArm.upperArmMesh.material  = this.fistMat;
+                this.parts.leftArm.forearmMesh.material   = this.fistMat;
+
+                // 손(주먹) 메시만 따로 관리 — wrist 자식 중 첫 번째 Mesh
+                this.handMat = new THREE.MeshLambertMaterial({ color: 0xffdbac });
+                const findHand = (wrist) => wrist.children.find(c => c.isMesh) || null;
+                this._rightHandMesh = findHand(this.parts.rightArm.wrist);
+                this._leftHandMesh  = findHand(this.parts.leftArm.wrist);
+                if (this._rightHandMesh) this._rightHandMesh.material = this.handMat;
+                if (this._leftHandMesh)  this._leftHandMesh.material  = this.handMat;
                 this.parts.rightLeg.thighMesh.material = yellowMat;
                 this.parts.rightLeg.calfMesh.material = skinMat;
                 this.parts.leftLeg.thighMesh.material = yellowMat;
@@ -2644,14 +2661,16 @@
                 this.maxSkillCooldown = 8;
             }
 
-            // 속성 모드 전환: 얼음 속성 (스킬/궁극기 시 주먹 색상 변경)
+            // 속성 모드 전환: 주먹에 얼음 기운 집중 (팔 색 유지, 손 메시만 변경)
             setElementalMode(on) {
-                if (this.fistMat) {
-                    this.fistMat.color.setHex(on ? 0x88ccff : 0xffdbac);
-                    this.fistMat.emissive = this.fistMat.emissive || new THREE.Color();
-                    this.fistMat.emissive.setHex(on ? 0x2266aa : 0x000000);
-                    this.fistMat.emissiveIntensity = on ? 0.6 : 0;
+                if (this.handMat) {
+                    this.handMat.color.setHex(on ? 0x88ccff : 0xffdbac);
+                    this.handMat.emissive.setHex(on ? 0x2266aa : 0x000000);
+                    this.handMat.emissiveIntensity = on ? 1.2 : 0;
                 }
+                const s = on ? 1.35 : 1.0;
+                if (this._rightHandMesh) this._rightHandMesh.scale.setScalar(s);
+                if (this._leftHandMesh)  this._leftHandMesh.scale.setScalar(s);
             }
 
             // ── 스킬: 지진파 (EF 전용, 지면 3연타 AOE) ──────────────
@@ -2755,7 +2774,7 @@
                             }
                         }
                     }
-                    this.applyPose(POSES.ef_skill_slam, 6, dt);
+                    this.applyPose(POSES.ef_ult_land, 6, dt);
                     this._updateNeckLook(dt, 8, -0.2);
                 }
             }
