@@ -1008,7 +1008,7 @@
          *       lHip  : { rx,ry,rz=고관절, knee=무릎X }
          * ==========================================
          */
-        const GAME_VERSION = '0.037';
+        const GAME_VERSION = '0.038';
         document.getElementById('game-version-display').textContent = 'ver ' + GAME_VERSION;
 
         const POSES = {
@@ -1506,15 +1506,15 @@
         rHip:  { rx:0.22, ry:0.08, rz:-0.14, knee:0.48 },
         lHip:  { rx:0.22, ry:-0.08, rz:0.14, knee:0.48 },
     },
-    // WM 성좌붕괴: 마력 차지 중 포즈 (더 깊은 후굴, 양팔 더 높이 — 궁극기 위압감 강조)
+    // WM 성좌붕괴: 마력 차지 중 포즈
     wm_ult_charge: {
-        root:  { y:0.82, rx:-0.22, ry:0 },
-        waist: { rx:-0.40, ry:0 },
-        chest: { rx:-0.52, ry:0 },
-        rArm:  { sx:3.0, sy:-0.28, sz:-0.18, ex:-0.08, wx:0.25, wy:0.1 },
-        lArm:  { sx:3.0, sy:0.28, sz:0.18, ex:-0.08 },
-        rHip:  { rx:-0.40, ry:0, rz:-0.20, knee:0.60 },
-        lHip:  { rx:-0.40, ry:0, rz:0.20, knee:0.60 },
+        root:  { y:0.78, rx:-0.15, ry:0 },
+        waist: { rx:-0.35, ry:0 },
+        chest: { rx:-0.45, ry:0 },
+        rArm:  { sx:2.8, sy:-0.3, sz:-0.2, ex:-0.1, wx:0.2, wy:0.1 },
+        lArm:  { sx:2.8, sy:0.3, sz:0.2, ex:-0.1 },
+        rHip:  { rx:-0.35, ry:0, rz:-0.18, knee:0.55 },
+        lHip:  { rx:-0.35, ry:0, rz:0.18, knee:0.55 },
     },
     // ─── 강공격 포즈 ────────────────────────────────────────
     // FS 폭발참: 칼 들어 올리기 차징
@@ -1557,25 +1557,25 @@
         rHip:  { rx:-0.16, ry:0.31, rz:0.11, knee:0 },
         lHip:  { rx:-1.31, ry:0.01, rz:0, knee:1.57 },
     },
-    // WM 폭풍수류: 마법봉 차징 (강공격 예비 동작 — 팔 조금 낮고 살짝 앞쏠림)
+    // WM 폭풍수류: 마법봉 차징
     wm_charge_windup: {
-        root:  { y:0.76, rx:-0.10, ry:0 },
-        waist: { rx:-0.28, ry:0 },
-        chest: { rx:-0.38, ry:0 },
-        rArm:  { sx:2.6, sy:-0.35, sz:-0.25, ex:-0.12, wx:0.18, wy:0.08 },
-        lArm:  { sx:2.6, sy:0.35, sz:0.25, ex:-0.12 },
-        rHip:  { rx:-0.30, ry:0, rz:-0.15, knee:0.48 },
-        lHip:  { rx:-0.30, ry:0, rz:0.15, knee:0.48 },
+        root:  { y:0.78, rx:-0.15, ry:0 },
+        waist: { rx:-0.35, ry:0 },
+        chest: { rx:-0.45, ry:0 },
+        rArm:  { sx:2.8, sy:-0.3, sz:-0.2, ex:-0.1, wx:0.2, wy:0.1 },
+        lArm:  { sx:2.8, sy:0.3, sz:0.2, ex:-0.1 },
+        rHip:  { rx:-0.35, ry:0, rz:-0.18, knee:0.55 },
+        lHip:  { rx:-0.35, ry:0, rz:0.18, knee:0.55 },
     },
-    // WM 폭풍수류: 수류 발사 (강공격 방출 — 앞으로 더 강하게 밀어내는 자세)
+    // WM 폭풍수류: 수류 발사
     wm_charge_fire: {
-        root:  { y:0.72, rx:0.16, ry:0 },
-        waist: { rx:0.24, ry:0 },
-        chest: { rx:0.18, ry:0 },
-        rArm:  { sx:0.48, sy:-0.18, sz:-0.10, ex:-1.28, wx:0.35, wy:0 },
-        lArm:  { sx:0.48, sy:0.18, sz:0.10, ex:-1.28 },
-        rHip:  { rx:-0.25, ry:0, rz:-0.12, knee:0.44 },
-        lHip:  { rx:-0.25, ry:0, rz:0.12, knee:0.44 },
+        root:  { y:0.74, rx:0.10, ry:0 },
+        waist: { rx:0.18, ry:0 },
+        chest: { rx:0.12, ry:0 },
+        rArm:  { sx:0.62, sy:-0.22, sz:-0.12, ex:-1.15, wx:0.3, wy:0 },
+        lArm:  { sx:0.62, sy:0.22, sz:0.12, ex:-1.15 },
+        rHip:  { rx:-0.30, ry:0, rz:-0.15, knee:0.50 },
+        lHip:  { rx:-0.30, ry:0, rz:0.15, knee:0.50 },
     },
     };
 
