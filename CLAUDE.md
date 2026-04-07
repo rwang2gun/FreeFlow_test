@@ -14,8 +14,8 @@
 
 ### 버전 위치
 ```
-line ~1011:  const GAME_VERSION = '0.035';
-             document.getElementById('game-version-display').textContent = 'ver ' + GAME_VERSION;
+const GAME_VERSION = '0.0XX';   // grep 'GAME_VERSION' 으로 위치 확인
+document.getElementById('game-version-display').textContent = 'ver ' + GAME_VERSION;
 ```
 > static HTML의 `game-version-display` div 텍스트는 JS가 덮어씀 → JS 상수만 수정할 것
 
@@ -35,23 +35,24 @@ grep 'GAME_VERSION' FreeFlow_Test_split.html
 
 ## 파일 구조
 
-단일 HTML 파일 (`FreeFlow_Test_split.html`, ~5,724줄)에 CSS + JS 전부 포함.
+단일 HTML 파일 (`FreeFlow_Test_split.html`)에 CSS + JS 전부 포함.  
+> 라인 번호는 편집 시 변동되므로 **클래스명/상수명으로 grep해서 찾을 것.**
 
-| 구간 | 내용 |
-|------|------|
-| 1 ~ 400 | HTML/CSS, 반응형 UI |
-| 400 ~ 477 | `InputManager` |
-| 481 ~ 598 | `CameraRig`, `StateMachine`, `State` 베이스 |
-| 600 ~ 1000 | State 서브클래스 10종 |
-| 1000 ~ 1608 | `POSES` 딕셔너리 (포즈 데이터 전체) |
-| 1609 ~ 2611 | `CharacterFS` (검사) |
-| 2614 ~ 3179 | `CharacterEF` (격투가, extends CharacterFS) |
-| 3180 ~ 3797 | `CharacterWM` (완드 마법사, extends CharacterFS) |
-| 3798 ~ 4347 | `Goblin` 적 클래스 |
-| 4348 ~ 4615 | VFX 클래스들 (FloatingIndicator, ExplosionRing, FireBladeProjectile, MagicBolt) |
-| 4616 ~ 4834 | `GoblinSpearman` (extends Goblin) |
-| 4838 ~ 5665 | `Game` (메인 루프, 씬, UI) |
-| 5666 ~ 5724 | PoseEditor 연동 |
+| 섹션 | 찾는 법 (`grep`) | 내용 |
+|------|-----------------|------|
+| HTML/CSS | `<style>` | 반응형 UI, 오버레이 |
+| InputManager | `class InputManager` | 키보드·마우스 입력 |
+| CameraRig / StateMachine | `class CameraRig` | 카메라, FSM 베이스 |
+| State 서브클래스 | `class HurtState` | 10종 상태 클래스 |
+| POSES 딕셔너리 | `const POSES` | 포즈 데이터 전체 |
+| CharacterFS | `class CharacterFS` | 검사 (기본 캐릭터) |
+| CharacterEF | `class CharacterEF` | 격투가 |
+| CharacterWM | `class CharacterWM` | 완드 마법사 |
+| Goblin | `class Goblin` | 근접 적 |
+| VFX 클래스들 | `class FloatingIndicator` | 이펙트, 투사체 |
+| GoblinSpearman | `class GoblinSpearman` | 원거리 적 |
+| Game | `class Game` | 메인 루프, 씬, UI |
+| PoseEditor 연동 | `BUILTIN_POSE_KEYS` | 커스텀 포즈 로드 |
 
 ---
 
@@ -121,8 +122,8 @@ this.applyPose(POSES.wm_skill, 12, dt);
 - 카테고리: `*_skill`, `*_ult_*`, `*_charge_*`
 
 ### 포즈 추가 시 주의
-- `POSES` 딕셔너리는 line ~1014에 위치
-- PoseEditor(`localStorage`)에서 커스텀 포즈 자동 로드 — 기본 포즈는 덮어쓰지 않음 (line 1582)
+- `POSES` 딕셔너리 위치: `grep 'const POSES'`
+- PoseEditor(`localStorage`)에서 커스텀 포즈 자동 로드 — 기본 포즈는 덮어쓰지 않음 (`grep 'BUILTIN_POSE_KEYS'`)
 - 중복 포즈 금지: 같은 값의 포즈를 다른 이름으로 두지 말 것 (독립 편집이 필요할 경우 값을 차별화)
 
 ---
@@ -140,10 +141,12 @@ this.applyPose(POSES.wm_skill, 12, dt);
 | 클릭 (홀드 0.3s) | 강공격 |
 | Tab / 1·2·3 | 캐릭터 전환 |
 | Esc | 일시정지 |
+| `,` | 좌클릭 시뮬레이션 (키보드 공격) |
+| `.` | 우클릭 시뮬레이션 (키보드 대시) |
 
 ### 트리거 방식
 - `attackTriggered`, `skillTriggered`, `ultimateTriggered` 등은 **단일 프레임 소비형**
-- 매 프레임 끝에 리셋 (line 5662)
+- 매 프레임 끝 트리거 리셋 (`grep 'attackTriggered = false'` 로 위치 확인)
 - State에서 소비 후 다시 활성화되지 않음
 
 ---
@@ -197,7 +200,7 @@ requestAnimationFrame
 | `Goblin` | 근접 기본 적 (×3) | `'attacker'` / `'watcher'` |
 | `GoblinSpearman` | 원거리 투사체 (×1) | `'attacker'` / `'watcher'` |
 
-- AI 조율: 동시 공격자 1명 제한, 0.5s 쿨다운 (line 5437)
+- AI 조율: 동시 공격자 1명 제한, 0.5s 쿨다운 (`grep 'aiCoordinatorTimer'`)
 - 범위: 공격 4m, 감지 8m
 
 ---
