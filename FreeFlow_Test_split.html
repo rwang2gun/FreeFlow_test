@@ -1084,25 +1084,25 @@
                 lHip:  { rx: 0.2,  ry: 0,   rz: 0,    knee: 0.1 },
             },
             // 이동 중 포즈 — 몸을 앞으로 낮추고 달려가는 자세
-            dash: {
-                root:  { y:0.5, rx:0.28, ry:-0.01 },
-                waist: { rx:0.65, ry:-0.25 },
-                chest: { rx:0.12, ry:-0.04 },
-                rArm:  { sx:0.02, sy:-0.15, sz:-0.25, ex:0.06, wx:-0.15, wy:-1.31 },
-                lArm:  { sx:-1.69, sy:-2, sz:-0.3, ex:-2 },
-                rHip:  { rx:-1.46, ry:-0.16, rz:-0.25, knee:2 },
-                lHip:  { rx:0.65, ry:0.38, rz:0.01, knee:0 },
-            },
+    dash: {
+        root:  { y:0.5, rx:0.28, ry:-0.01 },
+        waist: { rx:0.83, ry:-0.03 },
+        chest: { rx:-0.28, ry:-0.41 },
+        rArm:  { sx:0.65, sy:0.39, sz:-0.28, ex:-0.97, wx:0.26, wy:-1.37 },
+        lArm:  { sx:-0.42, sy:-0.95, sz:1.39, ex:-2 },
+        rHip:  { rx:-1.46, ry:-0.16, rz:-0.25, knee:2 },
+        lHip:  { rx:0.65, ry:0.38, rz:0.01, knee:0 },
+    },
             // 도착 후 타격 포즈 — 검을 앞으로 강하게 찌르는 동작
-            dashAttack: {
-                root:  { y:0.65, rx:0, ry:0 },
-                waist: { rx:0.52, ry:0.46 },
-                chest: { rx:0.03, ry:0.34 },
-                rArm:  { sx:-0.59, sy:-0.75, sz:0.79, ex:0.15, wx:0.79, wy:-0.15 },
-                lArm:  { sx:-0.27, sy:-0.77, sz:0.6, ex:-1.17 },
-                rHip:  { rx:-1.2, ry:-0.04, rz:-0.47, knee:1.69 },
-                lHip:  { rx:-0.34, ry:0.56, rz:0.61, knee:0.47 },
-            },
+    dashAttack: {
+        root:  { y:0.65, rx:0, ry:0 },
+        waist: { rx:0.24, ry:0.6 },
+        chest: { rx:-0.37, ry:0.45 },
+        rArm:  { sx:-1.45, sy:1.06, sz:-0.2, ex:-0.12, wx:1.25, wy:-0.03 },
+        lArm:  { sx:0.7, sy:0.53, sz:1, ex:-1.29 },
+        rHip:  { rx:-1.2, ry:-0.04, rz:-0.47, knee:1.69 },
+        lHip:  { rx:-0.34, ry:0.56, rz:0.61, knee:0.47 },
+    },
             // y는 updateCombo에서 점프 아크로 덮어씀
     leap: {
         root:  { y:0.65, rx:0.35, ry:0.05 },
