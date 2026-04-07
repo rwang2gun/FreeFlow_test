@@ -1008,7 +1008,7 @@
          *       lHip  : { rx,ry,rz=고관절, knee=무릎X }
          * ==========================================
          */
-        const GAME_VERSION = '0.040';
+        const GAME_VERSION = '0.041';
         document.getElementById('game-version-display').textContent = 'ver ' + GAME_VERSION;
 
         const POSES = {
@@ -1469,7 +1469,7 @@
         rHip:  { rx:-0.39, ry:-0.05, rz:-0.03, knee:1.74 },
         lHip:  { rx:0.37, ry:0, rz:-0.03, knee:0 },
     },
-    // EF 천지파쇄: 강타 순간 포즈 (양팔 아래로)
+    // EF 천지파쇄: 공중 웅크리기 — 다리를 모아 올리며 타격 준비
     ef_ult_slam: {
         root:  { y:0.88, rx:-1.1, ry:-0.09 },
         waist: { rx:1.5, ry:0.35 },
@@ -1479,7 +1479,7 @@
         rHip:  { rx:-0.43, ry:-0.05, rz:-0.03, knee:2 },
         lHip:  { rx:-0.95, ry:0, rz:-0.03, knee:2 },
     },
-    // 궁극기 착지 포즈 (스킬 slam과 동일한 초기값, 독립 편집 가능)
+    // EF 천지파쇄: 양발 지면 강타 임팩트 — 충격파 발생 순간 자세
     ef_ult_land: {
         root:  { y:0.4, rx:-0.22, ry:0.49 },
         waist: { rx:0.54, ry:-0.37 },
@@ -2707,9 +2707,10 @@
             // ── 궁극기: 천지파쇄 (EF 전용) ─────────────────────────────
             // 공중에서 내리꽂으며 거대한 충격파로 주변 모든 적을 날려버림
             setupUltimate(state) {
-                state.duration   = 2.2;
+                state.duration   = 2.4;
                 state.jumpEnd    = 0.55;  // 도약 구간
-                state.slamAt     = 0.80;  // 지면 강타 시점
+                state.tuckEnd    = 0.95;  // 공중 웅크리기 구간
+                state.slamAt     = 1.15;  // 급하강 완료 → 지면 강타 시점
                 state.burstDone  = false;
                 this.parts.root.position.y = 0.8;
 
@@ -2723,26 +2724,31 @@
                 this.velocity.set(0, 0, 0);
 
                 if (state.timer < state.jumpEnd) {
-                    // 도약: 높이 솟구치는 연출
+                    // 1단계: 도약 — 위로 솟구치기
                     const jumpT = state.timer / state.jumpEnd;
-                    this.parts.root.position.y = 0.8 + Math.sin(jumpT * Math.PI) * 2.5;
+                    this.parts.root.position.y = 0.8 + Math.sin(jumpT * Math.PI * 0.5) * 2.5;
                     this.applyPose(POSES.ef_ult_jump, 20, dt);
                     this._updateNeckLook(dt, 15, -0.4);
 
+                } else if (state.timer < state.tuckEnd) {
+                    // 2단계: 공중 웅크리기 — 고점에서 다리를 모아 타격 준비
+                    this.parts.root.position.y = 3.3;
+                    this.applyPose(POSES.ef_ult_slam, 14, dt);
+                    this._updateNeckLook(dt, 12, -0.3);
+
                 } else if (state.timer < state.slamAt) {
-                    // 급하강: 팔을 아래로 모으며 내리꽂기 직전
-                    const downT = (state.timer - state.jumpEnd) / (state.slamAt - state.jumpEnd);
-                    this.parts.root.position.y = THREE.MathUtils.lerp(3.3, 0.8, downT);
-                    this.applyPose(POSES.ef_ult_slam, 35, dt);
+                    // 3단계: 급하강 — 양발로 지면을 향해 내려꽂기
+                    const downT = (state.timer - state.tuckEnd) / (state.slamAt - state.tuckEnd);
+                    this.parts.root.position.y = THREE.MathUtils.lerp(3.3, 0.8, downT * downT);
+                    this.applyPose(POSES.ef_ult_land, 40, dt);
                     this._updateNeckLook(dt, 25, -0.5);
 
                 } else {
-                    // 착지 후 충격파
+                    // 4단계: 착지 충격파
                     this.parts.root.position.y = THREE.MathUtils.lerp(this.parts.root.position.y, 0.8, 10 * dt);
 
                     if (!state.burstDone) {
                         state.burstDone = true;
-                        // 대형 충격파 3겹
                         for (let r = 0; r < 3; r++) {
                             setTimeout(() => this.game.spawnShockwaveRing(this.mesh.position, 5.5 + r * 0.5, 0xaaddff), r * 80);
                         }
